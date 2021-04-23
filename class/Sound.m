@@ -55,7 +55,9 @@ classdef Sound < handle
             
         end
         
-        function s = normalize(s) % function for normalize the sound
+        function rmsy = normalize(s) % function for normalize the sound
+            filtery = highpass(s.y,400,s.fs);
+            rmsy = filtery*rms(filtery)/0.5;  % when 0.5 is the goal
         end
         
         function s = preprocess(s) % preprocess the sound to remove the interval silence and normalize the syllables

@@ -14,7 +14,7 @@ classdef Ephys < handle
     end
     
     methods
-        function e = Ephys(spike, trigger, sound) 
+        function e = Ephys(spike, trigger, sound)
             
             
             e.spike = spike;
@@ -23,7 +23,7 @@ classdef Ephys < handle
             e.y = e.sound.y;
             e.corey = e.sound.corey;
             
-           % disp('MAGA!');
+            % disp('MAGA!');
             e.fs = sound.fs;
             e.allocate;
             
@@ -50,7 +50,7 @@ classdef Ephys < handle
             figure;
             draw.raster(e.sptimes,e.sound.corey,e.fs,color,title);
             %draw.raster(e.sound.corey, e.fs, e.sptimes);
-        end 
+        end
         
         
         function e = spec(e) % draw spectrogram
@@ -58,7 +58,7 @@ classdef Ephys < handle
             figure;
             draw.spectrogram(e.sound.corey,e.fs);
             %draw.raster(e.sound.corey, e.fs, e.sptimes);
-        end 
+        end
         
         function e = sdf(e)    % draw sdf
             figure;
@@ -68,7 +68,7 @@ classdef Ephys < handle
         function e = three(e)% draw three plots
             figure;
             draw.three(e.sound.corey,e.fs,e.sptimes);
-        end   
+        end
         
         
         function locs = peak(e)% time of response peak
@@ -106,48 +106,80 @@ classdef Ephys < handle
             
         end
         
-        function sigsyl = siginf(e) % full info of sig syllable
-            dbstop if error
-            number = e.sig;
-            if ~isempty(number)
-                for idx = 1: length(number)
-                    sigsyl(idx).sound = e.sound.name;
-                    sigsyl(idx).number = number(idx);
-                    sigsyl(idx).plx = e.trigger.plxname;
-                    sigsyl(idx).channel = e.spike.channel;
-                    sigsyl(idx).unit = e.spike.unit;
-                    sigsyl(idx).y = e.sound.fragment(number(idx)).y;
-                    
-                    
-                end
-            else
-                sigsyl = [];
+        function siginf = siginf(e) % full info of sig syllable
+            
+            siginf = sylinf([e.sylinf.label] == 1); % derive from sylinf
+            if isempty(e.sig)
+                siginf = [];
             end
         end
         
         
-        function response = sylinf(e) % full info of all syllables
+        function syl = sylinf(e) % full info of all syllables
             dbstop if error
             number = e.sig;
-            response = struct;
+            syl = struct;
             for n = 1:length(e.sound.initial)
                 
                 
-                response(n).sound = convertStringsToChars(e.sound.name);
-                response(n).number = n;
-                response(n).plx = convertStringsToChars(e.trigger.plxname);
-                response(n).channel = e.spike.channel;
-                response(n).unit = e.spike.unit;
-                response(n).y = e.sound.fragment(n).y;
-                response(n).image = cal.img(response(n).y,e.fs); % store the image matrix
-                if ismember(n,number)
-                    response(n).label = 1; % significant
+                syl(n).sound = convertStringsToChars(e.sound.name);
+                syl(n).number = n;
+                syl(n).plx = convertStringsToChars(e.trigger.plxname);
+                syl(n).channel = e.spike.channel;
+                syl(n).unit = e.spike.unit;
+                syl(n).y = e.sound.fragment(n).y;
+                syl(n).image = cal.img(syl(n).y,e.fs); % store the image matrix
+                temp = extract.feature(syl(n).y,e.fs);
+                syl(n).goodness = temp.goodness;
+                syl(n).meanf = temp.mean_frequency;
+                syl(n).fm = temp.fm;
+                syl(n).amplitude = temp.amplitude;
+                syl(n).entropy = temp.entropy;
+                syl(n).pitch = temp.pitch;
+                syl(n).rawpitch = temp.rawpitch;
+                syl(n).am = temp.AM;
+                syl(n).initial = e.sound.fragment(n).initial;
+                syl(n).terminal = e.sound.fragment(n).terminal;
+                if n ~= 1
+                    syl(n).pregap = (length(syl(n).initial) - length(syl(n-1).terminal))/e.fs;
                 else
-                    response(n).label = 0; % not significant
+                    syl(n).pregap = inf; % pre-gap duration
+                end
+                syl(n).dur = length(syl(n).y)/e.fs;
+                
+                if ismember(n,number)
+                    syl(n).label = 1; % significant
+                else
+                    syl(n).label = 0; % not significant
                 end
                 
                 
             end
+            
+        end
+        
+        function syl = avgn(e) % full info of all syllables
+            dbstop if error
+            number = e.sig;
+            syl = struct;
+            for n = 1:length(e.sound.initial)
+                syl(n).birdid = convert.bid(convertStringsToChars(e.sound.name));
+                syl(n).filename = convertStringsToChars(e.sound.name);
+                syl(n).number = n;
+                syl(n).plx = convertStringsToChars(e.trigger.plxname);
+                syl(n).channel = e.spike.channel;
+                syl(n).unit = e.spike.unit;
+                syl(n).y = e.sound.fragment(n).y;
+                syl(n).hpy = highpass(syl(n).y,400,e.fs); % high passed y, threshold is 400
+                syl(n).image = cal.img(syl(n).y,e.fs); % store the image matrix
+
+                if ismember(n,number)
+                    syl(n).label = 1; % significant
+                else
+                    syl(n).label = 0; % not significant
+                end
+            end
+
             
         end
         
@@ -167,7 +199,7 @@ classdef Ephys < handle
         function pre = preinf(e, duration)% info of pre-peak duration
             
             if ~exist('duration','var')
-                dur = 0.5 ;% second , this is default
+                dur = 0.200 ;% second , this is default
             else
                 dur = duration;
             end
@@ -182,7 +214,7 @@ classdef Ephys < handle
                     temp = extract.feature(pre(n).y,e.fs);
                     pre(n).goodness = temp.goodness;
                     pre(n).meanf = temp.mean_frequency;
-                    pre(n).fm = temp.FM;
+                    pre(n).fm = temp.fm;
                     pre(n).amplitude = temp.amplitude;
                     pre(n).entropy = temp.entropy;
                     pre(n).pitch = temp.pitch;
@@ -194,10 +226,10 @@ classdef Ephys < handle
                     
                 end
             else
-                pre = struct;
+                pre = [];
             end
             
-        end    
+        end
     end
 end
 

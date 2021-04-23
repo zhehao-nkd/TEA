@@ -55,11 +55,11 @@ classdef segment < handle
         
         function fragment = seg2(s)
             
-          
             
             
-                    config = configSegSyl('default');
-          
+            
+            config = configSegSyl('default');
+            
             
             
             
@@ -133,16 +133,62 @@ classdef segment < handle
             fragment.fs = s.fs;
             fragment.y_filtered_abs = y_filtered_abs;
             fragment.y_env = y_env;
-         
+            
             
         end
         
-        function fragment = seg3(s)  % segment already preprocessed song
+        function frag = seg3(s)  % specific for dataset, will be merged into seg1 in the future
+           
+            %gpuy = gpuArray(y);
+            measurey = abs(s.y);
+            measurey = highpass(measurey,400,s.fs);
             
+            
+            [yup,~] = envelope(measurey,800,'rms');
+            %     figure
+            %     plot(yup)
+            %     figure
+            [lowpks,lowlcs] = findpeaks(-yup,'MinPeakHeight',-0.005,'MinPeakDistance',500);
+            %     figure
+            %     findpeaks(yup,'MinPeakHeight',0.01,'MinPeakDistance',500);
+            [highpks,highlcs] = findpeaks(yup,'MinPeakHeight',0.015,'MinPeakDistance',500);
+            
+            frag = struct;
+            frag(1).label = 0;
+            for lcsN = 2: length(lowlcs)
+                
+                
+                
+                if  ~isempty(highlcs(lowlcs(lcsN-1)<highlcs&highlcs<lowlcs(lcsN)))
+                    
+                    frag(lcsN).label = 1;
+                    frag(lcsN).initial = lowlcs(lcsN-1);
+                    frag(lcsN).terminal = lowlcs(lcsN);
+                    %syllable(lcsN).y = s.y(lowlcs(lcsN-1):lowlcs(lcsN));
+                    
+                else
+                    frag(lcsN).label = 0;
+                end
+                
+                %                 figure('Visible','off');
+                %                 mySpectrogram(syllable(idx).y,fs,'Decide');
+                %                 temp = getframe(gcf)
+                %                 syllable(idx).I = temp.cdata;
+                %                 close(gcf);
+            end
+            
+            ind=find([frag.label]);  % remove fake data
+            if ~isempty(ind)
+                frag=frag(ind);
+            else
+                frag = [];
+            end
+            
+           % frag = rmfield(frag,'label');
         end
         
         
     end
     
 end
-    
+

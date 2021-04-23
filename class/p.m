@@ -9,6 +9,7 @@ classdef p
         a = "C:\Users\Remote\Documents\G606_Z01SO.txt"
         b = "C:\Users\Remote\Documents\G606_Z01SO.plx"
         c = "C:\Users\Remote\Documents\G606-1st"
+        bucket = "Z:\Yazaki-SugiyamaU\Bird-song"
 % this class store the commonly used paramters( ect. pathes) for testing
 % the function
     end

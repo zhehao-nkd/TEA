@@ -6,6 +6,22 @@ classdef extract
         function features = feature(y,fs)
             
             features = SAT_hijack(y,fs).features;
+            % fix the pitch
+            temp = features.pitch;
+            newpitch = features.pitch;
+            newpitch(newpitch > 2000) = nan;
+            newpitch(newpitch < 400) = nan;
+            features.pitch = newpitch;
+            features.rawpitch = temp;
+            
+            % fix the fm
+            temp2 = features.FM;
+            newfm = [diff(features.pitch),0];
+          
+            features.fm = newfm;
+            features.rawfm = temp2;
+            
+            
         end
         
         function filenames = filename(dirpath,extension)

@@ -18,6 +18,24 @@ classdef convert
             end
             
         end
+        
+        function newid = bid(rawid) % used for normalize the bird id to B345-like str
+            
+            captured = regexp(rawid,'(?<letter>[a-zA-Z]+)(?<number>\d+)','names');
+            % 3 to 6 letter, red to orange{3,6}
+            if isempty(captured)
+                warning('%s may not be correctly converted!',rawid);
+                newid = rawid;
+                return
+            end
+           
+            temp = convertStringsToChars(captured.letter);
+            
+            newletter = upper(temp(1));
+            newid = [newletter,captured.number];
+                    
+        end
+            
     end
 end
 

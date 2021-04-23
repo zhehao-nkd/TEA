@@ -23,7 +23,7 @@ if isempty(params_defined) % ensures that this function is called only once
        
                                       
        % Features computation and exclusion options
-       SAT_params.pitch_method=0; % 0 = mean frequency; 1 = Yin algorithm
+       SAT_params.pitch_method=1; % 0 = mean frequency; 1 = Yin algorithm !!!!!!!!!!!!!!这就是为什么有些算pitch的变成了mean frequency
                                       
                                       
        % Features enumeration and normalization values, default is zebra finch normalization:
