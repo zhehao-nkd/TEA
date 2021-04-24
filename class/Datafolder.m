@@ -95,7 +95,7 @@ classdef Datafolder < handle
             end
         end
         
-        function syllables = avgn(d,file_per_folder) % generate .mat file for avgn analysis
+        function avgn(d,file_per_folder) % generate .mat file for avgn analysis
             
             dbstop if error
             outdir = 'bucket_avgn'

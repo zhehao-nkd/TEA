@@ -32,21 +32,21 @@ classdef Raw < handle & Audio
             syl = struct;
             
             if isempty(r.initial)
-                syl = []   % to avoid empty segment
+                syl = [];   % to avoid empty segment
                 return
             end
             
             for n = 1:length(r.initial)
-                syl(n).birdid = convertStringsToChars(r.folder);
+                syl(n).birdid = convertStringsToChars(convert.bid(r.folder));
                 syl(n).filename = convertStringsToChars(r.filename);
                 syl(n).number = n;
                 syl(n).plx = nan; % these are only available for ephys object
                 syl(n).channel = nan; 
                 syl(n).unit = nan;
                 syl(n).y = r.y(r.initial(n):r.terminal(n));
-                syl(n).hpy = highpass(syl(n).y,400,r.fs); % high passed y, threshold is 400
-                syl(n).stft = cal.stft(syl(n).y,400,48,400,r.fs);
-               % syl(n).image = cal.img(syl(n).y,r.fs); % store the image matrix 
+                syl(n).hpy = highpass(syl(n).y,pa.hp,r.fs); % high passed y, threshold is 400
+               %syl(n).stft = cal.stft(syl(n).y,400,48,400,r.fs);
+                syl(n).image = cal.img(syl(n).hpy,r.fs); % store the image matrix 
                 syl(n).label = 0; % not significant
             end
         end
