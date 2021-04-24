@@ -23,7 +23,7 @@ classdef convert
             
             captured = regexp(rawid,'(?<letter>[a-zA-Z]+)(?<number>\d+)','names');
             % 3 to 6 letter, red to orange{3,6}
-            if isempty(captured)
+            if length(captured) ~= 1
                 warning('%s may not be correctly converted!',rawid);
                 newid = rawid;
                 return
