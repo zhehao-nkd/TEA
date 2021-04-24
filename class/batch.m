@@ -42,7 +42,7 @@ classdef batch < handle
         
         
         function avgn(b) % write avgn mat files
-            outdir = 'bath_avgn';
+            outdir = 'batch_avgn';
             mkdir(outdir);
             
             for idx = 1: length(b.neu)

@@ -170,7 +170,7 @@ classdef Ephys < handle
                 syl(n).channel = e.spike.channel;
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.fragment(n).y;
-                syl(n).hpy = highpass(syl(n).y,400,e.fs); % high passed y, threshold is 400
+                syl(n).hpy = highpass(syl(n).y,450,e.fs); % high passed y, threshold is 400
                 syl(n).image = cal.img(syl(n).y,e.fs); % store the image matrix
 
                 if ismember(n,number)
