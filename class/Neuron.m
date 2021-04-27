@@ -1,10 +1,11 @@
-classdef Neuron < handle
+ classdef Neuron < handle
     %ANALYSIS Summary of this class goes here
     %   Detailed explanation goes here
     
     properties
         e
         neuronname
+        slist % sound list
     end
     
     methods
@@ -42,16 +43,107 @@ classdef Neuron < handle
         function sigonly = siginf(n)
             
             collect = cellfun(@(obj) obj.siginf, n.e,'UniformOutput',false);
-            sigonly =  vertcat(collect{:});
+            sigonly =  horzcat(collect{:});
             
         end
         
         
         function sylinf = sylinf(n)
   
-            collect = cellfun(@(obj) obj.sylinf, n.e,'UniformOutput',false);
+%             collect = cellfun(@(obj) obj.sylinf, n.e,'UniformOutput',false);
+%             sylinf =  horzcat(collect{:});
+            
+            tic;
+            disp(sprintf('Current neuron is %s',n.neuronname)); %#ok<DSPS>
+            
+            parfor idx = 1: length(n.e)
+                collect{idx} = n.e{idx}.sylinf;
+            end
             sylinf =  horzcat(collect{:});
             
+            toc;
+            newline;
+            
+        end
+        
+        function syl = sylinfsl(n) % same length
+            
+            tic;
+            disp(sprintf('Current neuron is %s',n.neuronname)); %#ok<DSPS>
+            parfor idx = 1: length(n.e)
+                collect{idx} = n.e{idx}.sylinfq;
+            end
+            syl =  horzcat(collect{:}).';
+            
+            parfor idx = 1: length(syl)
+                len(idx) = length(syl(idx).y);
+            end
+            syl(len> pa.SYLLEN) = []; % remove longer syllables
+            
+            parfor id = 1: length(syl)
+                syl(id).y = utl.pad(syl(id).y,pa.SYLLEN); % pad to 12800
+                syl(id).image = cal.img(syl(id).y,syl(id).fs); % store the image matrix
+                temp = extract.feature(syl(id).y,syl(id).fs);
+                syl(id).goodness = temp.goodness;
+                syl(id).meanf = temp.mean_frequency;
+                syl(id).fm = temp.fm;
+                syl(id).amplitude = temp.amplitude;
+                syl(id).entropy = temp.entropy;
+                syl(id).pitch = temp.pitch;
+                syl(id).rawpitch = temp.rawpitch;
+                syl(id).am = temp.AM;
+                
+              
+                
+              
+            end
+            newline;
+            toc;
+            
+        end
+        
+        function sylT = sylinfsld(n) % same length% downsample
+            
+            
+            tic;
+            disp(sprintf('Current neuron is %s',n.neuronname)); %#ok<DSPS>
+            parfor idx = 1: length(n.e)
+                collect{idx} = n.e{idx}.sylinfq;
+            end
+            syl =  horzcat(collect{:}).';
+            
+            parfor idx = 1: length(syl)
+                len(idx) = length(syl(idx).y);
+            end
+            syl(len> pa.SYLLEN) = []; % remove longer syllables
+            
+            parfor id = 1: length(syl)
+                syl(id).y = utl.pad(syl(id).y,pa.SYLLEN); % pad to 12800
+                %syl(id).image = cal.img(syl(id).y,syl(id).fs); % store the image matrix
+                temp = extract.feature(syl(id).y,syl(id).fs);
+                drate = 10; % downsampling rate
+                syl(id).goodness = downsample(temp.goodness,drate);
+                syl(id).meanf = downsample(temp.mean_frequency,drate);
+                syl(id).fm = downsample(temp.fm,drate);
+                syl(id).amplitude = downsample(temp.amplitude,drate);
+                syl(id).entropy = downsample(temp.entropy,drate);
+                syl(id).pitch = downsample(temp.pitch,drate);
+                %syl(id).rawpitch = downsample(temp.rawpitch,drate);
+                syl(id).am = downsample(temp.AM,drate);
+
+            end
+            sylT = struct2table(syl);
+            newline;
+            toc;
+            
+        end
+        
+        function n = gets(n) % get sound list
+            for idx = 1: length(n.e)
+                n.slist(idx).idx = idx;
+                n.slist(idx).name = n.e{idx}.sound.name;
+            end
+            n.slist = n.slist';
         end
         
         
@@ -70,7 +162,7 @@ classdef Neuron < handle
             parfor idx = 1: length(n.e)
                 collect{idx} = n.e{idx}.avgn;
             end
-            syl =  horzcat(collect{:}).';
+            syl =  horzcat(collect{:});
             
            
             newline;
@@ -83,8 +175,144 @@ classdef Neuron < handle
             collect = cellfun(@(obj) obj.preinf, n.e,'UniformOutput',false);
             pre =  horzcat(collect{:}).';
         end
-        %METHOD1 Summary of this method goes here
-        %   Detailed explanation goes here
+        
+        
+        function IMG = three(n) % draw three plot
+            
+            for idx = 1: length(n.e)
+                n.e{idx}.three;
+                frame = getframe(gcf);
+                I{idx} = frame.cdata;
+                close(gcf);
+            end
+            
+            % draw blank white
+            lieshu = 9;
+            hangshu = ceil(length(I)/lieshu);
+            rest = lieshu*hangshu - length(I);
+            white = uint8(255*ones(size(I{1})));
+            
+            if rest > 0
+                for k = 1:rest
+                    I = [I,white];
+%                     ax = gcf;
+%                     ax.Position(3) = 560;
+%                     ax.Position(4) = 420;
+                end
+            end
+            
+            reshapedI = reshape(I, lieshu,[])';
+            
+            clear I
+            
+            IMG = cell2mat(reshapedI);
+            
+            
+        end
+        
+        function drawpre(n)
+            pre = preinf(n);
+            feature = {'pitch'};
+            
+            for feaN = 1: length(feature)
+                
+                featurename = feature{feaN};
+                
+                featurecell = eval(['{pre.',feature{feaN},'}.''']);
+                allfea = horzcat(featurecell{:});
+                
+                allfea(allfea==0)=[];
+                allfea(allfea==inf)=[];
+                allfea(isnan(allfea))=[];
+
+                
+                figure('color','w','visible','off');
+                ax = gcf;
+                ax.Position(3) = 1120;
+                ax.Position(4) = 840;
+                
+                data = cell2mat(eval(['{pre.',feature{feaN},'}.''']))';
+                data(data == inf|data == -inf|data == 0) = NaN;
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                 
+%                 controldata = {};
+%                 PDFcontrol = {};
+%                 tic
+%                 parfor conN = 1
+%                     controlprespike = featureAlignControl2(response,range,length(prespike),feature{feaN});
+%                     controldata{conN} = cell2mat({controlprespike.thefeature}.')';
+%                     
+%                     controldata{conN}(controldata{conN} == inf|controldata{conN} == -inf|controldata{conN} == 0) = NaN;
+%                     [~,PDFcontrol{conN},~] = estDensityThesis(controldata{conN},prespike,1,featurename,1);
+%                     %disp(conN)
+%                 end
+%                 toc
+                
+%                 sumPDF =  horzcat(PDFcontrol{:});
+%                 %     figure
+%                 %     histogram( max(sumPDF),'Normalization','Probability' );
+%                 
+%                 [countN, bedges] =  histcounts( max(sumPDF),'Normalization','Probability' );
+%                 
+%                 bin = 0;
+%                 probablity = 0;
+%                 while probablity < 0.95
+%                     bin = bin + 1;
+%                     probablity = probablity + countN(bin);
+%                 end
+%                 
+%                 threshold = ( bedges(bin) + bedges(bin+1) )/2;
+%                 
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                [Ia,DFdata,limcolor] = estDensityThesis(data, pre, [],featurename);
+                
+                
+                figure;
+                plot(data);
+                tempI = getframe(gcf);
+                Itrace{feaN} = tempI.cdata;
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% last part
+                Ifea{feaN} = Ia;
+                
+                close(gcf);
+            end
+            
+            I = vertcat(Ifea{:});
+            
+        end  % have to modify a lot to use this function
+        
+        function collect = extractstimuli(n)
+            
+              tic;
+            disp(sprintf('Current neuron is %s',n.neuronname)); %#ok<DSPS>
+            parfor idx = 1: length(n.e)
+                %collect{idx} = n.e{idx}.y;
+                figure('Visible','off')
+                draw.spec(n.e{idx}.y,n.e{idx}.fs);
+                temp = getframe(gcf);
+                I = temp.cdata;
+                collect{idx} = rgb2gray(I);
+            end
+           
+            newline;
+            toc;
+        end
+        
+        function collect = extractsdf(n)
+            
+              tic;
+            disp(sprintf('Current neuron is %s',n.neuronname)); %#ok<DSPS>
+            parfor idx = 1: length(n.e)
+                collect{idx} = cal.sdf(n.e{idx}.sptimes,n.e{idx}.y,n.e{idx}.fs);
+            end
+           
+            newline;
+            toc;
+        end
+        
         
     end
 end

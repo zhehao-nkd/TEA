@@ -25,6 +25,7 @@ classdef Sound < handle
         fragment
         trigger
         initial
+        terminal
     end
     
     methods
@@ -46,7 +47,7 @@ classdef Sound < handle
             s.segment;
             s.setcorey;
             s.initial = [s.fragment.initial].';
-            
+            s.terminal = [s.fragment.terminal].';
         end
         
         function s = segment(s) % function for segmenting the sound

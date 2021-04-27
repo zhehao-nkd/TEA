@@ -2,7 +2,7 @@ classdef draw
     
     methods(Static)
         
-        function spectrogram(y,fs)
+        function spec(y,fs)
             
             %             idx = find(y,1);
             %             zpt = idx/fs; % zp means Zero Point
@@ -26,7 +26,7 @@ classdef draw
             
         end
         
-        function raster(sptimes,y,fs,color,title)
+        function raster(sptimes,y,fs,color)
             %find initial of stimuli
             
             
@@ -75,7 +75,35 @@ classdef draw
         end
         
         
-        function psth
+        function psth(sptimes)
+            
+            all = [];
+            for iTrial = 1:length(sptimes)
+                all             = [all; sptimes{iTrial}];               % Concatenate spikes of all trials
+            end
+            
+            ax                  = subplot(4,1,2);
+            nbins               = 100;
+            h                   = histogram(all,nbins);
+            h.FaceColor         = 'k';
+            
+            mVal                = max(h.Values)+round(max(h.Values)*.1);
+            ax.XLim             = [-.2 .3];
+            ax.YLim             = [0 mVal];
+            ax.XTick            = [0 .2];
+            ax.XLabel.String  	= 'Time [s]';
+            ax.YLabel.String  	= 'Spikes/Bin';
+            
+            slength             = 500;                                  % Length of signal trace [ms]
+            bdur                = slength/nbins;                        % Bin duration in [ms]
+            nobins              = 1000/bdur;                            % No of bins/sec
+            for iLab = 1:length(ax.YTickLabel)
+                lab             = str2num(ax.YTickLabel{iLab});
+                conv            = (lab / length(sptimes)) * nobins; 	% Convert to [Hz]: avg spike count * bins/sec
+                newlabel{iLab}  = num2str(round(conv));                 % Change YLabel
+            end
+            ax.YTickLabel       = newlabel;
+            ax.YLabel.String  	= 'Firing Rate [Hz]';
         end
         
         function sdf(y, fs, sptimes)
@@ -83,15 +111,17 @@ classdef draw
             gausswidth = 0.02;
             msdf = cal.sdf(sptimes,y,fs,resolution,gausswidth);
             %figure; 
-            plot(msdf);
+            x = linspace(0,length(msdf),length(msdf))*resolution;
+            plot(x,msdf);
+            xlim([0,max(x)])
         
         end
         
         function three(y,fs,sptimes)
             subplot(3,1,1)
-            draw.spectrogram(y,fs);
+            draw.spec(y,fs);
             subplot(3,1,2)
-            draw.raster(sptimes, y, fs, 'k',' ');
+            draw.raster(sptimes, y, fs, 'k');
             subplot(3,1,3)
             draw.sdf(y,fs,sptimes);
         end

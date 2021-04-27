@@ -1,16 +1,23 @@
 classdef Ephys < handle
     %EPHYS2 Summary of this class goes here
     %   Detailed explanation goes here
-    
+    properties(Constant)
+        pltext = 1  % plot extension is 0.2
+    end
     properties
         spike
         trigger
         sound
-        sptimes
         fs
+        rawy
         y
-        corey
+        sptimes
         presptimes
+        plty
+        pltsptimes
+        zpt
+        npt
+        rawsptimes
     end
     
     methods
@@ -20,12 +27,14 @@ classdef Ephys < handle
             e.spike = spike;
             e.trigger = trigger;
             e.sound = sound;
-            e.y = e.sound.y;
-            e.corey = e.sound.corey;
-            
+            e.rawy = e.sound.y; % rawy
+            e.y = e.sound.corey; % corey is y
             % disp('MAGA!');
             e.fs = sound.fs;
+            e.zpt = e.sound.initial(1)/e.fs;
+            e.npt = e.sound.initial(end)/e.fs;
             e.allocate;
+            e.plty = [zeros(e.pltext*e.fs,1);e.y;zeros(e.pltext*e.fs,1)];
             
             
         end
@@ -34,12 +43,16 @@ classdef Ephys < handle
             
             n = e.sound.trigger;
             initials = e.trigger.info(n).time;
-            ylength = length(e.sound.corey)/e.sound.fs;
+            ylength = length(e.y)/e.sound.fs;
             
             for k = 1:length(initials)
-                e.sptimes{k} = e.spike.time( initials(k)<e.spike.time& e.spike.time<initials(k) + ylength)...
+                e.sptimes{k} = e.spike.time( initials(k)<e.spike.time & e.spike.time<initials(k) + ylength)...
                     - initials(k);
                 e.presptimes{k} = e.spike.time( initials(k)- ylength<e.spike.time & e.spike.time<initials(k))- (initials(k)-ylength);
+                e.pltsptimes{k} = e.spike.time( initials(k)- e.pltext<e.spike.time& e.spike.time<initials(k) + ylength + e.pltext)...
+                    - (initials(k)- e.pltext);
+                e.rawsptimes{k} = e.spike.time( initials(k)- e.zpt<e.spike.time& e.spike.time<initials(k) + ylength + length(e.rawy)/e.fs- e.npt)...
+                    - (initials(k)- e.zpt);
             end
             
         end
@@ -48,7 +61,7 @@ classdef Ephys < handle
             color = 'k';
             title = ' ';
             figure;
-            draw.raster(e.sptimes,e.sound.corey,e.fs,color,title);
+            draw.raster(e.pltsptimes,e.plty,e.fs,color);
             %draw.raster(e.sound.corey, e.fs, e.sptimes);
         end
         
@@ -56,32 +69,54 @@ classdef Ephys < handle
         function e = spec(e) % draw spectrogram
             
             figure;
-            draw.spectrogram(e.sound.corey,e.fs);
+            draw.spec(e.plty,e.fs);
             %draw.raster(e.sound.corey, e.fs, e.sptimes);
         end
         
         function e = sdf(e)    % draw sdf
             figure;
-            draw.sdf(e.sound.corey,e.fs,e.sptimes);
+            draw.sdf(e.plty,e.fs,e.pltsptimes);
         end
         
         function e = three(e)% draw three plots
-            figure;
-            draw.three(e.sound.corey,e.fs,e.sptimes);
+            figure('color','w')
+            draw.three(e.plty,e.fs,e.pltsptimes);
+            xlabel(e.sound.name);
+            subplot(3,1,1);
+            locs = e.sig;
+            for idx = 1: length(locs)
+                initial = (e.sound.initial(locs(idx))-e.sound.initial(1))/e.fs + e.pltext;
+                terminal = (e.sound.terminal(locs(idx))-e.sound.initial(1))/e.fs+ e.pltext;
+                line([initial,terminal],[10,10],'color','r');
+            end
+        end
+        
+        function e = rawthree(e)% draw three plots
+            figure('color','w')
+            draw.three(e.rawy,e.fs,e.rawsptimes);
+            xlabel(e.sound.name);
+            subplot(3,1,1);
+            locs = e.sig;
+            for idx = 1: length(locs)
+                initial = e.sound.initial(locs(idx))/e.fs;
+                terminal = e.sound.terminal(locs(idx))/e.fs;
+                line([initial,terminal],[10,10],'color','r');
+            end
         end
         
         
         function locs = peak(e)% time of response peak
             resolution = .001;
             gausswidth = resolution*20;
+            %minpeakheight = 18;
+            minpeakprominence = 5;
+            minpeakdistance = 30;
             
-            minpeakprominence = 10;
-            minpeakdistance = 90;
             range = 0.05;
-            presdf = cal.sdf(e.presptimes,e.corey,e.fs,resolution,gausswidth);
+            presdf = cal.sdf(e.presptimes,e.y,e.fs,resolution,gausswidth);
             thres = cal.thres(presdf,range);
-            
-            sdf = cal.sdf(e.sptimes,e.corey,e.fs,resolution,gausswidth);
+            thres = max(thres, 9);
+            sdf = cal.sdf(e.sptimes,e.y,e.fs,resolution,gausswidth);
             %             figure
             %             findpeaks(sdf,"MinPeakHeight",thres,...
             %                 'MinPeakProminence',minpeakprominence,'MinPeakDistance',minpeakdistance);
@@ -96,22 +131,27 @@ classdef Ephys < handle
             locs = e.peak;
             if ~isempty(locs)
                 for idx = 1: length(locs)
-                    sylidx = length(find(~(locs(idx)<initial))); % return the idx of the significant syllables
+                    sylidx(idx) = length(find(~(locs(idx)<initial))); % return the idx of the significant syllables
                 end
             else
                 sylidx = [];
             end
+            sylidx = horzcat(sylidx(:));
             
             sylidx = unique(sylidx,'stable'); % remove repeated element
             
         end
         
         function siginf = siginf(e) % full info of sig syllable
-            
-            siginf = sylinf([e.sylinf.label] == 1); % derive from sylinf
+            dbstop if error
             if isempty(e.sig)
                 siginf = [];
+                return
             end
+            idx = find([e.sylinf.label] == 1);
+            temp = e.sylinf;
+            siginf = temp(idx); % derive from sylinf
+            
         end
         
         
@@ -158,6 +198,41 @@ classdef Ephys < handle
             
         end
         
+        function syl = sylinfq(e) % quick but less
+            dbstop if error
+            number = e.sig;
+            syl = struct;
+            for n = 1:length(e.sound.initial)
+                
+                
+                syl(n).sound = convertStringsToChars(e.sound.name);
+                syl(n).number = n;
+                syl(n).plx = convertStringsToChars(e.trigger.plxname);
+                syl(n).channel = e.spike.channel;
+                syl(n).unit = e.spike.unit;
+                syl(n).y = e.sound.fragment(n).y;
+                syl(n).fs = e.fs;
+                syl(n).initial = e.sound.fragment(n).initial;
+                syl(n).terminal = e.sound.fragment(n).terminal;
+                if n ~= 1
+                    syl(n).pregap = (length(syl(n).initial) - length(syl(n-1).terminal))/e.fs;
+                else
+                    syl(n).pregap = inf; % pre-gap duration
+                end
+                syl(n).dur = length(syl(n).y)/e.fs;
+                
+                if ismember(n,number)
+                    syl(n).label = 1; % significant
+                else
+                    syl(n).label = 0; % not significant
+                end
+                
+                
+            end
+            
+        end
+        
+        
         function syl = avgn(e) % full info of all syllables
             dbstop if error
             number = e.sig;
@@ -171,7 +246,7 @@ classdef Ephys < handle
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.fragment(n).y;
                 syl(n).hpy = highpass(syl(n).y,450,e.fs); % high passed y, threshold is 400
-                syl(n).image = cal.img(syl(n).y,e.fs); % store the image matrix
+                %syl(n).image = cal.img(syl(n).y,e.fs); % store the image matrix
 
                 if ismember(n,number)
                     syl(n).label = 1; % significant
@@ -179,7 +254,7 @@ classdef Ephys < handle
                     syl(n).label = 0; % not significant
                 end
             end
-
+           
             
         end
         
@@ -209,7 +284,7 @@ classdef Ephys < handle
             if ~isempty(locs)
                 
                 for n = 1: length(locs)
-                    pre(n).y = Sound.intercept(e.corey,e.fs,locs(n)-dur,locs(n));
+                    pre(n).y = Sound.intercept(e.y,e.fs,locs(n)-dur,locs(n));
                     pre(n).fs = e.fs;
                     temp = extract.feature(pre(n).y,e.fs);
                     pre(n).goodness = temp.goodness;

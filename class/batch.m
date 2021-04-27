@@ -8,6 +8,10 @@ classdef batch < handle
         neu % these are the inputs for class Neuron
         plx % 
         wavfolder%
+        sneu  % selected
+        splx
+        swavfolder
+        nlist  % to show the list of neuron name
     end
     
     methods
@@ -15,7 +19,7 @@ classdef batch < handle
         function b = batch(varargin)
             b.input = varargin;
             b.split;
-            
+            b.nlist = b.nlist';
         end
         
         
@@ -36,6 +40,13 @@ classdef batch < handle
                     b.neu{idx} = spikes{m};
                     b.plx{idx} = b.path(k).path_plx;
                     b.wavfolder{idx} = b.path(k).path_folder;
+                    [~,plxname,~] = fileparts(b.plx{idx});
+                    channelname = unique(b.neu{idx}.channelname);
+                    channelname = channelname{1};
+                    unitname = unique(b.neu{idx}.unit);
+                     b.nlist(idx).idx = idx;
+                    b.nlist(idx).neuronname = sprintf('%s_%s_%u',plxname,channelname,unitname);
+                    
                 end
             end  
         end
@@ -57,6 +68,27 @@ classdef batch < handle
             
             
         end
+        
+        function select(b,idx)
+            if ~exist('idx','var')
+                b.sneu = b.neu;
+                b.splx = b.splx;
+                b.swavfolder = b.wavfolder;
+            else
+                b.sneu = b.neu(idx);
+                b.splx = b.plx(idx);
+                b.swavfolder = b.wavfolder(idx);
+            end
+        end
+        
+        function neurons = getn(b) % initiatialize neurons
+
+            for idx = 1: length(b.sneu)
+                neurons{idx} = Neuron(b.sneu{idx},b.splx{idx},b.swavfolder{idx});
+            end
+        end
+      
+        
         
     end
     

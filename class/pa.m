@@ -11,6 +11,7 @@ classdef pa
         c = "C:\Users\Remote\Documents\G606-1st"
         bucket = "Z:\Yazaki-SugiyamaU\Bird-song"
         hp = 450;  % high pass threshold
+        SYLLEN = 12800 % threshold for screnning the syllables
 % this class store the commonly used paramters( ect. pathes) for testing
 % the function
     end

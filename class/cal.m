@@ -90,7 +90,7 @@ classdef cal
         
         function image = img(y,fs)
             figure('visible','off')
-            draw.spectrogram(y,fs);
+            draw.spec(y,fs);
             f = getframe(gcf);
             [rgb,~] = frame2im(f);
             image = rgb2gray(rgb);
@@ -153,6 +153,18 @@ classdef cal
             
         end
         
+        function N = psth(sptimes,y,fs)
+            
+            all = [];
+            for iTrial = 1:length(sptimes)
+                all             = [all; sptimes{iTrial}];               % Concatenate spikes of all trials
+            end
+            
+            len =  length(y)/fs
+            edges = linspace(0,len,500) % 500 is the bin number!!!!!! wrong
+            
+            N = histcounts(all,edges);
+        end
         
     end
     
