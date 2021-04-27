@@ -21,11 +21,23 @@ classdef utl
             
         end
         
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
+        function merged = mergestruct(dir,rows) % put the need to merge mat files into the same folder
+           % rows specificy how many rows to merge
+            files = extract.filename(dir,'*.mat');
+            summer = {};
+            for idx= 1: length(files)
+                eval(['load ',files{idx}]);
+                if exist('rows','var')
+                     summer{idx} = syllables(1:rows);
+                else
+                    summer{idx} = syllables;
+                end
+                merged = horzcat(summer{:});
+                
+            end
         end
+        
+        
     end
 end
 

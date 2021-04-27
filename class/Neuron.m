@@ -92,9 +92,7 @@
                 syl(id).pitch = temp.pitch;
                 syl(id).rawpitch = temp.rawpitch;
                 syl(id).am = temp.AM;
-                
-              
-                
+
               
             end
             newline;
@@ -121,7 +119,7 @@
                 syl(id).y = utl.pad(syl(id).y,pa.SYLLEN); % pad to 12800
                 %syl(id).image = cal.img(syl(id).y,syl(id).fs); % store the image matrix
                 temp = extract.feature(syl(id).y,syl(id).fs);
-                drate = 10; % downsampling rate
+                drate = 3; % downsampling rate
                 syl(id).goodness = downsample(temp.goodness,drate);
                 syl(id).meanf = downsample(temp.mean_frequency,drate);
                 syl(id).fm = downsample(temp.fm,drate);

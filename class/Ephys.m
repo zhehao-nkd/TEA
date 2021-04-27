@@ -2,7 +2,7 @@ classdef Ephys < handle
     %EPHYS2 Summary of this class goes here
     %   Detailed explanation goes here
     properties(Constant)
-        pltext = 1  % plot extension is 0.2
+        pltext = 0.1  % plot extension is 0.2
     end
     properties
         spike
@@ -60,7 +60,7 @@ classdef Ephys < handle
         function e = raster(e)% draw raster
             color = 'k';
             title = ' ';
-            figure;
+            %figure;
             draw.raster(e.pltsptimes,e.plty,e.fs,color);
             %draw.raster(e.sound.corey, e.fs, e.sptimes);
         end
@@ -74,7 +74,7 @@ classdef Ephys < handle
         end
         
         function e = sdf(e)    % draw sdf
-            figure;
+          %  figure;
             draw.sdf(e.plty,e.fs,e.pltsptimes);
         end
         
@@ -181,7 +181,7 @@ classdef Ephys < handle
                 syl(n).initial = e.sound.fragment(n).initial;
                 syl(n).terminal = e.sound.fragment(n).terminal;
                 if n ~= 1
-                    syl(n).pregap = (length(syl(n).initial) - length(syl(n-1).terminal))/e.fs;
+                    syl(n).pregap = (syl(n).initial - syl(n-1).terminal)/e.fs;
                 else
                     syl(n).pregap = inf; % pre-gap duration
                 end
@@ -215,7 +215,7 @@ classdef Ephys < handle
                 syl(n).initial = e.sound.fragment(n).initial;
                 syl(n).terminal = e.sound.fragment(n).terminal;
                 if n ~= 1
-                    syl(n).pregap = (length(syl(n).initial) - length(syl(n-1).terminal))/e.fs;
+                     syl(n).pregap = (syl(n).initial - syl(n-1).terminal)/e.fs;
                 else
                     syl(n).pregap = inf; % pre-gap duration
                 end
@@ -305,6 +305,42 @@ classdef Ephys < handle
             end
             
         end
+        
+        function fea = featurecurve(e)
+            temp = SAT_hijack(e.y,e.fs);
+            fea.rawpitch = temp.features.pitch;
+            newpitch = temp.features.pitch;
+            newpitch(newpitch > 2000) = nan;
+            newpitch(newpitch < 400) = nan;
+            fea.pitch = newpitch;
+            fea.amplitude = temp.features.amplitude;
+            fea.FM = temp.features.FM;
+            fea.AM = temp.features.AM;
+            fea.goodness = temp.features.goodness;
+            fea.entropy = temp.features.entropy;
+            fea.mfreq = temp.features.mean_frequency;
+            fea.y = e.y;
+        end
+        
+        function drawfeaturecurve(e)
+            fea = featurecurve(e);
+            figure('color','w');
+            name ={'pitch', 'amplitude', 'FM', 'AM', 'goodness', 'entropy', 'mfreq'};
+            subplot(length(name)+2,1,1);
+            draw.spec(e.y,e.fs);
+            ylabel('Hz');
+            subplot(length(name)+2,1,2);
+            e.raster
+            ylabel('trails');
+            for idx = 1: length(name)
+                subplot(length(name)+2,1,idx+ 2);
+                eval(['plot(fea.',name{idx},');']);
+                xlim([0,length(fea.mfreq)]);
+                ylabel(name{idx});
+                hold on
+            end
+        end
+         
     end
 end
 
