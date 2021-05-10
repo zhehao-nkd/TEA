@@ -91,6 +91,10 @@ classdef Spike < handle
             
             
             T = rawT(startsWith(rawT.channelname,'SPKC'),:); % Remove non-SPKC channels
+            if isempty(T)
+                 T = rawT(startsWith(rawT.channelname,'SPK'),:);
+                 warning('Dangerous !!! No SPKC detected, using SPK instead.'); % to fit jelena's data
+            end
             channel_name = unique(T.('channelname')); % Get SPKC channel names
             
             separatedT = {};

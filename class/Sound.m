@@ -26,6 +26,10 @@ classdef Sound < handle
         trigger
         initial
         terminal
+        feature
+        sapfragment
+        sapinitial
+        sapterminal
     end
     
     methods
@@ -43,17 +47,52 @@ classdef Sound < handle
                 s.y = s.raw(:,2);
                 s.iniTrigger; % number of trigger pulse
             end
-            
+            s.inifeature; % initialize feature
             s.segment;
             s.setcorey;
             s.initial = [s.fragment.initial].';
             s.terminal = [s.fragment.terminal].';
+            
+            s.sapsegment;
+            s.sapinitial = [s.sapfragment.initial].';
+            s.sapterminal = [s.sapfragment.terminal].';
+            disp('草泥马！');
         end
+        
+        function s = inifeature(s)
+            temp = SAT_hijack(s.y,s.fs);
+            s.feature = temp.features;
+        end
+        
+        
+        function thissap = getsap(s)
+            [folder,b,c] = fileparts(s.path);
+            xlsfile = extract.filename(folder,'*.xls');
+            xlsfile = xlsfile{1};
+            sap = table2struct(readtable(xlsfile));
+            thisfile = sprintf('%s%s',b,c);
+          
+            thisidx = find(~cellfun(@isempty,regexp({sap(:).fileName},thisfile)));
+            thissap = sap(thisidx);
+            
+        end
+        
+        function s = sapsegment(s)
+            dbstop if error
+            thissap = s.getsap;
+            
+            for idx = 1: length(thissap)
+                s.sapfragment(idx).initial = thissap(idx).syllable_start/1000*s.fs;
+                s.sapfragment(idx).terminal = (thissap(idx).syllable_start+ thissap(idx).syllable_duration )/1000*s.fs;
+                s.sapfragment(idx).y = s.y(s.sapfragment(idx).initial:s.sapfragment(idx).terminal);
+            end
+            
+        end  % segment function specific for sap
         
         function s = segment(s) % function for segmenting the sound
             
-            s.fragment = segment(s.y,s.fs).seg1;
-            
+            s.fragment = segment(s.y,s.fs).seg5;
+            warning('Now the segment method is seg5!!');
         end
         
         function rmsy = normalize(s) % function for normalize the sound

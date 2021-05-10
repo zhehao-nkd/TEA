@@ -166,6 +166,20 @@ classdef cal
             N = histcounts(all,edges);
         end
         
+        function [num,detail] = sylnum(dir) % calculate how in total many syllables in a song folder
+            num = 0;
+            files = extract.filename (dir, '*.wav');
+            for idx = 1: length(files)
+                [yall,fs] = audioread(files{idx}); 
+                y = yall(:,2); % yall means 2-channels y
+                frag = segment(y,fs).seg5;
+                num = length(frag) + num;
+                detail(idx).name = files{idx};
+                detail(idx).num = length(frag);
+            end
+            
+        end 
+        
     end
     
 end

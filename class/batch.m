@@ -53,16 +53,19 @@ classdef batch < handle
         
         
         function avgn(b) % write avgn mat files
+            dbstop if error
             outdir = 'batch_avgn';
             mkdir(outdir);
-            
-            for idx = 1: length(b.neu)
-                syllables = Neuron(b.neu{idx},b.plx{idx},b.wavfolder{idx}).avgn;
-                syllables = syllables';
+            % 48 is jumped out
+            for idx = 49: length(b.neu) %!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                temp = Neuron(b.neu{idx},b.plx{idx},b.wavfolder{idx});
+                syllables = temp.avgn;
+                %syllables = syllables';
                 
-                [~,rawid,~] = fileparts(b.plx{idx});
+                %[~,rawid,~] = fileparts(b.plx{idx});
+                fullid = temp.neuronname; %%%%%%%%%%%%%%%%%%
                 
-                save(sprintf('%s\\%s.mat',outdir,rawid),'syllables');
+                save(sprintf('%s\\%s.mat',outdir,fullid),'syllables');
                 
             end
             
@@ -72,7 +75,7 @@ classdef batch < handle
         function select(b,idx)
             if ~exist('idx','var')
                 b.sneu = b.neu;
-                b.splx = b.splx;
+                b.splx = b.plx;
                 b.swavfolder = b.wavfolder;
             else
                 b.sneu = b.neu(idx);
@@ -88,6 +91,29 @@ classdef batch < handle
             end
         end
       
+        function featuretsne(b)
+            for idx = 11: length(b.neu) %%%%%%%% modified here
+                Neuron(b.neu{idx},b.plx{idx},b.wavfolder{idx}).featuretsne;
+            end
+        end
+        
+        function three(b)
+            neurons = b.getn;
+            for idx = 1: length(neurons)
+                neurons{idx}.three;
+            end
+        end
+        
+        function sapscatter(b)
+            
+            for idx = 1: length(b.neu)
+                
+                b.select(idx);
+                neuron = b.getn;
+                neuron = neuron{1};
+                neuron.sapscatter;
+            end
+        end
         
         
     end

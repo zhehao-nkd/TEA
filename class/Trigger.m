@@ -42,7 +42,7 @@ classdef Trigger
                 if  strcmp(plexonfile.ContinuousChannels(m).Name, 'AI01')
                     PULSE_LOCATION = m;
                     t.equipment = 'PLEXON';
-                    raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
+                    t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
                     t.info = t.extract; % not digital
                     clear plexonfile
                     return
@@ -156,7 +156,7 @@ classdef Trigger
         
         function info = extract(t)
             
-            fs = 20000;
+            fs = t.raw.ADFrequency; % avoid hard-coding;
             %dbstop if error
             pulse_channel = t.raw.Values;
             %detecting triggers and recording their time

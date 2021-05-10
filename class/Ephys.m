@@ -2,7 +2,7 @@ classdef Ephys < handle
     %EPHYS2 Summary of this class goes here
     %   Detailed explanation goes here
     properties(Constant)
-        pltext = 0.1  % plot extension is 0.2
+        pltext = 0.4 % plot extension is 0.2
     end
     properties
         spike
@@ -34,11 +34,15 @@ classdef Ephys < handle
             e.zpt = e.sound.initial(1)/e.fs;
             e.npt = e.sound.initial(end)/e.fs;
             e.allocate;
-            e.plty = [zeros(e.pltext*e.fs,1);e.y;zeros(e.pltext*e.fs,1)];
+            e.updateplt;
             
             
         end
         
+        function e = updateplt(e)
+            e.allocate;
+            e.plty = [zeros(e.pltext*e.fs,1);e.y;zeros(e.pltext*e.fs,1)];
+        end
         function e = allocate(e) % here the response is a collection of response
             
             n = e.sound.trigger;
@@ -79,6 +83,7 @@ classdef Ephys < handle
         end
         
         function e = three(e)% draw three plots
+            e.updateplt;
             figure('color','w')
             draw.three(e.plty,e.fs,e.pltsptimes);
             xlabel(e.sound.name);
@@ -142,6 +147,24 @@ classdef Ephys < handle
             
         end
         
+        
+        function sylidx = sapsig(e) % index of significant syllable
+            dbstop if error
+            initial = ( e.sound.sapinitial -e.sound.sapinitial(1) )/e.fs;  % this is for cvonverting initial to seconds relative to the first syllable
+            locs = e.peak;
+            if ~isempty(locs)
+                for idx = 1: length(locs)
+                    sylidx(idx) = length(find(~(locs(idx)<initial))); % return the idx of the significant syllables
+                end
+            else
+                sylidx = [];
+            end
+            sylidx = horzcat(sylidx(:));
+            
+            sylidx = unique(sylidx,'stable'); % remove repeated element
+            
+        end
+        
         function siginf = siginf(e) % full info of sig syllable
             dbstop if error
             if isempty(e.sig)
@@ -154,6 +177,9 @@ classdef Ephys < handle
             
         end
         
+        function num = sylnum(e)
+            num = length(e.sound.initial);
+        end
         
         function syl = sylinf(e) % full info of all syllables
             dbstop if error
@@ -196,6 +222,49 @@ classdef Ephys < handle
                 
             end
             
+        end
+        
+        function syl = sapsylinf(e)
+            dbstop if error
+            number = e.sapsig;
+            syl = struct;
+            thissap = e.sound.getsap;
+            for n = 1:length(e.sound.sapinitial)
+                
+                
+                syl(n).sound = convertStringsToChars(e.sound.name);
+                syl(n).number = n;
+                syl(n).plx = convertStringsToChars(e.trigger.plxname);
+                syl(n).channel = e.spike.channel;
+                syl(n).unit = e.spike.unit;
+                syl(n).y = e.sound.sapfragment(n).y;
+                %syl(n).image = cal.img(syl(n).y,e.fs); % store the image matrix
+                %temp = extract.feature(syl(n).y,e.fs);
+                syl(n).goodness = thissap(n).mean_goodness;
+                syl(n).meanf = thissap(n).mean_freq;
+                syl(n).fm = thissap(n).mean_FM;
+                syl(n).amplitude = thissap(n).mean_amplitude;
+                syl(n).entropy = thissap(n).mean_entropy;
+                syl(n).pitch = thissap(n).mean_pitch;
+               % syl(n).rawpitch = temp.rawpitch;
+                syl(n).am = thissap(n).mean_AM;
+                syl(n).initial = e.sound.sapfragment(n).initial;
+                syl(n).terminal = e.sound.sapfragment(n).terminal;
+                if n ~= 1
+                    syl(n).pregap = (syl(n).initial - syl(n-1).terminal)/e.fs;
+                else
+                    syl(n).pregap = inf; % pre-gap duration
+                end
+                syl(n).dur = length(syl(n).y)/e.fs;
+                
+                if ismember(n,number)
+                    syl(n).label = 1; % significant
+                else
+                    syl(n).label = 0; % not significant
+                end
+                
+                
+            end
         end
         
         function syl = sylinfq(e) % quick but less
@@ -246,7 +315,7 @@ classdef Ephys < handle
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.fragment(n).y;
                 syl(n).hpy = highpass(syl(n).y,450,e.fs); % high passed y, threshold is 400
-                %syl(n).image = cal.img(syl(n).y,e.fs); % store the image matrix
+                syl(n).image = cal.img(syl(n).hpy,e.fs); % store the image matrix
 
                 if ismember(n,number)
                     syl(n).label = 1; % significant
@@ -330,7 +399,7 @@ classdef Ephys < handle
             draw.spec(e.y,e.fs);
             ylabel('Hz');
             subplot(length(name)+2,1,2);
-            e.raster
+            draw.raster(e.sptimes,e.y,e.fs,'k');
             ylabel('trails');
             for idx = 1: length(name)
                 subplot(length(name)+2,1,idx+ 2);

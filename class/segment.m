@@ -138,7 +138,7 @@ classdef segment < handle
         end
         
         function frag = seg3(s)  % specific for dataset, will be merged into seg1 in the future
-           
+            
             %gpuy = gpuArray(y);
             measurey = abs(s.y);
             measurey = highpass(measurey,400,s.fs);
@@ -184,11 +184,79 @@ classdef segment < handle
                 frag = [];
             end
             
-           % frag = rmfield(frag,'label');
+            % frag = rmfield(frag,'label');
         end
         
+        function frag = seg4(s)
+            mingap = 0.001;
+            
+            allidx = find(abs(s.y)>0);
+            
+            initials = allidx(s.y(allidx-1)==0); % Find the initials of all the segements
+            ends = allidx(s.y(allidx+1)==0);  % Find the ends of all the segements
+            
+            
+            % Remove small gaps
+            
+            
+            for n = 1:length(ends)-1
+                if initials(n+1)-ends(n)< mingap*s.fs
+                    ends(n)= NaN;
+                    initials(n+1) = NaN;
+                end
+            end
+            
+            initials (isnan(initials)) = [];
+            ends (isnan(ends)) = [];
+            
+            for idx = 1: length(initials)
+                frag(idx).initial = initials(idx);
+                frag(idx).terminal = ends(idx);
+                frag(idx).y = s.y(initials(idx):ends(idx));
+            end
+            
+        end
+        
+        function frag = seg5(s)
+            % suitable for already normalized signal
+%              mingap = 0.0000;
+%             thres = 0.00056;
+%             env =  medfilt1(abs(s.y),700,'truncate');
+            
+            mingap = 0.0000;
+            thres = 0.00056;
+            env =  medfilt1(abs(s.y),750,'truncate');
+            env(env<=thres)= 0;
+            env(env>thres)= 1;
+            allidx = find(env>0);
+            initials = allidx(env(allidx-1)==0); % Find the initials of all the segements
+            ends = allidx(env(allidx+1)==0);  % Find the ends of all the segements
+            
+            
+            % Remove small gaps
+            
+            
+            for n = 1:length(ends)-1
+                if initials(n+1)-ends(n)< mingap*s.fs
+                    ends(n)= NaN;
+                    initials(n+1) = NaN;
+                end
+            end
+            
+            initials (isnan(initials)) = [];
+            ends (isnan(ends)) = [];
+            
+            for idx = 1: length(initials)
+                frag(idx).initial = initials(idx);
+                frag(idx).terminal = ends(idx);
+                frag(idx).y = s.y(initials(idx):ends(idx));
+            end
+            
+        end
         
     end
     
 end
+
+
 
