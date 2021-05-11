@@ -113,14 +113,14 @@ classdef Ephys < handle
         function locs = peak(e)% time of response peak
             resolution = .001;
             gausswidth = resolution*20;
-            %minpeakheight = 18;
+            FORCEDHEIGHT= 18;
             minpeakprominence = 5;
             minpeakdistance = 30;
             
             range = 0.05;
             presdf = cal.sdf(e.presptimes,e.y,e.fs,resolution,gausswidth);
             thres = cal.thres(presdf,range);
-            thres = max(thres, 9);
+            thres = max(thres, FORCEDHEIGHT);
             sdf = cal.sdf(e.sptimes,e.y,e.fs,resolution,gausswidth);
             %             figure
             %             findpeaks(sdf,"MinPeakHeight",thres,...

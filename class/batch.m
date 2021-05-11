@@ -98,9 +98,13 @@ classdef batch < handle
         end
         
         function three(b)
-            neurons = b.getn;
-            for idx = 1: length(neurons)
-                neurons{idx}.three;
+            
+            
+            for idx = 1: length(b.neu)
+                b.select(idx);
+                neurons = b.getn;
+                neurons{1}.three;
+                disp('HAhahahahahaha');
             end
         end
         

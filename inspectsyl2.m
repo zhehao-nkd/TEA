@@ -6,7 +6,7 @@
 % end
 
 %sapsylinf = n.sapsylinf;
-function inspectsyl(sylinf)
+function inspectsyl2(sylinf)
 
 
 idx = find ([sylinf.label] ==1);
@@ -45,15 +45,12 @@ set(h,'Color','cyan','Enable','on','ActionPostCallback',{@brushedDataCallback,sy
         end
         
         for kk = 1: length(sidx)
-            figure;
-            draw.spec(sylinf(sidx(kk)).y,32000);
-            sound(sylinf(sidx(kk)).y,32000);
-            title(sprintf('%s-%u',sylinf(sidx(kk)).sound,sylinf(sidx(kk)).number));
+          inspectapp(sidx,sylinf);
 %             bu = uibutton(gcf);
 %             bu.Text = 'Plot';
         end
         
-        autoArrangeFigures()
+        %autoArrangeFigures()
         
     end
 

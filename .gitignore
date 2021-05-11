@@ -33,3 +33,9 @@ octave-workspace
 # mat file
 *.mat
 
+# png file
+*.png
+
+# tif file
+*.tif
+*.tiff
