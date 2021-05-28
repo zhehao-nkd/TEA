@@ -115,7 +115,10 @@ classdef batch < handle
                 b.select(idx);
                 neuron = b.getn;
                 neuron = neuron{1};
-                neuron.sapscatter;
+                try
+                    neuron.sapscatter;
+                catch Error
+                end
             end
         end
         

@@ -39,3 +39,7 @@ octave-workspace
 # tif file
 *.tif
 *.tiff
+
+# wav file
+*.wav
+*.WAV

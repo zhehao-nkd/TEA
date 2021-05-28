@@ -6,7 +6,7 @@
 % end
 
 %sapsylinf = n.sapsylinf;
-function inspectsyl(sylinf)
+function inspectsyl4(sylinf)
 
 
 idx = find ([sylinf.label] ==1);
@@ -21,17 +21,20 @@ scatter([sylinf.pitch].',[sylinf.fm].','k','filled');
 [~,~,ic] = unique({labeled(:).sound});
 idxs = unique(ic);
 for k = 1: length(idxs)
-    thissong = labeled(find(ic == idxs(k)));
+    thissong = labeled(ic == idxs(k));
     hold on
     scatter([thissong.pitch].',[thissong.fm].','filled');
 end
 
 %scatter([labeled.pitch].',[labeled.fm].','r','filled');
 
+
+
 xlabel('Pitch');
+
 ylabel('FM');
 %title(n.neuronname);
-
+hold off
 
 h=brush;
 set(h,'Color','cyan','Enable','on','ActionPostCallback',{@brushedDataCallback,sylinf});
@@ -54,20 +57,12 @@ set(h,'Color','cyan','Enable','on','ActionPostCallback',{@brushedDataCallback,sy
         end
         
         for kk = 1: length(sidx)
-            figure;
-            subplot(3,1,1);
-            draw.spec(sylinf(sidx(kk)).yplt,32000);
-            sound(sylinf(sidx(kk)).y,32000);
-            title(sprintf('%s-%u',sylinf(sidx(kk)).sound,sylinf(sidx(kk)).number));
-            subplot(3,1,2);
-            draw.raster(sylinf(sidx(kk)).sptimesplt,sylinf(sidx(kk)).yplt,32000,'k');
-            subplot(3,1,3);
-            draw.sdf(sylinf(sidx(kk)).yplt, 32000, sylinf(sidx(kk)).sptimesplt);
+          extendPlot(sidx,sylinf);
 %             bu = uibutton(gcf);
 %             bu.Text = 'Plot';
         end
         
-       % autoArrangeFigures()
+        %autoArrangeFigures()
         
     end
 

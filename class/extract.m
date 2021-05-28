@@ -60,6 +60,12 @@ classdef extract
             SubFolders = temp(idx);
             
         end
+        
+        function newspt = cutspt(sptimes,zpt,ylen)
+           sptimes = cellfun(@(x) x - zpt, sptimes, 'un', 0);
+           sptimes = cellfun(@(v) v( v > 0), sptimes, 'UniformOutput', false);
+           newspt = cellfun(@(v) v( v < ylen), sptimes, 'UniformOutput', false);
+        end
     end
 end
 

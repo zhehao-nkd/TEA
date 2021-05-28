@@ -2,7 +2,8 @@ classdef Ephys < handle
     %EPHYS2 Summary of this class goes here
     %   Detailed explanation goes here
     properties(Constant)
-        pltext = 0.4 % plot extension is 0.2
+        pltext = 0.05 % plot extension is 0.2
+        
     end
     properties
         spike
@@ -18,9 +19,13 @@ classdef Ephys < handle
         zpt
         npt
         rawsptimes
+        latency
     end
     
     methods
+        function e = inilatency(e)
+            e.latency = 0.1;
+        end
         function e = Ephys(spike, trigger, sound)
             
             
@@ -112,7 +117,7 @@ classdef Ephys < handle
         
         function locs = peak(e)% time of response peak
             resolution = .001;
-            gausswidth = resolution*20;
+            gausswidth = .02;
             FORCEDHEIGHT= 18;
             minpeakprominence = 5;
             minpeakdistance = 30;
@@ -194,7 +199,7 @@ classdef Ephys < handle
                 syl(n).channel = e.spike.channel;
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.fragment(n).y;
-                syl(n).image = cal.img(syl(n).y,e.fs); % store the image matrix
+                %syl(n).image = cal.img(syl(n).y,e.fs); % store the image matrix
                 temp = extract.feature(syl(n).y,e.fs);
                 syl(n).goodness = temp.goodness;
                 syl(n).meanf = temp.mean_frequency;
@@ -238,6 +243,7 @@ classdef Ephys < handle
                 syl(n).channel = e.spike.channel;
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.sapfragment(n).y;
+               
                 %syl(n).image = cal.img(syl(n).y,e.fs); % store the image matrix
                 %temp = extract.feature(syl(n).y,e.fs);
                 syl(n).goodness = thissap(n).mean_goodness;
@@ -250,6 +256,12 @@ classdef Ephys < handle
                 syl(n).am = thissap(n).mean_AM;
                 syl(n).initial = e.sound.sapfragment(n).initial;
                 syl(n).terminal = e.sound.sapfragment(n).terminal;
+                syl(n).dur = (syl(n).terminal - syl(n).initial)/e.fs;
+                syl(n).yplt = [e.sound.sapfragment(n).y;zeros(e.latency*e.fs,1)];
+                e.inilatency;
+                syl(n).sptimesplt = extract.cutspt(e.rawsptimes,syl(n).initial/e.fs, syl(n).dur + e.latency);
+                
+                %syl(n).sptimes = e.sptimes(syl(n).initial<e.sptimes< syl(n).terminal); % !~!!!!!!!!!!!
                 if n ~= 1
                     syl(n).pregap = (syl(n).initial - syl(n-1).terminal)/e.fs;
                 else

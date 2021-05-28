@@ -48,7 +48,9 @@
                     e{k} = Ephys(sp,t,so);
                 
             end
-            n.e = e;
+            n.e = e;  % maybe because the connection to the bucket is dead
+            
+            n.gets; % get a list of all songs
         end
           
         
@@ -68,7 +70,7 @@
             tic;
             disp(sprintf('Current neuron is %s',n.neuronname)); %#ok<DSPS>
             
-            parfor idx = 1: length(n.e)
+            for idx = 1: length(n.e)
                 collect{idx} = n.e{idx}.sylinf;
             end
             sylinf =  horzcat(collect{:});
@@ -92,6 +94,26 @@
             newline;
         end
         
+        function siginf = sapsiginf(n)
+           sylinf = n.sapsylinf;
+           
+           idx = find([sylinf.label].');
+           siginf = sylinf(idx);
+            
+        end
+        function sapsigspec(n)
+            siginf = n.sapsiginf;
+            gap = zeros(0.05*32000,1);
+            concatenated = gap;
+            
+            for idx = 1: length(siginf)
+                concatenated = [concatenated;siginf(idx).y;gap];
+            end
+            figure('Color','w');
+            draw.spec(concatenated,32000);
+            
+        end
+        
         function sapscatter(n)
             sapsylinf = n.sapsylinf;
             idx = find ([sapsylinf.label] ==1);
@@ -108,6 +130,7 @@
             ylabel('FM');
             title(n.neuronname);
             saveas(gcf,sprintf('Scatter-%s.png',n.neuronname));
+            pause(0.5)
             close(gcf);
         end
         
@@ -191,6 +214,17 @@
             n.slist = n.slist';
         end
         
+        function showsigspec(n)
+            siginf = n.siginf;
+            gap = zeros(0.05*32000,1);
+            concatenated = gap;
+            
+            for idx = 1: length(siginf)
+                concatenated = [concatenated;siginf(idx).y;gap];
+            end
+            figure('Color','w');
+            draw.spec(concatenated,32000);
+        end
         
         function response = resp(n) % mimic old response
             
@@ -219,6 +253,41 @@
         function pre = preinf(n)
             collect = cellfun(@(obj) obj.preinf, n.e,'UniformOutput',false);
             pre =  horzcat(collect{:}).';
+        end
+        
+        function prespec(n) % draw the spectrogram of the pre-peak stimuli durations
+            pre = n.preinf;
+            
+            
+            edges = [];
+            sumy = [];
+            thisedge = 0;
+            for idx = 1: length(pre)
+                sumy = [sumy;pre(idx).y];
+                thisedge = thisedge + length(pre(idx).y);
+                edges = [edges,thisedge];
+            end
+            figure; 
+            sumy(isnan(sumy))=0; % convert nan to 0
+            draw.spec(sumy,pre(1).fs);
+            
+            for idx = 1: length(edges)
+                xpair = repmat(edges(idx),2,1);
+                ypair = [0,16];
+                hold on
+                line(xpair/pre(1).fs,ypair,'color','r');
+            end
+   
+%             figure;
+%             for idx = 1: length(pre)
+%                 subplot(length(pre),1,idx);
+%                 draw.spec(pre(idx).y,pre(idx).fs);
+%                 xlabel('');
+%                 ylabel('');
+%                 set(gca,'xtick',[],'ytick',[])
+%                 set(gca,'xticklabel',[],'yticklabel',[])
+%             end
+            
         end
         
         
