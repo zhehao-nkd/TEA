@@ -30,6 +30,25 @@ classdef draw
             
         end
         
+        function spec256(y,fs)
+            try
+                spectrogram(y,hamming(256),256-round(fs/1e3),256,fs,'yaxis'); colorbar('off');
+                
+                axh = gca;                                             %add this
+                axh.Toolbar = matlab.ui.controls.AxesToolbar();       %add this
+                hold on;
+            catch Err
+                disp('Error!!')
+            end
+            
+            ylabel('Hz','FontSize',18);
+            xlabel('Time (s)');
+            ax.XLim             = [0 length(y)/fs];
+            
+            ydata = get(gca,'Ylim');
+            % line([idx/fs,idx/fs],[min(ydata),max(ydata)],'color','r');
+        end
+        
         function spec3(y,fs)
             [~,F,T,P] = spectrogram(y,hamming(1024),1024-round(fs/1e3),1024,32000,'yaxis');
             %imagesc(T, F, 10*log10(P+eps)) % add eps like pspectrogram does

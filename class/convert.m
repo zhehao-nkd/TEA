@@ -38,7 +38,7 @@ classdef convert
             
         function two2one(dir) % convert 2 channel to 1 channel wav
             [~,rawdir,~] = fileparts(dir);
-            outdir = sprintf('1ch_%s',rawdir);
+            outdir = sprintf('1channel_%s',rawdir);
             mkdir(outdir);
             
             files = extract.filename(dir,'*.wav');
