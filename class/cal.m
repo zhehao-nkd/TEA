@@ -1,3 +1,4 @@
+% functions to calculate sth.
 classdef cal
     %UNTITLED Summary of this class goes here
     %   Detailed explanation goes here
@@ -66,6 +67,19 @@ classdef cal
             
             
             msdf= mean(sdf);
+        end
+        
+        function img = spec(y,fs) % calculate the image matrix of spectrogram
+            y = 2*y;%myAxe = app.UIAxes;
+            [S,F,T] = spectrogram(y,hamming(512),512-round(fs/1e3),512,fs);
+            img = flip(log(1+abs(S)));
+        end
+        
+        
+        function img = spec1024(y,fs) % calculate the image matrix of spectrogram
+            y = 2*y;%myAxe = app.UIAxes;
+            [S,F,T] = spectrogram(y,hamming(1024),1024-round(fs/1e3),1024,fs);
+            img = flip(log(1+abs(S)));
         end
         
         
@@ -179,6 +193,16 @@ classdef cal
             end
             
         end 
+        
+        function N =  psth_frag(y,fs,sptimes) % specific for syllables/elements
+            dur = 0.1;
+            len = length(y)/fs;
+            edges = linspace(0,len,len/dur);
+            concat =  vertcat(sptimes{:});
+            %figure; histogram(concat,edges);
+            N = histcounts(concat,edges);
+            
+        end
         
     end
     

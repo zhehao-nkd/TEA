@@ -228,7 +228,11 @@ classdef segment < handle
             env =  medfilt1(abs(s.y),750,'truncate');
             env(env<=thres)= 0;
             env(env>thres)= 1;
+            if env(1) == 1
+                env = [0;env]; % if the pre-gap is zero  % dangerous code!!!!!
+            end
             allidx = find(env>0);
+            
             initials = allidx(env(allidx-1)==0); % Find the initials of all the segements
             ends = allidx(env(allidx+1)==0);  % Find the ends of all the segements
             

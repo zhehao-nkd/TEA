@@ -8,6 +8,7 @@ classdef Spike < handle
         channel
         unit
         waveform
+        ephys_fs
         
     end
     
@@ -39,6 +40,9 @@ classdef Spike < handle
         
         
       
+        function  set_ephys_fs(s,ephys_fs)
+            s.ephys_fs = ephys_fs;
+        end
         
         
         function result = getResult(s)
@@ -67,6 +71,31 @@ classdef Spike < handle
             properties.result = s.result{which};
         end
         
+        function mean_waveform(s) % calculate the mean waveform
+            
+            figure;
+            plot(s.waveform.')
+        end
+        
+        function meandiff = cal_wavelength(s)
+            waveforms = s.waveform.';
+           
+           [valley,Ivalley] =  min (waveforms);
+           
+           for k = 1: length(Ivalley)
+               
+           [peak(k),Ipeak(k)] =  max (waveforms(Ivalley(k):end,k));
+           Ipeak(k) = Ipeak(k) + Ivalley(k);
+           
+           end
+          
+           diffs = (Ipeak - Ivalley)/s.ephys_fs*1000; % ephys_fs is the sa,pling rate of ephys signal
+           
+           meandiff = mean(diffs); % 单位是 ms
+           
+            
+            
+        end
         
             
         

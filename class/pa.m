@@ -13,6 +13,9 @@ classdef pa
         hp = 450;  % high pass threshold
         SYLLEN = 12800 % threshold for screnning the syllables
         wavfolders = unique(readtable(pa.T).path_folder);
+        t2021 = "C:\Users\Zhehao\Dropbox (OIST)\My_EphysInput\input2021.xlsx"
+        TEAOutputFolder = "C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA\Output"
+        selected = "C:\Users\Zhehao\Dropbox (OIST)\My_EphysInput\selected.xlsx"
 % this class store the commonly used paramters( ect. pathes) for testing
 % the function
     end

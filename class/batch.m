@@ -1,4 +1,5 @@
-classdef batch < handle
+% batch for data analysis
+classdef Batch < handle
     %UNTITLED6 Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -16,12 +17,20 @@ classdef batch < handle
     
     methods
         
-        function b = batch(varargin)
+        function b = Batch(varargin)
             b.input = varargin;
             b.split;
             b.nlist = b.nlist';
         end
         
+        function spikeinf = manspike(b)
+            for ii = 1: length(b.neu)
+                b.select(ii);
+                temp = b.getn;
+                thisn = temp{1};
+                thisn.manspike;
+            end
+        end
         
         function b = split(b) % generate input
             if length(b.input) == 1 % the path of the csv folder

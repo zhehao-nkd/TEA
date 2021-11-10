@@ -2,7 +2,7 @@ classdef Ephys < handle
     %EPHYS2 Summary of this class goes here
     %   Detailed explanation goes here
     properties(Constant)
-        pltext = 0.05 % plot extension is 0.2
+        pltext = 0.1 % plot extension is 0.2 % previosuly it was 0.1
         
     end
     properties
@@ -19,7 +19,14 @@ classdef Ephys < handle
         zpt
         npt
         rawsptimes
-        latency
+        latency   
+        frate % firing rate
+        fnum % firing number
+        label % responsive(1) or not(0)
+        sigloc % location (time) of the significant neural response
+        eliciting_element_counting_whole %  index of the response-elciting 
+        %element by taking neural response to all stimuli into consideration
+        % this Paramter are calculated outside the Ephys class
     end
     
     methods
@@ -40,6 +47,13 @@ classdef Ephys < handle
             e.npt = e.sound.initial(end)/e.fs;
             e.allocate;
             e.updateplt;
+            if ~isempty(regexp(e.sound.name,'norm'))  %%% This code has not been completed yet!!!
+                e.sigloc = e.peak; % calculate this value only when stimuli is not a syllable
+                % THis is a very bad solution. As the real problem here is
+                % that when I calculate the sdf for syllables, I onlly
+                % include the time duration the same as the stimuli, didn;t
+                % take the latency into consideration
+            end
             
             
         end
@@ -51,13 +65,14 @@ classdef Ephys < handle
         function e = allocate(e) % here the response is a collection of response
             
             n = e.sound.trigger;
-            initials = e.trigger.info(n).time;
+            index = find([e.trigger.info.name].'== n);
+            initials = e.trigger.info(index ).time;
             ylength = length(e.y)/e.sound.fs;
             
             for k = 1:length(initials)
                 e.sptimes{k} = e.spike.time( initials(k)<e.spike.time & e.spike.time<initials(k) + ylength)...
                     - initials(k);
-                e.presptimes{k} = e.spike.time( initials(k)- ylength<e.spike.time & e.spike.time<initials(k))- (initials(k)-ylength);
+                e.presptimes{k} = e.spike.time( initials(k)- ylength<e.spike.time & e.spike.time<initials(k))- double((initials(k)-ylength));
                 e.pltsptimes{k} = e.spike.time( initials(k)- e.pltext<e.spike.time& e.spike.time<initials(k) + ylength + e.pltext)...
                     - (initials(k)- e.pltext);
                 e.rawsptimes{k} = e.spike.time( initials(k)- e.zpt<e.spike.time& e.spike.time<initials(k) + ylength + length(e.rawy)/e.fs- e.npt)...
@@ -74,6 +89,14 @@ classdef Ephys < handle
             %draw.raster(e.sound.corey, e.fs, e.sptimes);
         end
         
+         function e = rasterpure(e)% draw raster pure means signal only
+            color = 'k';
+            title = ' ';
+            %figure;
+            draw.raster(e.sptimes,e.y,e.fs,color);
+            %draw.raster(e.sound.corey, e.fs, e.sptimes);
+        end
+        
         
         function e = spec(e) % draw spectrogram
             
@@ -85,6 +108,13 @@ classdef Ephys < handle
         function e = sdf(e)    % draw sdf
           %  figure;
             draw.sdf(e.plty,e.fs,e.pltsptimes);
+        end
+        
+        function e = threesingle(e) % three plots for single syllable/element
+             e.updateplt;
+            figure('Visible','off','color','w')
+            draw.three(e.plty,e.fs,e.pltsptimes);
+            xlabel(e.sound.name);
         end
         
         function e = three(e)% draw three plots
@@ -101,6 +131,41 @@ classdef Ephys < handle
             end
         end
         
+         function e = three_with_sig_resp(e)% draw three plots with marks on the significant response
+            e.updateplt;
+            figure('color','w')
+            draw.three(e.plty,e.fs,e.pltsptimes);
+            xlabel(e.sound.name);
+            subplot(3,1,2);
+            locs = e.peak;
+            for idx = 1: length(locs) 
+              xline(locs(idx) + e.pltext,'--hr');
+            end
+            subplot(3,1,3);
+            hold on
+            pks = e.firing_peak;
+            for idx = 1: length(locs) 
+              scatter(locs(idx)+ e.pltext,pks(idx),[],'r','*')
+            end
+            hold off
+            
+        end
+        
+        function e = four(e)
+            e.updateplt;
+            figure('color','w')
+            draw.four(e.plty,e.fs,e.pltsptimes);
+            xlabel(e.sound.name);
+            subplot(4,1,2);
+            locs = e.sig;
+            for idx = 1: length(locs)
+                initial = (e.sound.initial(locs(idx))-e.sound.initial(1))/e.fs + e.pltext;
+                terminal = (e.sound.terminal(locs(idx))-e.sound.initial(1))/e.fs+ e.pltext;
+                line([initial,terminal],[10,10],'color','r');
+            end
+        end
+
+        
         function e = rawthree(e)% draw three plots
             figure('color','w')
             draw.three(e.rawy,e.fs,e.rawsptimes);
@@ -114,11 +179,10 @@ classdef Ephys < handle
             end
         end
         
-        
-        function locs = peak(e)% time of response peak
+        function [pks,locs,w,p] = sigresp(e) % information about the response
             resolution = .001;
             gausswidth = .02;
-            FORCEDHEIGHT= 18;
+            FORCEDHEIGHT= 15;
             minpeakprominence = 5;
             minpeakdistance = 30;
             
@@ -127,15 +191,46 @@ classdef Ephys < handle
             thres = cal.thres(presdf,range);
             thres = max(thres, FORCEDHEIGHT);
             sdf = cal.sdf(e.sptimes,e.y,e.fs,resolution,gausswidth);
+            %             figure;
+            %             draw.raster(e.sptimes,e.y,e.fs);
             %             figure
             %             findpeaks(sdf,"MinPeakHeight",thres,...
             %                 'MinPeakProminence',minpeakprominence,'MinPeakDistance',minpeakdistance);
-            [~,locs] = findpeaks(sdf,"MinPeakHeight",thres,...
-                'MinPeakProminence',minpeakprominence,'MinPeakDistance',minpeakdistance);
+            [pks,locs,w,p]  = findpeaks(sdf,"MinPeakHeight",thres,... %Error using findpeaks Expected MinPeakDistance to be a scalar with value < 20.??????
+                'MinPeakProminence',minpeakprominence,'MinPeakDistance',minpeakdistance);  % very bad code
+% %             
+            %[pks,locs,w,p] = findpeaks(sdf)
+            
+            width_thres = 50;
+            for j = 1: length(locs)
+                low_t = locs(j)-width_thres;
+                high_t = locs(j)+ width_thres; 
+                num_sig_trials = length(find(~cellfun(@isempty, cellfun(@(x)find(low_t<x<high_t),e.sptimes,'UniformOutput',0)))); % in how many trails there are spikes in this duration
+                if num_sig_trials < length(e.sptimes)/2 % if num_sig_trails do not contain half of the trials
+                    locs(j) = nan;
+                end
+            end
+            ids = find(~isnan(locs)); % find ids which is not nan
+            locs = locs(ids);
+            pks = pks(ids);
+            w = w(ids);
+            p = p(ids);
+            
             locs = locs*0.001 ;% convert seconds to miliseconds
+        end
+        function locs = peak(e)% time of response peak
+            [~,locs,~,~] = sigresp(e);
+        end
+        
+         function pks = firing_peak(e)% strength (peak) of response peak 
+            [pks,~,~,~] = sigresp(e);
         end
         
         function sylidx = sig(e) % index of significant syllable
+            % This is based on neural respons to a simgle stimuli, which is
+            % usually not accurate, so this function is not very useful
+            % --10.13,2021,Zhehao
+        
             dbstop if error
             initial = ( e.sound.initial -e.sound.initial(1) )/e.fs;  % this is for cvonverting initial to seconds relative to the first syllable
             locs = e.peak;
@@ -151,7 +246,6 @@ classdef Ephys < handle
             sylidx = unique(sylidx,'stable'); % remove repeated element
             
         end
-        
         
         function sylidx = sapsig(e) % index of significant syllable
             dbstop if error
@@ -311,8 +405,7 @@ classdef Ephys < handle
                 
             end
             
-        end
-        
+        end    
         
         function syl = avgn(e) % full info of all syllables
             dbstop if error

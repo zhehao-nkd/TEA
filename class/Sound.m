@@ -16,6 +16,7 @@ classdef Sound < handle
     
     
     properties
+        wavinfo
         path
         raw
         name
@@ -30,12 +31,17 @@ classdef Sound < handle
         sapfragment
         sapinitial
         sapterminal
+        sapexcel % an xls-fomratted excel table containing sap-segmented syllable/element
     end
     
     methods
         
         function s = Sound(path_wav) % constrcutor
+            
+            s.setexcel("C:\Users\Zhehao\Dropbox (OIST)\My_Luscinia\sap1276.xls");
             s.path = path_wav;
+            
+            
             
             [s.raw,s.fs] =  audioread(path_wav);
             
@@ -47,18 +53,29 @@ classdef Sound < handle
                 s.y = s.raw(:,2);
                 s.iniTrigger; % number of trigger pulse
             end
-            s.inifeature; % initialize feature
-            s.segment;
-            s.setcorey;
-            s.initial = [s.fragment.initial].';
-            s.terminal = [s.fragment.terminal].';
+%            s.inifeature; % initialize feature   trmporaliy delete this
+%            part
+
+            wavinfo = audioinfo(path_wav);
             
-            s.sapsegment;
-            s.sapinitial = [s.sapfragment.initial].';
-            s.sapterminal = [s.sapfragment.terminal].';
-            disp('草泥马！');
+            if isempty(wavinfo.Comment) % if segmentation information is not stored in the  wav file
+                s.segment;
+                s.setcorey;
+                s.initial = [s.fragment.initial].';
+                s.terminal = [s.fragment.terminal].';
+            end
+            % unfortunately I have not giot time to write about the another
+            % possibility
+            
+          %  s.sapsegment;
+          %  s.sapinitial = [s.sapfragment.initial].';
+          %  s.sapterminal = [s.sapfragment.terminal].';
+            disp('Sound一回！');
         end
         
+        function s = setexcel(s, path)
+            s.sapexcel = path;
+        end
         function s = inifeature(s)
             temp = SAT_hijack(s.y,s.fs);
             s.feature = temp.features;
@@ -66,11 +83,20 @@ classdef Sound < handle
         
         
         function thissap = getsap(s)
+            dbstop if error
+            if isempty(s.sapexcel)  % if there is no sapexcel
             [folder,b,c] = fileparts(s.path);
             xlsfile = extract.filename(folder,'*.xls');
             xlsfile = xlsfile{1};
+            else
+            [~,b,c] = fileparts(s.path);
+            temp = strsplit(b,'_');   % this modification is dangerous  !!!!!!
+            b = temp{1};
+            xlsfile = s.sapexcel;
+            end
+            
             sap = table2struct(readtable(xlsfile));
-            thisfile = sprintf('%s%s',b,c);
+            thisfile = sprintf('%s',b);
           
             thisidx = find(~cellfun(@isempty,regexp({sap(:).fileName},thisfile)));
             thissap = sap(thisidx);
@@ -152,7 +178,20 @@ classdef Sound < handle
             k = find(yT);                        % Find all the 1
             initials = k(yT(k-1)==0)-1;      % Find the initial of all the pulses
             
+            difftype = length(unique(round(diff(initials),-1)));
+            if difftype == 1||difftype == 0
             s.trigger = length(initials);
+            elseif difftype == 2 % When the stimuli is using binary trigger code
+                onevalue = max(unique(round(diff(initials),-1)));
+                zerovalue = min(unique(round(diff(initials),-1)));
+                
+                temp = round(diff(initials),-1);
+                temp(temp == onevalue ) = 1;
+                temp(temp == zerovalue ) = 0;
+                s.trigger = bi2de(temp(:).');
+            end
+                
+                
         end
         
         function s = setcorey(s) % y with real sound signal, without silent duration

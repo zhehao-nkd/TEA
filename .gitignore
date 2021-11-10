@@ -43,3 +43,8 @@ octave-workspace
 # wav file
 *.wav
 *.WAV
+
+# txt file
+*.txt
+
+

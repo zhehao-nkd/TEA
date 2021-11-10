@@ -66,6 +66,25 @@ classdef extract
            sptimes = cellfun(@(v) v( v > 0), sptimes, 'UniformOutput', false);
            newspt = cellfun(@(v) v( v < ylen), sptimes, 'UniformOutput', false);
         end
+        
+        function birdid = birdid(dirpath)
+            fileExt = '*.wav';
+            files = dir(fullfile(dirpath,fileExt));
+            len = size(files,1);
+            
+            filenames = {};
+            coder.varsize(filenames);
+            
+            for n=1:len
+                filenames = fullfile(dirpath,files(n,1).name);
+                [~,rawid,~] = fileparts(filenames);
+                parts = strsplit(rawid,'_');
+                birdid{n} = parts{1};
+            end
+            
+            birdid = birdid.'; % Trasnpose only for convinient checking variables
+            
+        end
     end
 end
 
