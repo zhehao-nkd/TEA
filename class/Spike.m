@@ -7,7 +7,9 @@ classdef Spike < handle
         pc
         channel
         unit
-        waveform
+        waveform % Here returns the waveforms
+        peak
+        valley
         ephys_fs
         
     end
@@ -17,33 +19,43 @@ classdef Spike < handle
         
         function s = Spike(T)
             
-            s.T = T;
+            s.T = T; % T is the imcoming table
             
             s.time = s.T.timestamp; % convert the timestamps into a matrix
-                %data.waveform = T{:,4:end}; % number of columns may change
-                
-                vname = s.T.Properties.VariableNames;% name of vareiables
-                idxwaveform = find (~cellfun(@isempty, regexp(vname, '^Var\d+$')));
-                s.waveform = table2array(s.T(:,idxwaveform));
-                
-                idxpc = find (~cellfun(@isempty, regexp(vname, '^pc\d+$'))); % idx of PCs
-                s.pc = table2array(s.T(:,idxpc));
-                
-                idxchannel = ~cellfun(@isempty, regexp(vname, 'channelname'));
-                s.channel = unique(table2array(s.T(:,idxchannel)));
-                
-                idxunit = ~cellfun(@isempty, regexp(vname, 'unit'));
-                s.unit = unique(table2array(s.T(:,idxunit)));
+            %data.waveform = T{:,4:end}; % number of columns may change
+            
+            vname = s.T.Properties.VariableNames;% name of vareiables
+            
+            % extract waveforms
+            idxwaveform = find (~cellfun(@isempty, regexp(vname, '^Var\d+$')));
+            s.waveform = table2array(s.T(:,idxwaveform));
+            
+            % extract PC values
+            idxpc = find (~cellfun(@isempty, regexp(vname, '^pc\d+$'))); % idx of PCs
+            s.pc = table2array(s.T(:,idxpc));
+            
+            % extract peak
+            idxpeak = find (~cellfun(@isempty, regexp(vname, 'peak'))); % idx of peaks
+            s.peak = table2array(s.T(:,idxpeak));
+            
+             % extract valley
+            idxvalley = find (~cellfun(@isempty, regexp(vname, 'valley'))); % idx of valleys
+            s.valley = table2array(s.T(:,idxvalley));
+            
+            % extract channelname
+            idxchannel = ~cellfun(@isempty, regexp(vname, 'channelname'));
+            s.channel = unique(table2array(s.T(:,idxchannel)));
+            
+            % extract unit name
+            idxunit = ~cellfun(@isempty, regexp(vname, 'unit'));
+            s.unit = unique(table2array(s.T(:,idxunit)));
             
             
         end
-        
-        
-      
-        function  set_ephys_fs(s,ephys_fs)
+          
+        function set_ephys_fs(s,ephys_fs)
             s.ephys_fs = ephys_fs;
         end
-        
         
         function result = getResult(s)
             
@@ -103,14 +115,11 @@ classdef Spike < handle
     
     methods(Static)
         
-        function separatedT = split(path_txt)
+        function separatedT = split(path_txt) % split exported data to single channel-unit table, unit0 (unsorted) are removed
             
-            rawT = readtable(path_txt);
+            rawT = readtable(path_txt);% sorted plus unsorted
             
-            % sorted plus unsorted
             
-            % Read first line as the title
-            %?????????
             fid = fopen(path_txt);
             frewind(fid);
             first_line = deblankl(fgetl(fid)); % deblankl for removal of blanks, as VariableNames can't include blanks
@@ -143,10 +152,28 @@ classdef Spike < handle
                 
             end
             
-            separatedT = Spike.rm0(separatedT);
+            separatedT = Spike.rm0(separatedT);  % to get the unsorted spikes,what I need is to extract 0 
             
         end
         
+        function singleChannelT = extract_specific_channel(path_txt,channel_name)
+            
+            rawT = readtable(path_txt);% sorted plus unsorted
+            
+            
+            % These codes are for uniforming the column name of the rawT
+            fid = fopen(path_txt);
+            frewind(fid);
+            first_line = deblankl(fgetl(fid)); % deblankl for removal of blanks, as VariableNames can't include blanks
+            titlecell = split(first_line,',');
+            lentitle = length(titlecell);
+            rawT.Properties.VariableNames(1:lentitle) = titlecell;
+            
+            % extract specific channel's rawT information as singleChannelT
+            singleChannelT = rawT(startsWith(rawT.channelname,channel_name),:);
+            
+           
+        end
         
         function separatedT = rm0(separatedT) % remove unit 0, which are unsorted
             
@@ -163,6 +190,24 @@ classdef Spike < handle
             separatedT = separatedT(not0);  % 
                    
         end
+        
+        
+        function zeroOnlyT = extract0(separatedT) % extract unit 0, which are unsorted
+            
+            is0 = [];
+            k = 0;
+            for idx = 1: length(separatedT)
+            
+               if unique(separatedT{idx}.unit)== 0
+                   k = k + 1;
+                   is0(k) = idx;
+               end
+            end
+            
+            zeroOnlyT  = separatedT(is0);  % 
+                   
+          end
+        
             
     end
     

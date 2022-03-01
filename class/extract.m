@@ -17,7 +17,7 @@ classdef extract
             % fix the fm
             temp2 = features.FM;
             newfm = [diff(features.pitch),0];
-          
+            
             features.fm = newfm;
             features.rawfm = temp2;
             
@@ -62,9 +62,9 @@ classdef extract
         end
         
         function newspt = cutspt(sptimes,zpt,ylen)
-           sptimes = cellfun(@(x) x - zpt, sptimes, 'un', 0);
-           sptimes = cellfun(@(v) v( v > 0), sptimes, 'UniformOutput', false);
-           newspt = cellfun(@(v) v( v < ylen), sptimes, 'UniformOutput', false);
+            sptimes = cellfun(@(x) x - zpt, sptimes, 'un', 0);
+            sptimes = cellfun(@(v) v( v > 0), sptimes, 'UniformOutput', false);
+            newspt = cellfun(@(v) v( v < ylen), sptimes, 'UniformOutput', false);
         end
         
         function birdid = birdid(dirpath)
@@ -85,6 +85,106 @@ classdef extract
             birdid = birdid.'; % Trasnpose only for convinient checking variables
             
         end
+        
+        function value = json(json_path)
+            % read json file
+            fname = json_path;
+            fid = fopen(fname);
+            raw = fread(fid,inf);
+            str = char(raw');
+            fclose(fid);
+            value = jsondecode(str);
+            
+        end
+        
+        function list = all(path) % extract everything files/folders in the path folder
+            list = dir(fullfile(path,'**/*.*'));
+        end
+        
+        function folders = foldersAllLevel(path) % extract everything files/folders in the path folder
+            list = dir(fullfile(path,'**/*.*'));
+            
+            dirids = find([list.isdir].');
+            
+            temp = {list.name}.';
+            dot_ids = find(~cellfun(@isempty,regexp({list.name}.','\.\.')));% Too bad code
+            
+            %dot_list = list(dot_ids);
+            
+            screened_ids = intersect(dirids,dot_ids);
+            
+            screened_list = list(screened_ids);
+            
+            folders = {};
+            for k = 1: length( screened_list)
+                
+                folders{k} = screened_list(k).folder;
+                
+            end
+            
+            
+        end
+        
+        
+        function files = filesAllLevel(path, extension)
+            
+            folders = extract.foldersAllLevel(path);
+            
+            for k = 1:length(folders)
+                
+                subdir_files{k} = extract.filename(folders{k},extension);
+            end
+            
+            files = vertcat(subdir_files{:});
+            
+        end
+        
+        function info = fileDirRelation(path,extension) % Available for two layers of folders
+            
+            subfolders = extract.folder(path).';
+            
+            info = struct;
+            ids = 0;
+            for k = 1:length(subfolders)
+               
+                wavfiles = extract.filename(subfolders{k},extension);
+                
+                for p = 1: length(wavfiles)
+                     ids = ids + 1;
+                     info(ids).fileid = ids;
+                     info(ids).filename = wavfiles{p};
+                     info(ids).folder = subfolders{k};
+                    
+                end
+                
+            end
+
+        end
+        
+        
+        function new_sptimes = sptimes(spike_times, initial, terminal)
+            
+            new_sptimes = {};
+            for k = 1: length(spike_times)
+                local_spt = spike_times{k};
+                if isempty(local_spt)
+                    new_sptimes{k} = [];
+                    continue
+                end
+                ids = find((local_spt>initial )& (local_spt<terminal));
+                if isempty(ids)
+                    new_sptimes{k} = [];
+                    continue
+                end
+                new_sptimes{k} = local_spt(ids);
+            end
+            
+        end
+        
     end
+    
+    
+    
+   
 end
 

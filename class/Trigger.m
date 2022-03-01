@@ -12,7 +12,7 @@ classdef Trigger < handle
     
     methods
         
-        function t = Trigger(path_plx)
+        function t = Trigger(path_plx,mergeIdx)
             
             [~,t.plxname,~] = fileparts(path_plx);
             path_plx = convertStringsToChars(path_plx);
@@ -20,7 +20,8 @@ classdef Trigger < handle
             
             PULSE_LOCATION = 0;
             %
-            % Find the trigger
+            % find the strat and stop field
+         
             
             % Find the trigger plexonfile.EventChannels(1).Timestamps
             for n = 1:length(plexonfile.EventChannels)
@@ -29,6 +30,22 @@ classdef Trigger < handle
                     PULSE_LOCATION = n;
                     t.equipment = 'ZEUS';
                     t.raw = plexonfile.EventChannels(PULSE_LOCATION);
+
+                    start_idx = find(~cellfun(@isempty, regexp({plexonfile.EventChannels.Name}.','Start')));
+                    stop_idx = find(~cellfun(@isempty, regexp({plexonfile.EventChannels.Name}.','Stop')));
+                    start_timestamps = plexonfile.EventChannels(start_idx).Timestamps;
+                    stop_timestamps = plexonfile.EventChannels(stop_idx).Timestamps;
+                    if length(start_timestamps) > 1
+                        if exist('mergeIdx','var')
+                            temp = t.raw.Timestamps(start_timestamps(mergeIdx)<= t.raw.Timestamps);
+                            raw_to_analysis = temp(temp<=stop_timestamps(mergeIdx));
+                        else
+                            raw_to_analysis = t.raw.Timestamps;
+                        end
+                    else
+                        raw_to_analysis = t.raw.Timestamps;
+                    end
+
                     
                     % to judge whether to use the binary-code decoder or
                     % dig signal extractior
@@ -39,7 +56,7 @@ classdef Trigger < handle
 %                     [diff_num,~] = sort(diff_num);
 %                     sort(unique(diff_raw))
                     newdiffs = [];
-                    diffs = diff(t.raw.Timestamps);
+                    diffs = diff(raw_to_analysis);
                     
                     for mm = 1: length(diffs)
                         newdiffs(mm) = round( double(diffs(mm)),-2 );
@@ -57,7 +74,7 @@ classdef Trigger < handle
                         
                          t.info = t.digbidecode; % digital
                         clear plexonfile
-                        return                     
+                        return  % if system is zeus, the function will return here                    
                     end        
                 end
                 
@@ -183,137 +200,159 @@ classdef Trigger < handle
         end
         
         function info = extract(t)
-            
+
             fs = t.raw.ADFrequency; % avoid hard-coding;
             t.ephys_fs = fs;
             %dbstop if error
             pulse_channel = t.raw.Values;
             %detecting triggers and recording their time
-            
+
             % debug pulse_channel = trigger.Values;
-            
-            MIN_THRESHOLD = 5000; % May vary in different situations
-            MAX_THRESHOLD = 8500; % May vary in different situations
-            
-            
+
+            MIN_THRESHOLD = 25000; % May vary in different situations
+            MAX_THRESHOLD = 40000; % May vary in different situations
+
             pulse_channel(pulse_channel < MIN_THRESHOLD | pulse_channel > MAX_THRESHOLD) = 0; %Convert singals of pulse channel to 0 and 1
             %figure; plot(pulse_channel);
-            
+
             pulse_channel(pulse_channel ~= 0) = 1; % based on the threshold
             %figure; plot(pulse_channel);
-            
-            
-            
+
+
+
             k = find(pulse_channel);   % Find all the 1
-            
+
             if k(1) == 1 % incase that k(1) = 1, when there are noises interrrput the pulse channel
                 tempinitial = find(pulse_channel == 0);
                 newinitial = tempinitial(1);
                 pulse_channel = pulse_channel(newinitial:end);
                 k = find(pulse_channel);
             end
-            
+
             %    difference =  k(2:end)- k(1:end-1) ;
             %    idxDif = find(difference ~= 1);
-            
-            
             pulse_initials = k(pulse_channel(k - 1)==0);      % Find the initial of all the pulses
             pulse_ends = k(pulse_channel(k + 1)==0);          % Find the ends of all the pulses
-            
-            
-            
-            % Remove noises
+            % Remove noises  这个不一定对， 可能 10e-3 要改
             for n = 1:length(pulse_initials)
-                
                 if pulse_ends(n) - pulse_initials(n) < 10e-3 / 2 * fs % 20000 is the fs of AI channel
                     pulse_initials(n) = NaN;
                     pulse_ends(n) = NaN;
                 end
-                
             end
-            
-            
             pulse_initials (isnan(pulse_initials)) = [];
             pulse_ends (isnan(pulse_ends)) = [];
-            
-            
-            % line([pulse_initials,pulse_initials],[0,5]); %for debug
-            
-            m = 1;
-            groups ={};
-            coder.varsize(groups);
-            
-            % As different stimuli have different number of square pulses, this works for grouping pulse clusters
-            
-            WINDOW = fs; % The length of searching window, 20000samples means 1 second
-            
-            
-            for n = 1: length(pulse_initials)
-                
-                if n == length(pulse_initials)
-                    groups{m}= [groups{m},pulse_initials(n)];
-                    
-                    
-                    
-                else
-                    
-                    if pulse_initials(n+1)-pulse_initials(n)<WINDOW
-                        if isempty(groups)
-                            groups{m} = pulse_initials(n);
-                        else
-                            groups{m}=[ groups{m},pulse_initials(n)];
-                        end
-                        
+            % 根据 diff的种类选择 decode 的 类型
+            ini_diffs =  round(diff(pulse_initials),-1);
+
+            group_split_thres = 5000;
+
+            to_judge_decode_method = ini_diffs(ini_diffs < 5000);
+            if length(unique(to_judge_decode_method)) == 1
+                % use the direct decode method
+                m = 1;
+                groups ={};
+                coder.varsize(groups);
+                % As different stimuli have different number of square pulses, this works for grouping pulse clusters
+
+                WINDOW = fs; % The length of searching window, 20000samples means 1 second
+                for n = 1: length(pulse_initials)
+
+                    if n == length(pulse_initials)
+                        groups{m}= [groups{m},pulse_initials(n)];
+
+
+
                     else
-                        if isempty(groups)
-                            groups{m}= pulse_initials(n);
-                            m = m+1;
-                            groups{m} =[];
+
+                        if pulse_initials(n+1)-pulse_initials(n)<WINDOW
+                            if isempty(groups)
+                                groups{m} = pulse_initials(n);
+                            else
+                                groups{m}=[ groups{m},pulse_initials(n)];
+                            end
+
                         else
-                            groups{m}= [groups{m},pulse_initials(n)];
-                            m = m+1;
-                            groups{m} =[];
+                            if isempty(groups)
+                                groups{m}= pulse_initials(n);
+                                m = m+1;
+                                groups{m} =[];
+                            else
+                                groups{m}= [groups{m},pulse_initials(n)];
+                                m = m+1;
+                                groups{m} =[];
+                            end
                         end
+
+
+
                     end
-                    
-                    
-                    
+
                 end
-                
+                % For collecting .time and .number
+                detection.samplepoint = [];
+                detection.name= [];
+                coder.varsize(detection.name,detection.samplepoint);
+                for o = 1:length(groups)
+
+                    detection.samplepoint(o) = groups{o}(1);
+                    detection.name(o) = length(groups{o});
+                end
+                detection.time = detection.samplepoint/fs;
+                name = unique(detection.name);
+                %sort triggers with same number of pulses
+                for n = 1:length(name) % for write name into the struct 'info'
+                    info(n).name = name(n);
+                end
+                for n = 1:length(name)
+                    info(n).repeats = length(find(detection.name==name(n)));
+                    info(n).time = detection.time(find(detection.name==name(n)));
+                end
+            else  % use the bi 2 bi decode method
+                raws = pulse_initials;
+                diff_between_pulse  = round(diff(raws),-1);
+                split_ids = find( diff_between_pulse >  group_split_thres);
+                split_ids = [0; split_ids;length(raws)];
+                groups = {};
+                for g = 1: length(split_ids)-1
+                    the_first =  split_ids(g)+ 1;
+                    the_last = split_ids(g+ 1);
+                    groups{g} = raws(the_first:the_last);
+                end
+                temp = cellfun(@diff,groups,'UniformOutput',0);
+                diff_collect_for_find_bi =arrayfun(@(x) round(x,-1), double(vertcat(temp{:})) );
+                zero_value = min(  diff_collect_for_find_bi);
+                one_value = max( diff_collect_for_find_bi);
+                for u = 1: length(groups)
+                    inner_group_diff = round(diff(double(groups{u})),-1);
+                    inner_group_diff(inner_group_diff== zero_value) = 0;
+                    inner_group_diff(inner_group_diff== one_value) = 1;
+                    binary_code =  flip(inner_group_diff.'); % binary code
+                    if isempty(binary_code)
+                        disp('Your encoder is wrong!!')
+                    end
+                    decimal_id(u) = bi2de(flip(binary_code));  % flip is necessar, as bi2de read in opposite direction
+                end
+                tris = unique(decimal_id);
+                info = struct;
+                for e = 1: length(tris)
+                    info(e).name = tris(e);
+                    %info(e).name = tris(e)+ 1;
+                    info(e).repeats = length(find(decimal_id == tris(e)));
+                    tri_id = find(decimal_id == tris(e));
+                    collects = {groups{tri_id}};
+                    for yy = 1: length(collects)
+                        % important note here, here collects return int32, but what
+                        % is necessary is double
+                        info(e).time(yy) = double(collects{yy}(1))/fs;   % fs equals to 30000
+                    end
+                end
+               
             end
-            
-            
-            
-            % For collecting .time and .number
-            detection.samplepoint = [];
-            detection.name= [];
-            coder.varsize(detection.name,detection.samplepoint);
-            
-            for o = 1:length(groups)
-                
-                detection.samplepoint(o) = groups{o}(1);
-                detection.name(o) = length(groups{o});
-            end
-            
-            detection.time = detection.samplepoint/fs;
-            
-            
-            name = unique(detection.name);
-            
-            %sort triggers with same number of pulses
-            
-            for n = 1:length(name) % for write name into the struct 'info'
-                info(n).name = name(n);
-            end
-            
-            for n = 1:length(name)
-                info(n).repeats = length(find(detection.name==name(n)));
-                info(n).time = detection.time(find(detection.name==name(n)));
-            end
-            
-            
+            % line([pulse_initials,pulse_initials],[0,5]); %for debug
+
         end
-        
+
         function info = digbidecode(t) % decode binary trigger information, which is compatible with the encoder
             
             
@@ -356,7 +395,8 @@ classdef Trigger < handle
             info = struct;
             
             for e = 1: length(tris)
-                info(e).name = tris(e)+ 1;
+                info(e).name = tris(e);
+                %info(e).name = tris(e)+ 1;
                 info(e).repeats = length(find(decimal_id == tris(e)));
                 tri_id = find(decimal_id == tris(e));
                 collects = {groups{tri_id}};
@@ -376,13 +416,30 @@ classdef Trigger < handle
     
     methods(Static)
         
-        function binary(outdir) % add trigger channel to stimuli - Binary code
+        function binary(outdir,from_which,pre,post) % add trigger channel to stimuli - Binary code
             
             dbstop if error
             
-            pre_length = 0; post_length = 3; % 224
+            if exist('pre','var')
+                 pre_length = pre;
+            else
+                pre_length = 0;
+            end
+            
+            if exist('post','var')
+                 post_length = post;
+            else
+                post_length = 3; % default
+            end
+            
+            
             GAP_DURATION = 1*8e-3; PULSE_DURATION = 5*8e-3; AMPLITUDE = 1;
-            from_which = 1;
+            
+            if exist('from_which','var')
+                
+            else
+                from_which = 1;
+            end
                 
             dirpath = uigetdir();
             files = extract.filename(dirpath, '*.wav');
@@ -393,9 +450,9 @@ classdef Trigger < handle
             for n = 1:length(files)
                 
                 [y,fs] = audioread(files{n}); % y means original y
-                binary_code = de2bi(n); 
-                zero_pulse = [zeros(GAP_DURATION*fs,1);AMPLITUDE*ones(GAP_DURATION*fs,1)];
-                one_pulse = [zeros(GAP_DURATION*fs,1);zeros(GAP_DURATION*fs,1);AMPLITUDE*ones(GAP_DURATION*fs,1)];
+                binary_code = de2bi(n + from_which - 1); 
+                zero_pulse = [zeros(GAP_DURATION*fs,1);AMPLITUDE*ones(GAP_DURATION*fs,1)];  % 0-1
+                one_pulse = [zeros(GAP_DURATION*fs,1);zeros(GAP_DURATION*fs,1);AMPLITUDE*ones(GAP_DURATION*fs,1)]; % 0-0-1
                 
                 % write data channel
                 yD = [zeros(pre_length*fs,1);y;zeros(post_length*fs,1)];
@@ -416,14 +473,14 @@ classdef Trigger < handle
                 yOut = [yT,yD];
                 
                 [~,name,~] = fileparts(files{n});
-                audiowrite(sprintf('%s/%s-%uPulses.wav',outdir,name,from_which),yOut,fs);
+                audiowrite(sprintf('%s/%s-%02uPulses.wav',outdir,name,n + from_which - 1),yOut,fs);
                 from_which = from_which + 1;
                 
             end
             
         end
         
-        function classic(outdir)  % add trigger channel to stimuli - Classical code
+        function classic(outdir,pre,post)  % add trigger channel to stimuli - Classical code
             
             %  This is a script for processing normalizede stimuli series.
             % It works by adding silent paddings together with trigger pulses to
@@ -431,7 +488,19 @@ classdef Trigger < handle
             % By Zhehao Cheng, 0820,2020
 
             dbstop if error
-            pre_length = 1; post_length = 3; % 224
+            
+            if exist('pre','var')
+                 pre_length = pre;
+            else
+                pre_length = 0;
+            end
+            
+            if exist('post','var')
+                 post_length = post;
+            else
+                post_length = 4;
+            end
+               
             GAP_DURATION = 8e-3; PULSE_DURATION = 8e-3; AMPLITUDE = 1;
             setinitial = 1;
             initial = setinitial-1;

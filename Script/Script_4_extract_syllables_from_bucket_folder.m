@@ -3,107 +3,119 @@
 
 %(((^>^))) This section is for fitering bucket folders, only select those
 %good folders
-dbstop if error
-fs = 32000;
-b = Bird("Z:\Yazaki-SugiyamaU\Bird-song"); % bi is the Bird object
-b.rand % randomize the folder paths
-goodfolders = b.folders;
-ConDirs = fromWavFindParentFolder("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\O684@test@20211019");
-Confolders = ConDirs; % Overwrite goodfolders
+% dbstop if error
+% fs = 32000;
+% b = Bird("Z:\Yazaki-SugiyamaU\Bird-song"); % bi is the Bird object
+% b.rand % randomize the folder paths
+% goodfolders = b.folders;
+ConDirs = fromWavFindParentFolder("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\O684@test@20211019","E:\WavsCollection");
+%Confolders = ConDirs; % Overwrite goodfolders
 
 %To place confolders at the front
-[Lia,locb] = ismember([Confolders{:}].',[goodfolders(:)]);
-new_ids = vertcat(locb(locb>0),setdiff([1: length(goodfolders)],locb(locb>0)).'); %v new ids which place ConFolders in the front
-goodfolders = goodfolders(new_ids).';
+%[Lia,locb] = ismember([Confolders{:}].',[goodfolders(:)]);
+% new_ids = vertcat(locb(locb>0),setdiff([1: length(goodfolders)],locb(locb>0)).'); %v new ids which place ConFolders in the front
+% goodfolders = goodfolders(new_ids).';
+% 
+% 
+% %(((^_^))) This section is for copy .wav files from bucket to my PC, and
+% %this will be applied for each bird
+% 
+%  build = buildFraginf("E:\SyllableCollections");
+%  
+% tic
+% for f = 1: length(goodfolders)
+%    
+%     build.moveFromBucket(goodfolders{f}); % blue137 (f = 25)contains too many files !!!
+%     fprintf('Number __%u__ in %u folders\n',f,length(goodfolders));
+%     disp('草如劍形，上有七星，列如北斗');
+% end
+% toc
+% 
+% 
+% %(((^~^))) This section is for segmenting copied songs into syllables. 
+ wav_dir = "E:\WavsCollection";
+% %wav_dir = "E:\Fake_Try";
+ subdirs = extract.folder(wav_dir);
+ [Lia,locb] = ismember([ConDirs{:}].',[subdirs{:}].');
+% tic
+% for r = 1:length(subdirs)
+%     
+% %    if ~isempty(extract.filename(sprintf('%s\\SegData',subdirs{r}),'*.mat'))
+% %        continue % if already segmented, do not segment again!!!
+% %    end
+%    
+%    as = autoseg(subdirs{r});
+%    as.intoSyllables_restrict_bout(5); % restrict to five bout
+%     
+%     fprintf('Now__%u__of %u dirs are processed',r,length(subdirs));
+% end
+% toc
 
 
-%(((^_^))) This section is for copy .wav files from bucket to my PC, and
-%this will be applied for each bird
-tic
-for f = 408: length(goodfolders)
-    output_dir = bucketMover(goodfolders{f}); % blue137 (f = 25)contains too many files !!!
-    fprintf('Number __%u__ in %u folders\n',f,length(goodfolders));
-    disp('草如劍形，上有七星，列如北斗');
-end
-toc
-
-
-%(((^~^))) This section is for segmenting copied songs into elements. 
-wav_dir = "E:\WavsCollection";
-%wav_dir = "E:\Fake_Try";
-subdirs = extract.folder(wav_dir);
-tic
-for r = 1:length(subdirs)
-    
-   if ~isempty(extract.filename(sprintf('%s\\SegData',subdirs{r}),'*.mat'))
-       continue
-   end
-    autosegmenter_restrict_bout(subdirs{r},5);
-    
-    fprintf('Now__%u__of %u dirs are processed',r,length(subdirs));
-end
-toc
-
-
-send_mail_message('379380788@qq.com','First section finished','Oops')
-
-
-for r = 1:length(subdirs)
-    
-   if ~isempty(extract.filename(sprintf('%s\\SegDataIndi',subdirs{r}),'*.mat'))
-       continue
-   end
-    autosegmenter(subdirs{r});
-    
-    fprintf('Now__%u__of %u dirs are processed',r,length(subdirs));
-end
-toc
-
+% send_mail_message('379380788@qq.com','First section finished','Oops')
 
 
 %(((^~^))) Convert segdata files into eleinf, and then convert eleinf into
 %the format suitable for the python script
-ote_eleinf = assemble_as_eleinf(subdirs,300); % 300 means remove folderes with bird id smaller than 300
-ote_eleinf = addcategoinfo(ote_eleinf); % add catego info into the eleinf
-unique_eleinf = stimuli.unique_it( ote_eleinf );
-
-conspe_eleinf = autoseg("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\Y687@10252021").singleSegmenter;
 
 
-temp_con = conspe_eleinf;
-for k = 1: length(temp_con)
-    temp_con(k).len = length(temp_con(k).y);
-end 
-cont = struct2table(temp_con); % Here I should find the max and min length of eleinf!!!
-
-
+noncon_dir_whole_collection = subdirs(setdiff([1: length(subdirs)],locb(locb>0)).');
+noncon_ote_eleinf = buildFraginf.assemble_as_sylinf(noncon_dir_whole_collection ,300,'SegData'); % 300 means remove folderes with bird id smaller than 300
+ote_eleinf = categoFrags(noncon_ote_eleinf).eachsong;
+unique_ote_eleinf = stimuli.unique_it( ote_eleinf );
 % remove too long or too short elements
-for k = 1: length(unique_eleinf)
-    unique_eleinf(k).len = length(unique_eleinf(k).y);
+for k = 1: length(unique_ote_eleinf )
+    unique_ote_eleinf(k).len = length(unique_ote_eleinf (k).y);
 end
 
-rm_eleinf = unique_eleinf(find(4000 >[unique_eleinf.len].'& [unique_eleinf.len].'> 700));
+%T_unique_ote_eleinf = struct2table(unique_ote_eleinf);
+rm_eleinf = unique_ote_eleinf(find(8000 >[unique_ote_eleinf.len].'& [unique_ote_eleinf.len].'> 800));
+%split ote_eleinf to non-con and con eleinf
 
-% to further remove eles which have the same name with con_eleinf
-ConDirs = fromWavFindParentFolder("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\Y687@10252021").';
-con_spe_names = {};
-for zeno = 1: length(ConDirs)
-   splitted = split( ConDirs{zeno},'\');
-   con_spe_names{zeno} = splitted{end};
-end
+% 这里的目的是为了让con-ELEINF的运算流程和ote-eleinf的运算流程一样
+as = autoseg("E:\Selected_wavs");
+ as.intoSyllables;
+readed_coneleinf = buildFraginf.assemble_as_sylinf("E:\Selected_wavs" ,300,'SegData')
+%    as.intoSyllables_restrict_bout
+conspe_eleinf = autoseg("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\Y687@10252021").singleSegmenterSyl;
+con_dir_in_whole_collection = subdirs(locb(locb>0));
+con_ote_eleinf = buildFraginf.assemble_as_sylinf(con_dir_in_whole_collection ,300,'SegData');
+con_plus_conrelated_ote_eleinf = categoFrags(con_ote_eleinf).include_con(conspe_eleinf); % add catego info into the eleinf
 
-pure_songname = {};
-for ee = 1: length(rm_eleinf)
-    temp = rm_eleinf(ee).songname;
-    temp = split(temp,'-');
-    pure_songname{ee} = temp{end};
-end
-Lia = find(~ismember(pure_songname,con_spe_names));
-rm2_eleinf = rm_eleinf(Lia); % fuether filtere eleinf
+S = stimuli(con_plus_conrelated_ote_eleinf);
 
-con_eleinf = conspe_eleinf(find(cellfun(@isempty,regexp([conspe_eleinf.songname].','Mcall|Het|Fcall|WNS'))));
+TT = struct2table(con_plus_conrelated_ote_eleinf);
+% temp_con = conspe_eleinf;
+% for k = 1: length(temp_con)
+%     temp_con(k).len = length(temp_con(k).y);
+% end 
+% cont = struct2table(temp_con); % Here I should find the max and min length of eleinf!!!
 
-all_eleinf = horzcat(con_eleinf,rm2_eleinf);
+
+
+
+
+
+% % to further remove eles which have the same name with con_eleinf
+% ConDirs = fromWavFindParentFolder("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\Y687@10252021").';
+% con_spe_names = {};
+% for zeno = 1: length(ConDirs)
+%    splitted = split( ConDirs{zeno},'\');
+%    con_spe_names{zeno} = splitted{end};
+% end
+% 
+% pure_songname = {};
+% for ee = 1: length(rm_eleinf)
+%     temp = rm_eleinf(ee).songname;
+%     temp = split(temp,'-');
+%     pure_songname{ee} = temp{end};
+% end
+% Lia = find(~ismember(pure_songname,con_spe_names));
+% rm2_eleinf = rm_eleinf(Lia); % fuether filtere eleinf
+% 
+% con_eleinf = conspe_eleinf(find(cellfun(@isempty,regexp([conspe_eleinf.songname].','Mcall|Het|Fcall|WNS'))));
+
+all_eleinf = horzcat(con_plus_conrelated_ote_eleinf,rm_eleinf);
 for p = 1: length(all_eleinf)
     all_eleinf(p).uniqueid = p;
 end

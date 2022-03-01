@@ -220,7 +220,7 @@ classdef Display
         
         function deg = finddeg(d,keyword)
             
-            idx = find(~cellfun(@isempty,regexp({d.info.stimuliname}.','deg')));
+            idx = find(~cellfun(@isempty,regexp({d.info.stimuliname}.','deg|Deg')));
             
             deg = d.info(idx);
             
@@ -270,11 +270,11 @@ classdef Display
         end
         
         function repla = findrepla(d,keyword)
-            idx = find(~cellfun(@isempty,regexp([d.info.stimuliname].','Repla')));
+            idx = find(~cellfun(@isempty,regexp({d.info.stimuliname}.','Repla|catego|repla')));
             repla = d.info(idx);
             if exist('keyword','var')
                 
-                kwidx = find(~cellfun(@isempty,regexp([repla.stimuliname].',keyword)));
+                kwidx = find(~cellfun(@isempty,regexp({repla.stimuliname}.',keyword)));
                 repla = repla(kwidx);
             end
             
@@ -416,8 +416,7 @@ classdef Display
             
             
         end
-        
-        
+          
         function showsyl(d,keyword,mergedeleinf,rangeratio,ids)
             syl = alignsyl(d,keyword,mergedeleinf);
             syl = syl(ids);

@@ -63,14 +63,14 @@ toc
 
 %(((^~^))) Convert segdata files into eleinf, and then convert eleinf into
 %the format suitable for the python script
-ote_eleinf = assemble_as_eleinf(subdirs,300); % 300 means remove folderes with bird id smaller than 300
-ote_eleinf = addcategoinfo(ote_eleinf); % add catego info into the eleinf
-unique_eleinf = stimuli.unique_it( ote_eleinf );
+ote_sylinf = assemble_as_eleinf(subdirs,300,'SegData'); % 300 means remove folderes with bird id smaller than 300
+ote_sylinf = addcategoinfo(ote_sylinf); % add catego info into the eleinf
+%unique_sylinf = stimuli.unique_it( ote_sylinf );
 
-conspe_eleinf = autoseg("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\Y687@10252021").singleSegmenter;
+conspe_sylinf = autoseg("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\Y687@10252021").singleSegmenterSyl;
 
 
-temp_con = conspe_eleinf;
+temp_con = conspe_sylinf;
 for k = 1: length(temp_con)
     temp_con(k).len = length(temp_con(k).y);
 end 
@@ -78,32 +78,34 @@ cont = struct2table(temp_con); % Here I should find the max and min length of el
 
 
 % remove too long or too short elements
-for k = 1: length(unique_eleinf)
-    unique_eleinf(k).len = length(unique_eleinf(k).y);
+for k = 1: length(unique_sylinf)
+    unique_sylinf(k).len = length(unique_sylinf(k).y);
 end
 
-rm_eleinf = unique_eleinf(find(4000 >[unique_eleinf.len].'& [unique_eleinf.len].'> 700));
+rm_eleinf = unique_sylinf(find(4000 >[unique_sylinf.len].'& [unique_sylinf.len].'> 700));
 
-% to further remove eles which have the same name with con_eleinf
-ConDirs = fromWavFindParentFolder("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\Y687@10252021").';
-con_spe_names = {};
-for zeno = 1: length(ConDirs)
-   splitted = split( ConDirs{zeno},'\');
-   con_spe_names{zeno} = splitted{end};
-end
+% I comment this part because I need those from the con_eleinf to write
+% elements which are just from the same bird ( but in different motifs )
 
-pure_songname = {};
-for ee = 1: length(rm_eleinf)
-    temp = rm_eleinf(ee).songname;
-    temp = split(temp,'-');
-    pure_songname{ee} = temp{end};
-end
-Lia = find(~ismember(pure_songname,con_spe_names));
-rm2_eleinf = rm_eleinf(Lia); % fuether filtere eleinf
+% % to further remove eles which have the same name with con_eleinf
+% ConDirs = fromWavFindParentFolder("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\Y687@10252021").';
+% con_spe_names = {};
+% for zeno = 1: length(ConDirs)
+%    splitted = split( ConDirs{zeno},'\');
+%    con_spe_names{zeno} = splitted{end};
+% end
+% pure_songname = {};
+% for ee = 1: length(rm_eleinf)
+%     temp = rm_eleinf(ee).songname;
+%     temp = split(temp,'-');
+%     pure_songname{ee} = temp{end};
+% end
+% Lia = find(~ismember(pure_songname,con_spe_names));
+% rm2_eleinf = rm_eleinf(Lia); % fuether filtere eleinf
 
-con_eleinf = conspe_eleinf(find(cellfun(@isempty,regexp([conspe_eleinf.songname].','Mcall|Het|Fcall|WNS'))));
+con_eleinf = conspe_sylinf(find(cellfun(@isempty,regexp([conspe_sylinf.songname].','Mcall|Het|Fcall|WNS'))));
 
-all_eleinf = horzcat(con_eleinf,rm2_eleinf);
+all_eleinf = horzcat(con_eleinf,rm_eleinf);
 for p = 1: length(all_eleinf)
     all_eleinf(p).uniqueid = p;
 end
@@ -153,16 +155,16 @@ Bird.findcandidates
 % all_eleinf
 % !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 % here the con_eleinf should come from all_eleinf
-xfake = 1000*randn([length(conspe_eleinf),1]);
-yfake = 1000*randn([length(conspe_eleinf),1]);
-for t = 1: length(conspe_eleinf)
-    conspe_eleinf(t).coor_1 = xfake(t);
-    conspe_eleinf(t).coor_2 = yfake(t); 
+xfake = 1000*randn([length(conspe_sylinf),1]);
+yfake = 1000*randn([length(conspe_sylinf),1]);
+for t = 1: length(conspe_sylinf)
+    conspe_sylinf(t).coor_1 = xfake(t);
+    conspe_sylinf(t).coor_2 = yfake(t); 
 end
 
 
 
-conS = stimuli(conspe_eleinf);
+conS = stimuli(conspe_sylinf);
 conS.setoutdir("E:\Total_stimuli_Y687");
 conS.writenorm;
 
@@ -170,12 +172,12 @@ conS.writenorm;
 
 
 %2 generate stimuli degressives
-allsongnames = [conspe_eleinf.songname].';
+allsongnames = [conspe_sylinf.songname].';
 songnames = unique(allsongnames);
 
 for v = 1: length(songnames)
     this_song_ids = find(~cellfun(@isempty, regexp(songnames{v},allsongnames)));
-    this_song_inf = conspe_eleinf(this_song_ids);
+    this_song_inf = conspe_sylinf(this_song_ids);
     degS = stimuli(this_song_inf);
     degS.setoutdir("E:\Total_stimuli_Y687");
     degS.writedegressive; % write degressive songs

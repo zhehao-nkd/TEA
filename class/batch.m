@@ -32,7 +32,8 @@ classdef Batch < handle
             end
         end
         
-        function b = split(b) % generate input
+        function b = split(b) % split a recording file to neurons with different channel and unit names
+            
             if length(b.input) == 1 % the path of the csv folder
                 b.path = table2struct(readtable(b.input{1}{1}));
             elseif length(b.input) == 3
@@ -43,7 +44,7 @@ classdef Batch < handle
             
             idx = 0;
             for k = 1:size(b.path,1)
-                spikes = Spike.split(b.path(k).path_txt);
+                spikes = Spike.split(b.path(k).path_txt); % in this step, the unsorted spikes has been removed
                 for m = 1: length(spikes)
                     idx = idx + 1;
                     b.neu{idx} = spikes{m};
@@ -53,13 +54,16 @@ classdef Batch < handle
                     channelname = unique(b.neu{idx}.channelname);
                     channelname = channelname{1};
                     unitname = unique(b.neu{idx}.unit);
-                     b.nlist(idx).idx = idx;
+                    b.nlist(idx).idx = idx;
                     b.nlist(idx).neuronname = sprintf('%s_%s_%u',plxname,channelname,unitname);
                     
                 end
-            end  
+            end
         end
         
+%         function b = add_same_channel_spikes(b) % For each neuron object from the bacth, write same_channel_spikes info into it
+%             
+%         end
         
         function avgn(b) % write avgn mat files
             dbstop if error
@@ -93,11 +97,26 @@ classdef Batch < handle
             end
         end
         
-        function neurons = getn(b) % initiatialize neurons
-
-            for idx = 1: length(b.sneu)
-                neurons{idx} = Neuron(b.sneu{idx},b.splx{idx},b.swavfolder{idx});
+        function neurons = getn(b,mergeIdx) % initiatialize neurons
+            
+            if exist('mergeIdx','var')
+                for idx = 1: length(b.sneu)
+                    neurons{idx} = Neuron(b.sneu{idx},b.splx{idx},b.swavfolder{idx},mergeIdx);
+                end
+            else
+                for idx = 1: length(b.sneu)
+                    neurons{idx} = Neuron(b.sneu{idx},b.splx{idx},b.swavfolder{idx});
+                end
             end
+            
+            for w = 1: length(neurons) % for each neuron, write the same_channel_spikes info
+                
+                
+               same_channel_spikes = Spike.extract_specific_channel(b.path.path_txt,neurons{w}.channelname);
+               neurons{w}.sameChannelSpikes = same_channel_spikes;
+                
+            end
+            
         end
       
         function featuretsne(b)

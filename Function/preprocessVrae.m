@@ -91,7 +91,8 @@ for n_s = 1 :  length(list)
 end
 
 
-save(dataSaveDir + "labeled_" + datafilename, "labeled_data", "data", "labels", "frs", "spiketimes_std")
+%save(dataSaveDir + "labeled_" + datafilename, "labeled_data", "data", "labels", "frs", "spiketimes_std")
+save(dataSaveDir + "labeled_" + datafilename, "data", "labels", "frs", "spiketimes_std",'-v7.3')
 
 end
 

@@ -33,8 +33,6 @@ classdef Bird < handle
             dbstop if error
             [~,fnames,~] = cellfun(@fileparts,b.folders,'UniformOutput',false);
             
-            
-            
             for n = 1: length(fnames)
                 
                 alphabets = regexp(fnames{n},'[A-Za-z]');
@@ -311,8 +309,10 @@ classdef Bird < handle
             birdlog = table2struct(readtable(pathlog, 'Sheet','today'));
             
             birdlog = birdlog(1:30); % 只取前30行
-            hidx = find(strcmp({birdlog(:).B_H}.', 'H')); % 只取 holding cages （H）
-            birdlog = birdlog(hidx);
+            hidx = find(strcmp({birdlog(:).B_H}.', 'H')); % 只取 holding cages （H）or juveniles
+            juvidx = find(strcmp({birdlog(:).B_H}.', 'juv'));
+            h_and_juv_idx = [hidx;juvidx];
+            birdlog = birdlog(h_and_juv_idx);
             
             birds = horzcat(birdlog(:).Var4);
             

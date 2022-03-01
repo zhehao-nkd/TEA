@@ -91,10 +91,7 @@ classdef SAT_hijack < handle % there will be only one copy of each SAT_sound
 %                 end;
             end
           
-            
-            
-            
-            
+          
             function calculate_features(obj)
                 global SAT_params;
                 obj.num_slices=1;

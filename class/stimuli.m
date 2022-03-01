@@ -34,6 +34,7 @@ classdef stimuli < handle
         outdir
         num_of_near
         num_of_far
+        num_of_sim
         repla_pregap % pre_gap for replacement
         initial_pregap  %pre_gap of the first elements % seconds
         
@@ -93,7 +94,11 @@ classdef stimuli < handle
         function s = getprepro(s)
             temp = stimuli.highpass(s.raw,450);
             temp = stimuli.normalize(temp, 0.05);
-            s.prepro = table2struct(sortrows(struct2table(temp),'uniqueid','ascend')); % re-order
+            if length(temp) == 1
+                s.prepro = temp;
+            else
+                s.prepro = table2struct(sortrows(struct2table(temp),'uniqueid','ascend')); % re-order
+            end
         end  %% already highpass-filtered and normalized for each song
              
         function replaced = replace(s,radish,pit)    % 一个萝卜一个坑
@@ -169,6 +174,7 @@ classdef stimuli < handle
             end
             
         end
+        
         
         function deg = degressive2(s,singlesyl, initial, terminal)  % initial-terminal
             deg = struct;
@@ -349,6 +355,65 @@ classdef stimuli < handle
                 
             end
         end
+        
+        
+        function writereverses(s,~,~)
+            
+            
+            dir = sprintf('%s/Reverse_CONs',s.outdir);
+            mkdir(dir);
+            
+            fraginf = s.prepro;
+            for k = 1: length(fraginf)
+                fraginf(k).y = flip(fraginf(k).y); % first flip
+            end
+            
+            
+            
+            source = stimuli.split(fraginf);
+            
+            wb = waitbar(0,'In Progress');
+            for m = 1: length(source)
+                waitbar(m/length(source),wb,'In Progress');
+                %                 Comment.initial = [source{m}.initial].';
+                %                 Comment.terminal = [source{m}.terminal].';
+                %                 commentstr = jsonencode(Comment);
+                summer = flip(s.assemble(source{m})); % second flip
+                audiowrite(sprintf('%s/reverse-%s.wav',dir,string(unique(cellstr({source{m}.songname}.')))),summer,s.fs);
+                
+                disp(string(unique(cellstr({source{m}.songname}.'))));
+            end
+            close(wb);
+            
+            
+        end
+        
+        function writemirrors(s,~,~)
+            
+            
+            dir = sprintf('%s/Mirror_CONs',s.outdir);
+            mkdir(dir);
+            
+            fraginf = s.prepro;
+            
+            source = stimuli.split(fraginf);
+            
+            wb = waitbar(0,'In Progress');
+            for m = 1: length(source)
+                waitbar(m/length(source),wb,'In Progress');
+                %                 Comment.initial = [source{m}.initial].';
+                %                 Comment.terminal = [source{m}.terminal].';
+                %                 commentstr = jsonencode(Comment);
+                summer = flip(s.assemble(source{m})); % second flip
+                audiowrite(sprintf('%s/mirror-%s.wav',dir,string(unique(cellstr({source{m}.songname}.')))),summer,s.fs);
+                
+                disp(string(unique(cellstr({source{m}.songname}.'))));
+            end
+            close(wb);
+            
+            
+        end
+        
         
         function pregap = getpregap(s,num)
             
@@ -1326,7 +1391,7 @@ classdef stimuli < handle
             
         end
         
-        function with_sampling_writeRepla_near_from_all(s,global_id,edge_converted_from_senatus)
+        function with_sampling_writeRepla_near_from_all(s,global_id,edge_converted_from_senatus,mode)
             dbstop if error
             
             % extract the samesong_eleinf after(include) the target_index ele
@@ -1351,7 +1416,36 @@ classdef stimuli < handle
             
             % sampling, but this might not be good
             nearby_ids = stimuli.findnearby(mergedeleinf,edge_converted_from_senatus,global_id-1);
-            sampled_nearby_ids = sort(randsample(length(nearby_ids),s.num_of_near),'ascend');
+            
+            if exist('mode','var')
+                if strcmp(mode,'random')
+                    
+                    if length(nearbyids) >= s.num_of_near
+                        rng(1);
+                        sampled_nearby_ids = nearby_ids(sort(randsample(length(nearby_ids),s.num_of_near),'ascend'));
+                    else
+                        rng(1);
+                        sampled_nearby_ids = nearby_ids(sort(randsample(length(nearby_ids),length(nearby_ids)),'ascend'));
+                    end
+                    
+                elseif strcmp(mode,'descend')
+                    
+                    sampled_nearby_ids = nearby_ids(1:s.num_of_near); % which means the most nearest element will be used
+                    
+                end
+            else % default mode is random
+                if length(nearbyids) >= s.num_of_near
+                    rng(1);
+                    sampled_nearby_ids = nearby_ids(sort(randsample(length(nearby_ids),s.num_of_near),'ascend'));
+                else
+                    rng(1);
+                    sampled_nearby_ids = nearby_ids(sort(randsample(length(nearby_ids),length(nearby_ids)),'ascend'));
+                end
+                
+            end
+            
+             %sampled_nearby_ids = sort(randsample(length(nearby_ids),s.num_of_near),'ascend');   
+            
             
             % write nearby-replace songs
             for h = 1: length(sampled_nearby_ids )
@@ -1371,7 +1465,7 @@ classdef stimuli < handle
             %             close(gcf)
         end
         
-        function with_sampling_writeFrag_near_from_all(s,global_id,edge_converted_from_senatus)
+        function with_sampling_writeFrag_near_from_all(s,global_id,edge_converted_from_senatus,mode)
             % near---same catego eles
             % all---all eles in the global_eleinf is used
             
@@ -1380,13 +1474,36 @@ classdef stimuli < handle
             nearbyids = stimuli.findnearby(global_eleinf,edge_converted_from_senatus,global_id);
             
             % sampling, but this might not be good
-            if length(nearbyids) >= s.num_of_near
-                rng(1);
-                sampled_nearby_ids = nearbyids(sort(randsample(length(nearbyids),s.num_of_near),'ascend'));
-            else
-                rng(1);
-                sampled_nearby_ids = nearbyids(sort(randsample(length(nearbyids),length(nearbyids)),'ascend'));
+            if exist('mode','var')
+                if strcmp(mode,'random')
+                    
+                    if length(nearbyids) >= s.num_of_near
+                        rng(1);
+                        sampled_nearby_ids = nearbyids(sort(randsample(length(nearbyids),s.num_of_near),'ascend'));
+                    else
+                        rng(1);
+                        sampled_nearby_ids = nearbyids(sort(randsample(length(nearbyids),length(nearbyids)),'ascend'));
+                    end
+                    
+                elseif strcmp(mode,'descend')
+                    
+                    if length(nearbyids) >= s.num_of_near
+                        sampled_nearby_ids = nearbyids(1:s.num_of_near);
+                    else
+                        sampled_nearby_ids = nearbyids(1:length(nearbyids));
+                    end
+                    
+                end
+            else % default mode is random
+                if length(nearbyids) >= s.num_of_near
+                    rng(1);
+                    sampled_nearby_ids = nearbyids(sort(randsample(length(nearbyids),s.num_of_near),'ascend'));
+                else
+                    rng(1);
+                    sampled_nearby_ids = nearbyids(sort(randsample(length(nearbyids),length(nearbyids)),'ascend'));
+                end
             end
+            
 
             
             % define path and name
@@ -1463,6 +1580,37 @@ classdef stimuli < handle
             
         end
         
+        function writeSimilarFragsButDifferentMotif(s)
+            mergedeleinf = s.prepro;
+            
+            conids = find(~cellfun(@isempty, regexp([mergedeleinf.songname].','CON')));
+            
+            for k = 1: length(conids)
+                target_norm_name = mergedeleinf(conids(k)).normed_name;
+                target_catego = mergedeleinf(conids(k)).catego;
+                
+                samesong = find(strcmp ([mergedeleinf.normed_name].',target_norm_name));
+                samecatego =  find([mergedeleinf.catego].'==target_catego);
+                samefrag = setdiff(intersect(samesong,samecatego),conids(k));
+                
+                subfoldername = sprintf('%s/SameFragDiffMotif-%s-%02u',s.outdir, target_norm_name , target_catego);
+                
+                mkdir(subfoldername); 
+                for w = 1:length(samefrag)
+                    audiowrite(sprintf('%s//%s-%02u.wav',subfoldername,mergedeleinf(samefrag(w)).songname,w),mergedeleinf(samefrag(w)).y,mergedeleinf(samefrag(w)).fs);
+                end
+                
+                % I guess that there might be something wrong with the
+                % code, as usually I will only get two samefragdiffmoitif
+                % songs !!!!!!!! By Zhehao Cheng @ 11.16
+                
+            end
+            
+        end
+        
+        function set_num_of_sim(s,num_of_sim)
+            s.num_of_sim = num_of_sim;  % set the number of similar frags(just the same elements in different motifs
+        end
         
     end
         
@@ -1502,6 +1650,16 @@ classdef stimuli < handle
             end
         end
         
+        function writeSingleWNS(length_in_seconds)
+                data = randn(length_in_seconds*32000,1);
+                raw_rms = rms(data);
+                normalized_data = data*0.05/raw_rms;
+                audiowrite('norm-WNS-rms0.05.wav',normalized_data,32000);
+                disp(rms(normalized_data));
+               
+
+        end
+
         function sylinf = polish(sylinf)
             for k = 1: length(sylinf)
                 sylinf(k).fs = 32000;
@@ -1693,6 +1851,7 @@ classdef stimuli < handle
         
         function newinf = unique_it(mergedeleinf)
             
+            % based on categories to unique the mergedeleinf
             concat = {};
             
             for k = 1: length(mergedeleinf)

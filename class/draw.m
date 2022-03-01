@@ -11,8 +11,7 @@ classdef draw
             plot(x,y);
             xlim([0,length(y)/fs]);
         end
-     
-        
+            
         function spec6(y,fs)
             
             %             idx = find(y,1);
@@ -72,6 +71,7 @@ classdef draw
            % h = colorbar;
            % h.Label.String = 'Power/frequency (dB/Hz)';
         end
+
         function spec(y,fs) %这个是目前最正确的一个!!!!!!
             y = 3*y;%myAxe = app.UIAxes;
             [S,F,T] = spectrogram(y,hamming(512),512-round(fs/1e3),512,fs);
@@ -85,6 +85,20 @@ classdef draw
            
         end
         
+        function spectest(y,fs) %这个是目前最正确的一个!!!!!!
+             figure;
+            y = 3*y;%myAxe = app.UIAxes;
+            [S,F,T] = spectrogram(y,hamming(512),512-round(fs/1e3),512,fs);
+            imagesc(T, F, log(1+abs(S)) ); %plot the log spectrum
+            set(gca,'YDir','normal');
+            colormap('jet')
+            set(gca, 'CLim', [0, 3])  % change the contrast
+            %xlim([min(T),max(T)]);
+            xlim([0,length(y)/fs]);
+            ylim([min(F),max(F)]);
+           
+         end
+
         function spec4(y,fs)   % rescaled x to 0 ~length(y)/fs
             [~,F,T,P] = spectrogram(y,hamming(1024),1024-round(fs/1e3),1024,32000,'yaxis');
             %imagesc(T, F, 10*log10(P+eps)) % add eps like pspectrogram does
@@ -131,6 +145,7 @@ classdef draw
            % h = colorbar;
            % h.Label.String = 'Power/frequency (dB/Hz)';
         end
+
         function rasterBeta(sptimes,y,fs,linewidth,color)
             %find initial of stimuli
             if ~exist ('color','var')
@@ -185,6 +200,7 @@ classdef draw
             
             xlim([0-zpt length(y)/fs-zpt]);   %%%%%%%%%%%%%%%%%???????????????????????????????? 哪里不太对
         end
+
         function raster(sptimes,y,fs)
             
             idx = find(y,1);
@@ -450,6 +466,14 @@ classdef draw
             subplot(3,1,3)
             draw.sdf(y,fs,sptimes);
         end
+        
+        function two(y,fs,sptimes)
+            subplot(2,1,1)
+            draw.spec(y,fs);
+            subplot(2,1,2)
+            draw.raster(sptimes, y, fs);
+         end
+         
         function four(y,fs,sptimes)
             
             subplot(4,1,1)
@@ -462,6 +486,7 @@ classdef draw
             draw.sdf(y,fs,sptimes);
             
         end
+
         function srps(y,fs,sptimes) % spec-raster-psth-sdf
              subplot(4,1,1)
             draw.spec(y,fs);
@@ -472,10 +497,26 @@ classdef draw
             subplot(4,1,4)
             draw.sdf(y,fs,sptimes);
         end
+
         function sixplot
         end
-        
-        
+
+        function octavespec(y,fs,f0)
+             y = 3*y;%myAxe = app.UIAxes;
+            [S,F,T] = spectrogram(y,hamming(512),512-round(fs/1e3),512,fs);
+            edited_T = T(2:end);
+            edited_F = F(2:end);
+            edited_S = S(2:end,:);
+            imagesc(edited_T, log2(edited_F/f0), log(1+abs(edited_S)) ); %plot the log spectrum
+            set(gca,'YDir','normal');
+            colormap('jet')
+            set(gca, 'CLim', [0, 3])  % change the contrast
+            %xlim([min(T),max(T)]);
+            xlim([0,length(y)/fs]);
+            ylim([min(log2(edited_F/f0)),max(log2(edited_F/f0))]);
+
+        end
+             
     end
     
 end

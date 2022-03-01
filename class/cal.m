@@ -76,7 +76,7 @@ classdef cal
         end
         
         
-        function img = spec1024(y,fs) % calculate the image matrix of spectrogram
+        function img = Deprecated_spec1024(y,fs) % calculate the image matrix of spectrogram
             y = 2*y;%myAxe = app.UIAxes;
             [S,F,T] = spectrogram(y,hamming(1024),1024-round(fs/1e3),1024,fs);
             img = flip(log(1+abs(S)));
@@ -180,7 +180,22 @@ classdef cal
             N = histcounts(all,edges);
         end
         
-        function [num,detail] = sylnum(dir) % calculate how in total many syllables in a song folder
+        function N = psth_SingleTrial(sptimes,ylen,fs) % calculate psth using length(y); Do not consider multiple trials
+%             
+%             all = [];
+%             for iTrial = 1:length(sptimes)
+%                 all             = [all; sptimes{iTrial}];               % Concatenate spikes of all trials
+%             end
+            
+            sptimes = sptimes * 1000;
+            len =  ylen/fs*1000; % 多少hao秒
+            edges = linspace(0,len,len); %len is the bin number
+            
+            N = histcounts(sptimes,edges);
+        end
+        
+        
+        function [num,detail] = sylnum(dir) % calculate in total how many syllables in a song folder
             num = 0;
             files = extract.filename (dir, '*.wav');
             for idx = 1: length(files)
@@ -195,13 +210,21 @@ classdef cal
         end 
         
         function N =  psth_frag(y,fs,sptimes) % specific for syllables/elements
-            dur = 0.1;
+            dur = 0.01; % 10 ms
             len = length(y)/fs;
-            edges = linspace(0,len,len/dur);
+            edges = linspace(0,len,ceil(len/dur));
             concat =  vertcat(sptimes{:});
             %figure; histogram(concat,edges);
-            N = histcounts(concat,edges);
+            if isempty(concat)
+                N = zeros(length(edges) - 1,1);
+            else
+                N = histcounts(concat,edges);
+            end
             
+        end
+        
+        
+        function Num_Trigger_binaryCode = BinaryCodeTriggerNum(num_of_stimuli)
         end
         
     end

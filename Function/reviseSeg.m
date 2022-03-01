@@ -3,7 +3,9 @@ function reviseSeg(path)
 %close all;
 load(path,'segdata')
 
-hFig = figure;
+hFig = figure('units','normalized','outerposition',[0 0 1 1]);
+
+%set(hFig,'WindowState','fullscreen');
 
  % to draw the title
 hAxes = subplot(1,1,1);
@@ -11,25 +13,30 @@ imagesc(segdata.I);
 title(segdata.birdid);
 
 
-
-for idx = 1: length(segdata.eleedge)
-    %hold on
-    hVerticalLines(idx) = line([segdata.eleedge(idx),segdata.eleedge(idx)],get(hAxes,'Ylim'),'Color','white');
-end
-
-
-if length(segdata.eleedge) == 0
-    hVerticalLines = [];
+if isfield(segdata,'eleedge')
+    for idx = 1: length(segdata.eleedge)
+        %hold on
+        hVerticalLines(idx) = line([segdata.eleedge(idx),segdata.eleedge(idx)],get(hAxes,'Ylim'),'Color','white');
+    end
     
+    if length(segdata.eleedge) == 0
+        hVerticalLines = [];
+    end
+    
+else
+    hVerticalLines = [];
 end
+
 for e = 1: length(segdata.syledge)
     
     hVerticalLines = [hVerticalLines line([segdata.syledge(e),segdata.syledge(e)],get(hAxes,'Ylim'),'Color','red')];
 end
 
 % legend('element','syllables')
-xlabel(['{\color[rgb]{0.5 .5 .5}white is element \color{red}red is syllable} Press Space to change color']);
+xlabel([...
+    '{\color[rgb]{0.5 .5 .5}white--element \color{red}red--syllable} Press Space to change color']);
 
+ylabel( ' 右键--创建 左键--拖动 双击--删除 ');
 set(hAxes,'Color','k');
 
 set(hFig,'WindowButtonDownFcn',  @mouseDown);
@@ -55,18 +62,14 @@ hLineToDelete = [];
         
         
         switch  clickType
-            case 'normal' % left tro move
-                disp('why???')
+            case 'normal' % left to move
+                disp('Moved!')
                 % is the mouse down event within the axes?
                 if IsCursorInControl(hObject, hAxes)
-                    
                     currentPoint   = get(hAxes,'CurrentPoint');
                     xCurrentPoint  = currentPoint(2,1);
-                    
                     for k=1:length(hVerticalLines)
-                        
                         xVertLineCoord = get(hVerticalLines(k),'XData');
-                        
                         if abs(xCurrentPoint - xVertLineCoord(1)) < 5
                             hLineToDrag = hVerticalLines(k);
                             break;
@@ -75,6 +78,7 @@ hLineToDelete = [];
                 end
             case 'open' % double to delete
                 % is the mouse down event within the axes?
+                disp('Deleted')
                 if IsCursorInControl(hObject, hAxes)
                     
                     currentPoint   = get(hAxes,'CurrentPoint');
@@ -103,17 +107,13 @@ hLineToDelete = [];
                 
             case 'alt' % right to create
                 
+                disp('Created');
                 if IsCursorInControl(hObject, hAxes)
-                    
                     currentPoint   = get(hAxes,'CurrentPoint');
                     xCurrentPoint  = currentPoint(2,1);
-                    
-                    
                 end
-                
                 hVerticalLines = [hVerticalLines line([xCurrentPoint,xCurrentPoint],get(hAxes,'Ylim'),'Color',hObject.UserData)];
                 disp(['颜色是',string(hObject.UserData)])
-                
                 
         end
         
@@ -165,11 +165,12 @@ hLineToDelete = [];
             status = true;
             
         end
-        disp(status)
+       % disp(status)
     end
 
     function winClose(~,~)
-        disp('GG')
+        
+        fprintf('Current Waveview %s is updated \n',segdata.birdid)
         
        % newsegdata = [];
         white = 0;
@@ -186,8 +187,10 @@ hLineToDelete = [];
             end
         end
         
-        if isfield(segdata,'eleedge')
-            sort(newsegdata.eleedge);
+        if isfield(newsegdata,'eleedge')
+            if ~isempty(newsegdata.eleedge) % if ele is a field and is not empty
+                sort(newsegdata.eleedge);
+            end
         end
         
         if isfield(segdata,'syledge')
@@ -196,6 +199,10 @@ hLineToDelete = [];
         
         if isfield(segdata,'y')
             newsegdata.y = segdata.y;
+        end
+        
+        if isfield(segdata,'rawy')
+            newsegdata.rawy = segdata.rawy;
         end
         
         if isfield(segdata,'birdid')

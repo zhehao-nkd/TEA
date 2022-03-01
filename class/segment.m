@@ -1,24 +1,21 @@
 % a collection of segment functions
 
-
+% I will have to rewrite segment function to a much broader one which can
+% use either eleinf,autoseg, simpelseg algorithms
 classdef segment < handle
     
     properties
         y
         fs
     end
-    
-    
-    
-    
+
     methods
         
         function s = segment(y,fs) % constructor function
             s.y = y;
             s.fs = fs;
         end
-        
-        
+
         function fragment = seg1(s) % function for segmenting the sound
             
             measurey = abs(s.y);
@@ -51,8 +48,7 @@ classdef segment < handle
             
             
         end
-        
-        
+      
         function fragment = seg2(s)
             
             
@@ -223,7 +219,7 @@ classdef segment < handle
 %             thres = 0.00056;
 %             env =  medfilt1(abs(s.y),700,'truncate');
             
-            mingap = 0.0000;
+            mingap = 0.0001;
             thres = 0.00056;
             env =  medfilt1(abs(s.y),750,'truncate');
             env(env<=thres)= 0;
@@ -246,10 +242,26 @@ classdef segment < handle
                     initials(n+1) = NaN;
                 end
             end
+
+            initials (isnan(initials)) = [];
+            ends (isnan(ends)) = [];
+            
+            
+            % Remove small segments
+            minseg = 0.005; % larger than 5 miliseconds
+            
+            for n = 1:length(ends)
+                if ends(n)-initials(n)< minseg*s.fs
+                    ends(n)= NaN;
+                    initials(n) = NaN;
+                end
+            end
             
             initials (isnan(initials)) = [];
             ends (isnan(ends)) = [];
             
+            
+            % asemble calculated initials and ends back to struct frag
             for idx = 1: length(initials)
                 frag(idx).initial = initials(idx);
                 frag(idx).terminal = ends(idx);

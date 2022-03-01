@@ -22,23 +22,39 @@ classdef convert
         function newid = bid(rawid) % used for normalize the bird id to B345-like str
             
             captured = regexp(rawid,'(?<letter>[a-zA-Z]+)(?<number>\d+)','names');
+            special_characters  = regexp(rawid,'(?<letter>TUT|BOS|Tut|Bos)','names');
+            if length(special_characters)~= 0
+                disp('It is a TUT or BOS!');
+                temp = convertStringsToChars(captured.letter); 
+                newletter = upper(temp(1));
+                newid = strcat(newletter,captured.number,special_characters.letter);
+                return
+            end
             % 3 to 6 letter, red to orange{3,6}
             if length(captured) ~= 1
-                warning('%s may not be correctly converted!',rawid);
-                newid = rawid;
-                return
+                captured2 = regexp(rawid,'(?<letter>Fcall|Mcall|WNS|Het)','names');
+                
+                if length(captured2) == 1
+                    fprintf('hey! current id is a %s',captured2.letter);
+                    newid = captured2.letter;
+                    return
+                else
+                    warning('%s may not be correctly converted!',rawid);
+                    newid = rawid;
+                    return
+                end
             end
            
             temp = convertStringsToChars(captured.letter);
             
             newletter = upper(temp(1));
-            newid = [newletter,captured.number];
+            newid = strcat(newletter,captured.number);
                     
         end
             
         function two2one(dir) % convert 2 channel to 1 channel wav
             [~,rawdir,~] = fileparts(dir);
-            outdir = sprintf('1channel_%s',rawdir);
+            outdir = sprintf('SingleChannel_%s',rawdir);
             mkdir(outdir);
             
             files = extract.filename(dir,'*.wav');
@@ -49,6 +65,47 @@ classdef convert
                 newfilepath = sprintf('%s/%s%s',outdir,name,ext);
                 audiowrite(newfilepath,ys,fs);
             end
+        end
+        
+        function two2oneAllLevel(dir) % convert 2 channel to 1 channel wav, no matter how many levels of folders there are
+            dbstop if error
+            f = waitbar(0,'Please wait...');
+            
+            % generat the new parent dir
+            [~,old,~] = fileparts(dir);
+            new = sprintf('SingleChannel_%s',old);
+            
+            %  create the folders
+            allfolders = extract.foldersAllLevel(dir);
+            for k = 1: length(allfolders)
+                New_allfolders{k} = replace(allfolders{k},old,new);
+                mkdir(New_allfolders{k});
+                waitbar(k/length(allfolders),f,'Creating folders...');
+            end
+            
+            % re write the files
+            waitbar(0,f,'Rewriting files...');
+            
+            allfiles = extract.filesAllLevel(dir,'*.wav');
+            
+            for k = 1: length(allfiles)
+                New_allfiles{k} = replace(allfiles{k},old,new);
+                [y,fs] = audioread(allfiles{k});
+                ys = y(:,2); % y-signal
+                audiowrite(New_allfiles{k},ys,fs);
+                waitbar(k/length(allfiles),f,'Creating folders...');
+            end
+            
+            close(f);
+            
+        end
+          
+        function new_sptimes = sptimesOnset2Zero(sptimes, onset_time)
+            % convert the onset of sptimes to zeros
+            for k = 1: length(sptimes)
+                new_sptimes{k} = sptimes{k} - onset_time;
+            end
+            
         end
         
         function rename(dirpath,ext,old,new)

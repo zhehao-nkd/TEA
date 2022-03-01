@@ -2,6 +2,8 @@ function unique_eleinf = addcategoinfo(mergedeleinf)
 
 songs = unique({mergedeleinf.songname}.');
 
+% this section split the whole eleinf to separated ones for each unique
+% songname
 for omega = 1: length(songs)
     
     this_ids = find( strcmp({mergedeleinf.songname}.',songs{omega}));

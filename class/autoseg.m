@@ -5,7 +5,7 @@ classdef autoseg
     properties
         dirpath
         names
-        
+        config
     end
     
     methods
@@ -22,7 +22,7 @@ classdef autoseg
             
         end
         
-        function autoSegmenter(a)
+        function Deprecated_autoSegmenter(a)
             tic;
             % plot the mean and sd
             dbstop if error
@@ -57,9 +57,103 @@ classdef autoseg
             
             toc;
             
+        end  %Deprecated
+        
+        function standard(a,num_of_bouts ) % 此乃标准算法
+            % if no num_of_bouts,then just no such restrictions
+            dbstop if error    
+            input_folder = a.dirpath;
+            names = a.names;
+            files = extract.filename(input_folder,'*.wav');
+            outdirname = 'SegData';% to create outdir
+            outdir = sprintf('%s\\%s',input_folder,outdirname);
+            mkdir(outdir);
+            
+            if exist('num_of_bouts','var') % Case-1 只有需要限制bout数量的时候才需要把所有的wav拼接在一起
+                
+                y = {};
+                for h = 1: length(files)
+                    [y{h},fs] = audioread(files{h}); % concatenate all y
+                end
+                sumy = vertcat(y{:});
+                
+                %通过低精度的分割找到大概有多少个bout，从而 restrict bout
+                fiy = highpass(sumy, 500, 32000);
+                img = cal.spec(fiy,32000);
+                proI = smooth(mean(img),960); % preocessed I
+                used_for_seg = proI;
+                seg_threshold = 0.06;
+                used_for_seg(used_for_seg > seg_threshold) = 1;
+                used_for_seg(used_for_seg <= seg_threshold) = 0;
+                curve_diff = diff(used_for_seg);
+                test_initials = find(curve_diff == 1) + 1;
+                test_terminals = find(curve_diff == -1);
+                
+                temp = split(input_folder,'\');
+                birdid = sprintf('OTE-%s',temp{length(temp)}); % OTE means songs never played as CONs
+                
+                if num_of_bouts > length(test_terminals)
+                    end_terminal = test_terminals(end)
+                else
+                    end_terminal = test_terminals(num_of_bouts);  % end_terminal is the terminal of the 10th bouts
+                end
+                
+                y_to_analyze = (end_terminal/1000 + 0.1)*fs; % 0.1 is the compensation
+                
+                a.standard_config('remove short elements'); % set configurtation
+                [rawy,~,I,syledge,eleedge] = autoseg.main(sumy(1:y_to_analyze),fs,birdid,a.config); %%% for default,a.config can be removed
+                
+                % 组装计算的量到最终的数据结构中
+                segdata.rawy = rawy;  % this might be useful
+                segdata.fs = fs;
+                segdata.I = I;
+                segdata.syledge = syledge;
+                segdata.eleedge = eleedge;
+                segdata.birdid = birdid;
+                %segdata.sumy = y_to_analyze;
+                save(sprintf('%s\\%s-segdata.mat',outdir,segdata.birdid),'segdata');
+            
+                
+                
+            else  %如果不需要restrict bout的数量
+                
+                for idx = 1: length(names)
+                    
+                    if ~isempty(regexp(names{idx},'WNS', 'once'))  % if the name contain the 'WNS'
+                        wavpath = names{idx};
+                        [y,fs] = audioread(wavpath);
+                        [~,birdid,~] = fileparts(wavpath);
+                        [~,~,I,syledge,eleedge] = autoseg.main(y,fs,birdid);
+                        segdata.rawy = y;  % this might be useful
+                        segdata.fs = fs;
+                        segdata.I = I;
+                        segdata.syledge = syledge;
+                        segdata.eleedge = eleedge;
+                        segdata.birdid = birdid;
+                        save(sprintf('%s\\%s-segdata.mat',outdir,segdata.birdid),'segdata');
+                        continue
+                    end
+                    
+                    wavpath = names{idx};
+                    [y,fs] = audioread(wavpath);
+                    [~,birdid,~] = fileparts(wavpath);
+                    [rawy,~,I,syledge,eleedge] = autoseg.main(y,fs,birdid);
+                    segdata.rawy = rawy;  % this might be useful
+                    segdata.fs = fs;
+                    segdata.I = I;
+                    segdata.syledge = syledge;
+                    segdata.eleedge = eleedge;
+                    segdata.birdid = birdid;
+                    save(sprintf('%s\\%s-segdata.mat',outdir,segdata.birdid),'segdata');
+                end
+               
+            end
+            
+       
+             
         end
         
-        function eleinf = singleSegmenter(a)
+        function eleinf = Deprecated_singleSegmenter(a)
             
             dirpath = a.dirpath;
             names = a.names;
@@ -99,62 +193,126 @@ classdef autoseg
             
             toc;
             
-        end
+        end  %Deprecated
         
-        function autosegmenter_restrict_bout(a,num_of_bouts)
+        function eleinf = Deprecated_singleSegmenterSyl(a)
+            
+            dirpath = a.dirpath;
+            names = a.names;
+            
+            tic;
+            % plot the mean and sd
+            dbstop if error
+            
+            names = extract.filename(dirpath,'*.wav')
+            outdirname = 'SegData';
+            outdir = sprintf('%s\\%s',dirpath,outdirname);
+            mkdir(outdir);
+            
+            segdata = struct;
+            for idx = 1: length(names)
+                
+                if ~isempty(regexp(names{idx},'WNS', 'once'))  % if the name contain the 'WNS'
+                    continue
+                end
+                
+                wavpath = names{idx};
+                [y,fs] = audioread(wavpath);
+                [~,birdid,~] = fileparts(wavpath);
+                [rawy,~,I,syledge,eleedge] = autoseg.main(y,fs,birdid);
+                segdata.rawy = rawy;  % this might be useful
+                segdata.I = I;
+                segdata.syledge = syledge;
+                segdata.eleedge = eleedge;
+                segdata.birdid = birdid;
+                
+                ele{idx}  = autoseg.seg2syl(segdata); % %%% Here is the difference between singleSegmenter and singleSegmenterSyl
+                
+            end
+            
+            eleinf = horzcat(ele{:});
+            
+            
+            toc;
+            
+        end  %Deprecated
+        
+        function Deprecated_intoElements(a,num_of_bouts)
             
             
             dbstop if error
-            
-            
             input_folder = a.dirpath;
             names = a.names;
-            
-            
             files = extract.filename(input_folder,'*.wav');
-            
             % to create outdir
             outdirname = 'SegData';
             outdir = sprintf('%s\\%s',input_folder,outdirname);
             mkdir(outdir);
             
-            
-            y = {};
-            for h = 1: length(files)
-                [y{h},fs] = audioread(files{h}); % concatenate all y
+            if exist('num_of_bouts','var') % Case-1 只有需要限制bout数量的时候才需要把所有的wav拼接在一起
+                
+                y = {};
+                for h = 1: length(files)
+                    [y{h},fs] = audioread(files{h}); % concatenate all y
+                end
+                sumy = vertcat(y{:});
+                
+                % process sumy to get feature for segmentation
+                fiy = highpass(sumy, 500, 32000);
+                img = cal.spec(fiy,32000);
+                proI = smooth(mean(img),960); % preocessed I
+                % figure; plot(proI);
+
+                % Unprecise segmentation to restrict bout
+                used_for_seg = proI;
+                seg_threshold = 0.06;
+                used_for_seg(used_for_seg > seg_threshold) = 1;
+                used_for_seg(used_for_seg <= seg_threshold) = 0;
+                curve_diff = diff(used_for_seg);
+                test_initials = find(curve_diff == 1) + 1;
+                test_terminals = find(curve_diff == -1);
+                
+                if exist( 'num_of_bouts','var')
+                    if num_of_bouts > length(test_terminals)
+                        end_terminal = test_terminals(end);
+                    else
+                        end_terminal = test_terminals(num_of_bouts);  % end_terminal is the terminal of the 10th bouts
+                    end
+                else
+                    end_terminal = test_terminals(end);
+                end
+                
+                y_to_analyze = (end_terminal/1000 + 0.1)*fs; % 0.1 is the compensation
+                
+                temp = split(input_folder,'\');
+                birdid = sprintf('OTE-%s',temp{length(temp)}); % OTE means songs never played as CONs
+                [rawy,~,I,syledge,eleedge] = autoseg.main(sumy(1:y_to_analyze),fs,birdid);
+                
+            else  %如果不需要restrict bout的数量
+                
+                
+                for idx = 1: length(names)
+                    
+                    if ~isempty(regexp(names{idx},'WNS', 'once'))  % if the name contain the 'WNS'
+                        continue
+                    end
+                    
+                    wavpath = names{idx};
+                    [y,fs] = audioread(wavpath);
+                    [~,birdid,~] = fileparts(wavpath);
+                    [rawy,~,I,syledge,eleedge] = autoseg.main(y,fs,birdid);
+                    segdata.rawy = rawy;  % this might be useful
+                    segdata.I = I;
+                    segdata.syledge = syledge;
+                    segdata.eleedge = eleedge;
+                    segdata.birdid = birdid;
+                    
+                    save(sprintf('%s\\%s-segdata.mat',outdir,segdata.birdid),'segdata');
+                    
+                end
             end
-            sumy = vertcat(y{:});
-            
-            % process sumy to get feature for segmentation
-            fiy = highpass(sumy, 500, 32000);
-            img = cal.spec(fiy,32000);
-            proI = smooth(mean(img),960); % preocessed I
-            % figure; plot(proI);
-            
-            
-            
-            
-            % FIND INTERSECTIONS    <@> One way
-            used_for_seg = proI;
-            seg_threshold = 0.06;
-            % <@> Anothere way
-            used_for_seg(used_for_seg > seg_threshold) = 1;
-            used_for_seg(used_for_seg <= seg_threshold) = 0;
-            curve_diff = diff(used_for_seg);
-            test_initials = find(curve_diff == 1) + 1;
-            test_terminals = find(curve_diff == -1);
-            
-            if num_of_bouts > length(test_terminals)
-                end_terminal = test_terminals(end)
-            else
-                end_terminal = test_terminals(num_of_bouts);  % end_terminal is the terminal of the 10th bouts
-            end
-            
-            y_to_analyze = (end_terminal/1000 + 0.1)*fs; % 0.1 is the compensation
-            
-            temp = split(input_folder,'\');
-            birdid = sprintf('OTE-%s',temp{length(temp)}); % OTE means songs never played as CONs
-            [rawy,~,I,syledge,eleedge] = autoseg.main(sumy(1:y_to_analyze),fs,birdid);
+                
+                
             segdata.rawy = rawy;  % this might be useful
             segdata.fs = fs;
             segdata.I = I;
@@ -169,88 +327,92 @@ classdef autoseg
             
         end
         
-        function intoSyllables(a)
-            
-             dbstop if error
-            
-            
-            input_folder = a.dirpath;
-            names = a.names;
-            
-            
-            files = extract.filename(input_folder,'*.wav');
-            
-            % to create outdir
-            outdirname = 'SylData';
-            outdir = sprintf('%s\\%s',input_folder,outdirname);
-            mkdir(outdir);
-            
-            
-            y = {};
-            for h = 1: length(files)
-                [y{h},fs] = audioread(files{h}); % concatenate all y
+        function standard_config(a,name) % no output, this function is to update autoseg.config
+            % input can be a string , that string represent a config group
+            % finally send config into the main function
+            switch name
+                
+                case 'normal' % normnal is the threshold I used previously to balance segmentation of syllables and elements
+                    a.config.filterlow = 900;
+                    a.config.filterhigh = 6000;
+                    a.config.envy_smoothnum = 150;
+                    a.config.bIthres = 0.25;
+                    a.config.strict_bIthres = 0.45;
+                    a.config.smooth_thres = 12;
+                    a.config.syllable_thres = 0.10;
+                    a.config.large_locs_MinPeakHeight = 0.25;
+                    a.config.too_short_seglen = 20;
+                    a.config.gap_too_short_thres = 5;
+                    a.config.min_sim = 0.8;
+                    a.config.e_max_MinPeakProminence = 0.08;
+                    a.config.minus_e_max_MinPeakProminence = 0.05;
+                    a.config.minus_e_max_MinPeakHeight = -0.7;
+                    a.config.flip_emax_MinPeakProminence = 0.08;
+                    a.config.minus_flip_emax_MinPeakProminence = 0.05;
+                    a.config.minus_flip_emax_MinPeakHeight = -0.7;
+                    a.config.diffy_threshold = 0.32;
+                    a.config.tpoint_x_thres = 30;
+                    a.config.max_pre_pks_end = 0.28;
+                    a.config.tpoint_x_close_to_initial = 18;
+                    a.config.flip_diffy_threshold = 0.33;
+                    a.config.max_flip_pre_pks = 0.38;
+                    a.config.too_close_to_end_flip_tpoint_x = 18;
+                    a.config.ele_time_judge = 28;
+                    
+                case 'remove short elements'
+%                     a.config.filterlow = 900;
+%                     a.config.filterhigh = 6000;
+%                     a.config.envy_smoothnum = 150;
+%                     a.config.bIthres = 0.25;
+%                     a.config.strict_bIthres = 0.45;
+%                     a.config.smooth_thres = 12;
+%                     a.config.syllable_thres = 0.10;
+%                     a.config.large_locs_MinPeakHeight = 0.25;
+%                     a.config.too_short_seglen = 20;
+%                     a.config.gap_too_short_thres = 5;
+%                     a.config.min_sim = 0.8;
+%                     a.config.e_max_MinPeakProminence = 0.08;
+%                     a.config.minus_e_max_MinPeakProminence = 0.05;
+%                     a.config.minus_e_max_MinPeakHeight = -0.7;
+%                     a.config.flip_emax_MinPeakProminence = 0.08;
+%                     a.config.minus_flip_emax_MinPeakProminence = 0.05;
+%                     a.config.minus_flip_emax_MinPeakHeight = -0.7;
+%                     a.config.diffy_threshold = 0.32;
+%                     a.config.tpoint_x_thres = 30;
+%                     a.config.max_pre_pks_end = 0.28;
+%                     a.config.tpoint_x_close_to_initial = 18;
+%                     a.config.flip_diffy_threshold = 0.33;
+%                     a.config.max_flip_pre_pks = 0.38;
+%                     a.config.too_close_to_end_flip_tpoint_x = 18;
+                    a.config.ele_time_judge = 35;
+                    
+                
             end
-            sumy = vertcat(y{:});
-            
-            % process sumy to get feature for segmentation
-            fiy = highpass(sumy, 500, 32000);
-            img = cal.spec(fiy,32000);
-            proI = smooth(mean(img),960); % preocessed I
-            % figure; plot(proI);
-            
-            
-            
-            
-            % FIND INTERSECTIONS    <@> One way
-            used_for_seg = proI;
-            seg_threshold = 0.06;
-            % <@> Anothere way
-            used_for_seg(used_for_seg > seg_threshold) = 1;
-            used_for_seg(used_for_seg <= seg_threshold) = 0;
-            curve_diff = diff(used_for_seg);
-            test_initials = find(curve_diff == 1) + 1;
-            test_terminals = find(curve_diff == -1);
-            
-            if num_of_bouts > length(test_terminals)
-                end_terminal = test_terminals(end)
-            else
-                end_terminal = test_terminals(num_of_bouts);  % end_terminal is the terminal of the 10th bouts
-            end
-            
-            y_to_analyze = (end_terminal/1000 + 0.1)*fs; % 0.1 is the compensation
-            
-            temp = split(input_folder,'\');
-            birdid = sprintf('OTE-%s',temp{length(temp)}); % OTE means songs never played as CONs
-            [rawy,~,I,syledge,eleedge] = autoseg.main(sumy(1:y_to_analyze),fs,birdid);
-            segdata.rawy = rawy;  % this might be useful
-            segdata.fs = fs;
-            segdata.I = I;
-            segdata.syledge = syledge;
-            %segdata.eleedge = eleedge;
-            segdata.birdid = birdid;
-            %segdata.sumy = y_to_analyze;
-            
-            save(sprintf('%s\\%s-syldata.mat',outdir,segdata.birdid),'syldata');
-            
-            
-            
-            
-            
         end
+        
         
     end
     
     methods(Static)
         
-        function [rawy,fiy,I,syledge,eleedge] = main(fiy,fs,birdid) % this the main function of autoseg
+        % 想办法写一个可以更新threshold（configuration)的main function！！！！！！！！！！！！
+        
+        function [rawy,fiy,I,syledge,eleedge] = main(inputy,fs,birdid,CONFIG) % this the main function of autoseg
             
-            rawy = fiy;
-            fiy = bandpass(fiy,[900 6000],fs); % preiously 5000
+            rawy = inputy;
+            fiy = bandpass(inputy,[900 6000],fs); % preiously 5000
             
-            envy = rescale(smooth(abs(fiy),150)); % amplitide envelope of y
+            envy = rescale(smooth(abs(fiy),150)); % amplitude envelope of y
             %powery = downsample(fiy.^2/length(fiy),fs/1000);
             %downy = downsample(abs(fiy),fs/1000);
             I = cal.spec(fiy,fs); % I is the image of the whole song
+            
+            % if the input stimuli is white noise
+            if regexp(birdid,'WNS|wns|Wns')
+                eleedge = [];
+                syledge = [0,size(I,2)];
+                return
+            end
             
             % @#%$%*() This is very dangerous step to rescale the I
             
@@ -374,7 +536,7 @@ classdef autoseg
             % figure; imagesc(img_sim); % plotting
             img_sim_tri = triu(img_sim,1); % triangular
             for c = 1:length(img_sim)
-                group{c} = find(img_sim(c,:)>0.8)
+                group{c} = find(img_sim(c,:)>min_sim)
             end
             
             %<solution-2>
@@ -537,7 +699,11 @@ classdef autoseg
                     % remove some of the all_X if the distance between them are too short
                     ele_time_judge = [1,all_X(:).',length(e_max)];
                     
-                    short_ele = find(diff(ele_time_judge) < 28); % originallly set to 15
+                    if exist( 'CONFIG','var')
+                        short_ele = find(diff(ele_time_judge) < CONFIG.ele_time_judge);
+                    else
+                        short_ele = find(diff(ele_time_judge) < 28); % originallly set to 15
+                    end
                     
                     
                     for yy = 1: length(short_ele)
@@ -585,7 +751,9 @@ classdef autoseg
             tp_sum = vertcat(element_tp{:}); % sum tps from all elements together
             
             % @_@_@_@_@_@_@
-            autoseg.drawfinalfig(I,edges,tp_sum,birdid); % plot the final result
+            if exist('birdid','var')
+                autoseg.drawfinalfig(I,edges,tp_sum,birdid); % plot the final result
+            end
             
             
             % assign syllable edges and also element edges
@@ -596,7 +764,6 @@ classdef autoseg
             disp('长风几万里，吹度玉门关')
             
         end
-        
         
         function drawsylfig(I,meanbI,stdbI,sumbI,Imax,maxloc,syllable_threshold)
             
@@ -740,7 +907,6 @@ classdef autoseg
             
         end
         
-        
         function drawfinalfig(I,edges,tp_sum,birdid)
             
             % plot the final result
@@ -764,12 +930,14 @@ classdef autoseg
             
             title(sprintf('%s.png',birdid));
             
+            figdir = 'Segmentation_of_CON_senatus';
+            mkdir(figdir);
             
-            if exist(sprintf('FinalResult-%s.png',birdid),'file')
-                delete(sprintf('FinalResult-%s.png',birdid));
+            if exist(sprintf('%s\\FinalResult-%s.png',figdir,birdid),'file')
+                delete(sprintf('%s\\FinalResult-%s.png',figdir,birdid));
             end
             
-            saveas(f2,sprintf('FinalResult-%s.png',birdid));
+            saveas(f2,sprintf('%s\\FinalResult-%s.png',figdir,birdid));
             
         end
         
@@ -808,7 +976,99 @@ classdef autoseg
             
         end
         
-
+        function eleinf = seg2ele(segdata)
+            
+            all_collect = {};
+            song_collect = {};
+            
+            
+            two_eleedge = repmat(segdata.eleedge,[2,1]);
+            alledges = sort( vertcat(segdata.syledge(:),reshape(two_eleedge,[],1) ));
+            
+            % the following is a very bad temporily code
+            if ~isfield(segdata,'fs') % if there is no such field named fs
+                fs = 32000;
+            else
+                fs = segdata.fs;
+            end
+            
+            initials = alledges(1:2:end);
+            terminals = alledges(2:2:end);
+            
+            song_eleinf = struct;
+            
+            for w = 1: length(initials) % can add a par-for
+                song_eleinf(w).initial = initials(w)*fs/1000;
+                song_eleinf(w).terminal = terminals(w)*fs/1000;
+                song_eleinf(w).songname = segdata.birdid;
+                
+                if isfield(segdata,'y')
+                    song_eleinf(w).y = segdata.y(initials(w)*fs/1000:terminals(w)*fs/1000);  % very bad code, but meibanfa
+                elseif isfield(segdata,'rawy')
+                    song_eleinf(w).y = segdata.rawy(initials(w)*fs/1000:terminals(w)*fs/1000);
+                end
+                
+                 fiy = highpass(song_eleinf(w).y, 500, 32000);
+                 I = cal.spec(fiy,fs); 
+                 song_eleinf(w).fragI = imresize(I,[257,50]);
+                
+                song_eleinf(w).fs = fs;
+            end
+            
+            parfor f = 1:length(song_eleinf)
+                song_eleinf(f).fragid = f;
+            end
+            
+            eleinf = song_eleinf;
+            
+        end
+        
+        function eleinf = seg2syl(segdata)
+            
+            all_collect = {};
+            song_collect = {};
+            
+           
+            alledges = sort( vertcat(segdata.syledge(:)));
+            
+            % the following is a very bad temporily code
+            if ~isfield(segdata,'fs') % if there is no such field named fs
+                fs = 32000;
+            else
+                fs = segdata.fs;
+            end
+            
+            initials = alledges(1:2:end);
+            terminals = alledges(2:2:end);
+            
+            song_eleinf = struct;
+            
+            for w = 1: length(initials) % can add a par-for
+                song_eleinf(w).initial = initials(w)*fs/1000;
+                song_eleinf(w).terminal = terminals(w)*fs/1000;
+                song_eleinf(w).songname = segdata.birdid;
+                
+                if isfield(segdata,'y')
+                    song_eleinf(w).y = segdata.y(initials(w)*fs/1000:terminals(w)*fs/1000);  % very bad code, but meibanfa
+                elseif isfield(segdata,'rawy')
+                    song_eleinf(w).y = segdata.rawy(initials(w)*fs/1000:terminals(w)*fs/1000);
+                end
+                
+                 fiy = highpass(song_eleinf(w).y, 500, 32000);
+                 I = cal.spec(fiy,fs); 
+                 song_eleinf(w).fragI = imresize(I,[257,50]);
+                
+                song_eleinf(w).fs = fs;
+            end
+            
+            parfor f = 1:length(song_eleinf)
+                song_eleinf(f).fragid = f;
+            end
+            
+            eleinf = song_eleinf;
+            
+        end
+        
     end
 end
 

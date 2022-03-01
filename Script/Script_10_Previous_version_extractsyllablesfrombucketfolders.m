@@ -4,10 +4,10 @@ tic;
 dbstop if error
 %folders = getFolders('/Volumes/bucket/Yazaki-SugiyamaU/Bird-song');
 %folders =  getFolders('/Users/Chengzh/Dropbox (OIST)/ForIdentifyingSongs');
-pathlist = 'BirdListMatlab.xlsx';
-pathlog = 'BirdlogMatlab.xlsx';
-load('ISOCELL.mat');
-%ISOCELL = extractIso(pathlog, pathlist);
+pathlist = 'C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA\Input\BirdListMatlab.xlsx';
+pathlog = 'C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA\Input\BirdlogMatlab.xlsx';
+%load('ISOCELL.mat');
+ISOCELL = extractIso(pathlog, pathlist);
 
 
 folders = extract.folder('Y:\Yazaki-SugiyamaU\Bird-song');

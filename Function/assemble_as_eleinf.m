@@ -1,6 +1,7 @@
 
-function all_eleinf = assemble_as_eleinf(subdirs,id_thres)  % 遍历 all the subdirs
+function all_eleinf = assemble_as_eleinf(subdirs,id_thres,matFolder)  % 遍历 all the subdirs
 
+% This function can be applied to both syldata or eledata
 all_collect = {};
 
 to_delete = [];
@@ -17,19 +18,24 @@ end
 
 subdirs(to_delete) = []; % delete those does not match the id threshold
 
-parfor r = 1:length(subdirs)
+for r = 1:length(subdirs)  % par-for can be used here
    
-    matfiles = extract.filename(sprintf('%s\\SegData',subdirs{r}),'*.mat');
+    matfiles = extract.filename(sprintf('%s\\%s',subdirs{r},matFolder),'*.mat'); % matFolder is the folder containing segdata.mat,
+    % which can be SegData or SylData or EleData
     
     song_collect = {};
     
     for m = 1: length(matfiles)
+        
         loaded = load(matfiles{m});
-        two_eleedge = repmat(loaded.segdata.eleedge,[2,1]);
-        alledges = sort( vertcat(loaded.segdata.syledge(:),reshape(two_eleedge,[],1) ));
         
-    
-        
+        if exist('loaded.segdata.eleedge','var')
+            two_eleedge = repmat(loaded.segdata.eleedge,[2,1]);
+            alledges = sort( vertcat(loaded.segdata.syledge(:),reshape(two_eleedge,[],1) ));
+        else
+            alledges = sort( vertcat(loaded.segdata.syledge(:)));
+        end
+   
          % the following is a very bad temporily code
          if ~isfield(loaded.segdata,'fs') % if there is no such field named fs
              fs = 32000;
