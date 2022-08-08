@@ -13,12 +13,20 @@ classdef Batch < handle
         splx
         swavfolder
         nlist  % to show the list of neuron name
+        
     end
     
     methods
         
-        function b = Batch(varargin)
-            b.input = varargin;
+        function b = Batch(path_txt,path_plx,path_folder)
+            
+            if nargin== 0
+                return
+            end
+            
+            b.path.path_txt = path_txt;
+            b.path.path_plx = path_plx;
+            b.path.path_folder = path_folder;
             b.split;
             b.nlist = b.nlist';
         end
@@ -34,14 +42,6 @@ classdef Batch < handle
         
         function b = split(b) % split a recording file to neurons with different channel and unit names
             
-            if length(b.input) == 1 % the path of the csv folder
-                b.path = table2struct(readtable(b.input{1}{1}));
-            elseif length(b.input) == 3
-                b.path.path_txt = b.input{1};
-                b.path.path_plx = b.input{2};
-                b.path.path_folder = b.input{3};
-            end
-            
             idx = 0;
             for k = 1:size(b.path,1)
                 spikes = Spike.split(b.path(k).path_txt); % in this step, the unsorted spikes has been removed
@@ -50,7 +50,11 @@ classdef Batch < handle
                     b.neu{idx} = spikes{m};
                     b.plx{idx} = b.path(k).path_plx;
                     b.wavfolder{idx} = b.path(k).path_folder;
-                    [~,plxname,~] = fileparts(b.plx{idx});
+                    if isa(b.plx{idx},'Trigger')
+                        [~,plxname,~] = fileparts(b.plx{idx}.inputpath);
+                    elseif isa(b.plx{idx},'string')||isa(b.plx{idx},'char')
+                        [~,plxname,~] = fileparts(b.plx{idx});
+                    end
                     channelname = unique(b.neu{idx}.channelname);
                     channelname = channelname{1};
                     unitname = unique(b.neu{idx}.unit);
@@ -60,10 +64,6 @@ classdef Batch < handle
                 end
             end
         end
-        
-%         function b = add_same_channel_spikes(b) % For each neuron object from the bacth, write same_channel_spikes info into it
-%             
-%         end
         
         function avgn(b) % write avgn mat files
             dbstop if error
@@ -96,20 +96,33 @@ classdef Batch < handle
                 b.swavfolder = b.wavfolder(idx);
             end
         end
-        
-        function neurons = getn(b,mergeIdx) % initiatialize neurons
-            
-            if exist('mergeIdx','var')
-                for idx = 1: length(b.sneu)
-                    neurons{idx} = Neuron(b.sneu{idx},b.splx{idx},b.swavfolder{idx},mergeIdx);
-                end
-            else
-                for idx = 1: length(b.sneu)
-                    neurons{idx} = Neuron(b.sneu{idx},b.splx{idx},b.swavfolder{idx});
-                end
+
+        function neurons = getn_shift(b,shift_value)
+           
+            for idx = 1: length(b.sneu) % heer should be parfor , i edited here just tio chelc the bug
+                NN = Neuron;
+                neurons{idx} = NN.shiftNeuron(b.sneu{idx},b.splx{idx},b.swavfolder{idx},shift_value);
             end
             
-            for w = 1: length(neurons) % for each neuron, write the same_channel_spikes info
+            parfor w = 1: length(neurons) % for each neuron, write the same_channel_spikes info
+                
+                
+                same_channel_spikes = Spike.extract_specific_channel(b.path.path_txt,neurons{w}.channelname);
+                neurons{w}.sameChannelSpikes = same_channel_spikes;
+                
+            end
+             
+        end
+        
+        function neurons = getn(b) % initiatialize neurons
+            
+            for idx = 1: length(b.sneu) % Here should be parfor
+                neurons{idx} = Neuron(b.sneu{idx},b.splx{idx},b.swavfolder{idx});
+                
+            end
+
+            
+            parfor w = 1: length(neurons) % for each neuron, write the same_channel_spikes info
                 
                 
                same_channel_spikes = Spike.extract_specific_channel(b.path.path_txt,neurons{w}.channelname);
@@ -126,8 +139,6 @@ classdef Batch < handle
         end
         
         function three(b)
-            
-            
             for idx = 1: length(b.neu)
                 b.select(idx);
                 neurons = b.getn;
@@ -150,10 +161,43 @@ classdef Batch < handle
             end
         end
         
+        function simuThree(b)
+            
+            IMG = {};
+            
+            neuronlist = b.getn;
+            
+            for k = 1:length(neuronlist)
+                IMG{k} = neuronlist{k}.OneRowThree;
+            end
+            
+            final_IMG = vertcat(IMG{:});
+            [~,plxname,~] = fileparts(b.input{2});
+            imwrite(final_IMG,sprintf('Three_%s.png',plxname));
+        end
         
     end
     
-   
+   methods(Static)
+       
+       function neuronlist = pipline(path_txt,path_plx,path_folder)
+           addpath(genpath("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA"))
+           b = Batch(path_txt,path_plx,path_folder);
+           b.select;
+           neuronlist = b.getn;
+           
+           for k = 1: length(neuronlist)
+               thisn = neuronlist{k};
+               
+              % A = Analysis(thisn);
+               %save(thisn.neuronname,'A','-v7.3');
+               %thisn.three;
+               thisn.rawthree;
+               %thisn.ResponseBasedOrderedThreePlots;
+           end
+       end
+
+   end
 end
 
 

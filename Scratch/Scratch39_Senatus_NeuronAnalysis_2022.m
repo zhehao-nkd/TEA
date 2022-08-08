@@ -43,6 +43,33 @@ path_txt = "E:\2022Recordings\R693@02220224\Test1_R693_Degs_2d5s_sub.txt";
 path_plx = "E:\2022Recordings\R693@02220224\Test1_R693_Degs_2d5s_sub.plx";
 path_folder = "Z:\Yazaki-SugiyamaU\Zhehao\My_Stimuli\R693@02232022\Test1-R693-Degs-2d5s";
 
+
+% Test2 Cons
+path_txt = "E:\2022Recordings\R693@02220224\Test2_R693_Cons_2d5s.txt";
+path_plx = "E:\2022Recordings\R693@02220224\Test2_R693_Cons_2d5s_sub.plx";
+path_folder = "Z:\Yazaki-SugiyamaU\Zhehao\My_Stimuli\R693@02232022\R693-1-Cons-2d5s";
+
+% Test2 Degs "E:\2022Recordings\R693@02220224\Test2_Degs_B521_2d5s_sub.plx"
+
+path_txt = "E:\2022Recordings\R693@02220224\Test2_Degs_B521_2d5s_sub.txt";
+path_plx = "E:\2022Recordings\R693@02220224\Test2_Degs_B521_2d5s_sub.plx";
+path_folder = "Z:\Yazaki-SugiyamaU\Zhehao\My_Stimuli\R693@02232022\Test2-Degs-B521-2d5s";
+
+
+% Test2 Details "E:\2022Recordings\R693@02220224\Test2_Details_B521_frag13_2d5s.txt"
+
+path_txt = "E:\2022Recordings\R693@02220224\Test2_Details_B521_frag13_2d5s.txt";
+path_plx = "E:\2022Recordings\R693@02220224\Test2_Details_B521_frag13_2d5s_sub.plx";
+path_folder = "C:\Users\Zhehao\Music\Test2-Details-B521-frag13-2d5s";
+
+
+% ripple
+
+
+path_txt = "C:\Users\Zhehao\Pictures\Test2_Ripples_1s.txt";
+path_plx = "C:\Users\Zhehao\Pictures\Test2_Ripples_1s_sub.plx";
+path_folder = "C:\Users\Zhehao\Downloads\rippletoolbox-master\rippletoolbox-master\Test2-Ripples-1s";
+
 % addpath genpath
 addpath(genpath("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA"))
 % 核心分析代码

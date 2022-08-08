@@ -19,7 +19,9 @@ classdef getInf < handle
             
         end
         
-        function  moveFromBucket(bf, singleFolder) % singleFolder is the path of a single folder in bucket server
+        function  moveFromBucket(bf, singleFolder) 
+            % To extract several song files from a target folder
+            % singleFolder is the path of a single folder in bucket server
             
             rawfiles = extract.filename(singleFolder,'*.wav');
             rawfiles = rawfiles(randperm(length(rawfiles))); % shuffling the order of the sound files
@@ -35,7 +37,7 @@ classdef getInf < handle
             while length(ids) < num_f2c
                 
                 iteration = iteration + 1;
-                disp('六道轮回')
+                disp('iteration update')
                 
                 if length(rawfiles) > 100* iteration
                     a = 1 + (iteration-1)* 100;
@@ -208,6 +210,52 @@ classdef getInf < handle
     
     methods(Static)
         
+        
+        function  moveNoiseFiles(sourcedir, destineydir) 
+            % to move pure noise files out of the sourcedir
+            tic;
+            
+            rawfiles = extract.filename(sourcedir,'*.wav');
+            
+            D = parallel.pool.DataQueue; % configurate waitbar in par-for
+            h = waitbar(0, 'Start processing');
+            num_files = length(rawfiles);
+            nUpdateWaitbar(num_files, h); % Dummy call to nUpdateWaitbar to initialise
+            afterEach(D, @nUpdateWaitbar); % Go back to simply calling nUpdateWaitbar with the data
+            
+            Centro_Thres = 125; % Threshold
+            
+            parfor k = 1: length(rawfiles)
+                
+                [y,fs] = audioread(rawfiles{k});% here the y is the raw y
+                centroid = spectralCentroid(y,fs);
+                if mean(centroid) < Centro_Thres
+                    [~,fname,ext] =  fileparts(rawfiles{k});
+                    new_fpath = fullfile(destineydir,strcat(fname,ext));
+                    movefile(rawfiles{k},new_fpath);
+                end
+                send(D, 1);   % send only an "increment" for the waitbar.
+                
+            end
+            
+            toc;
+           
+        
+            function p = nUpdateWaitbar(data, h)    % subfunctiuon for waitbar
+                persistent TOTAL COUNT H
+                if nargin == 2
+                    H = h;TOTAL = data;COUNT = 0;   % initialisation mode
+                else
+                    COUNT = 1 + COUNT; p = COUNT / TOTAL;    % afterEach call, increment COUNT
+                    waitbar(p, H,sprintf('Checking %u of totally %u files',COUNT,TOTAL));
+                end
+            end
+            
+            
+        end
+        
+        
+        
         function all_eleinf = Fraginf(subdirs,id_thres,matFolder)  % 遍历 all the subdirs
             
             % If there is eleinf , then assemble into element level, while
@@ -311,10 +359,10 @@ classdef getInf < handle
             for w = 1:length(subdirs)
                 birdid  = split(subdirs{w},'\');
                 birdid = regexp(birdid{end},'\d+','match');
-               
+                
                 if ~isempty(birdid) % 当subidr是以birdid来命名的时候
                     birdid = str2double(birdid{1});
-                     
+                    
                     if exist('id_thres','var')
                         if birdid < id_thres
                             to_delete = [to_delete,w];
@@ -344,7 +392,7 @@ classdef getInf < handle
                     else
                         alledges = sort(loaded.segdata.syledge(:));
                     end
-
+                    
                     
                     % the following is a very bad temporily code
                     if ~isfield(loaded.segdata,'fs') % if there is no such field named fs
@@ -398,9 +446,9 @@ classdef getInf < handle
                 end
                 
                 folder_eleinf = horzcat(song_collect{:});
-
+                
                 all_collect{r} = folder_eleinf;
-        
+                
                 
             end
             
@@ -425,7 +473,7 @@ classdef getInf < handle
                 birdid  = split(subdirs{w},'\');
                 birdid = regexp(birdid{end},'\d+','match');
                 if ~isempty(birdid) % 当subidr是以birdid来命名的时候
-                birdid = str2double(birdid{1});
+                    birdid = str2double(birdid{1});
                     if exist('id_thres','var')
                         if birdid < id_thres
                             to_delete = [to_delete,w]; % 去掉某个birdid数字以前的bird的数据
@@ -446,7 +494,7 @@ classdef getInf < handle
                 % which can be SegData or SylData or EleData
                 
                 song_collect = {};
-     
+                
                 for m = 1: length(matfiles)
                     
                     loaded = load(matfiles{m});
@@ -488,6 +536,19 @@ classdef getInf < handle
             
             all_eleinf = horzcat(all_collect{:});
             
+            
+        end
+        
+        function all_eleinf = getAllTwoMotifEleinf(two_motif_ele_dir)
+            if ~exist('two_motif_ele_dir','var')
+                two_motif_ele_dir = "G:\StimuliSource";
+            end
+            
+            subdirs = extract.folder(two_motif_ele_dir).';
+            twomotif_ids = find(~cellfun(@isempty, regexp([subdirs{:}].','twoMotif')));
+            twoMotif_subdirs = subdirs(twomotif_ids).';
+            
+            all_eleinf = getInf.Eleinf(twoMotif_subdirs,1,'SegData');
             
         end
         

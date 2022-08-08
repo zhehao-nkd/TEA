@@ -406,7 +406,72 @@ classdef Bird < handle
             
         end
         
+        function siblings_names = findSiblings(birdname)
+            % configs for reading the table
+            numVars = 5;
+            varNames = {'BirdID','Hatch date','Gender','father','mother','isolate'} ;
+            varTypes = {'string','string','string','string','string','string'} ;
+            dataStartLoc = 'A2';
+            
+            opts = spreadsheetImportOptions('Sheet',1,'NumVariables',numVars,...
+                'VariableNames',varNames,...
+                'VariableTypes',varTypes,...
+                'DataRange', dataStartLoc);
+            
+           % preview('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts)
+            birdlist = readtable('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts);
+
+            % get the corresponding index, set fathername
+            index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
+            fathername = birdlist.father(index);
+            
+            if isempty(fathername)
+                fathername = string(missing);
+            end
+            
+            children_index = find(~cellfun(@isempty, regexp(birdlist.father,fathername)));
+            
+            siblings_index = setdiff(children_index, index);
+            siblings_names = birdlist.BirdID(siblings_index);
+            
+        end
+        
+        function fathername = findFather(birdname)
+            
+            % configs for reading the table
+            numVars = 5;
+            varNames = {'BirdID','Hatch date','Gender','father','mother','isolate'} ;
+            varTypes = {'string','string','string','string','string','string'} ;
+            dataStartLoc = 'A2';
+            
+            opts = spreadsheetImportOptions('Sheet',1,'NumVariables',numVars,...
+                'VariableNames',varNames,...
+                'VariableTypes',varTypes,...
+                'DataRange', dataStartLoc);
+            
+           % preview('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts)
+            birdlist = readtable('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts);
+
+            % get the corresponding index, set fathername
+            index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
+            fathername = birdlist.father(index);
+            if isempty(fathername)
+                fathername = string(missing);
+            end
+            
+        end
        
+        
+        function answer = areTheySiblings(birdname1,birdname2)
+            %判断两只鸟是否是siblings
+            siblings_names = Bird.findSiblings(birdname1);
+            if ismember(birdname2,siblings_names)
+                answer = 1;
+            else
+                answer = 0;
+            end
+            
+        end
     end
 end
 

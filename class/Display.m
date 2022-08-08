@@ -220,12 +220,12 @@ classdef Display
         
         function deg = finddeg(d,keyword)
             
-            idx = find(~cellfun(@isempty,regexp({d.info.stimuliname}.','deg|Deg')));
+            idx = find(~cellfun(@isempty,regexp(cellstr({d.info.stimuliname}.'),'deg|Deg')));
             
             deg = d.info(idx);
             
             if exist('keyword','var')
-                kwidx = find(~cellfun(@isempty,regexp({deg.stimuliname}.',keyword)));
+                kwidx = find(~cellfun(@isempty,regexp(cellstr({deg.stimuliname}.'),keyword)));
                 deg = deg(kwidx);
             end
             
@@ -259,7 +259,7 @@ classdef Display
         end
         
         function catego = findcatego(d,keyword)
-            idx = find(~cellfun(@isempty,regexp({d.info.stimuliname}.','catego')));
+            idx = find(~cellfun(@isempty,regexp(cellstr({d.info.stimuliname}.'),'catego|repla')));
             catego = d.info(idx);
             if exist('keyword','var')
                 
@@ -270,7 +270,7 @@ classdef Display
         end
         
         function repla = findrepla(d,keyword)
-            idx = find(~cellfun(@isempty,regexp({d.info.stimuliname}.','Repla|catego|repla')));
+            idx = find(~cellfun(@isempty,regexp(cellstr({d.info.stimuliname}.'),'Repla|catego|repla')));
             repla = d.info(idx);
             if exist('keyword','var')
                 
@@ -331,11 +331,11 @@ classdef Display
         end
         
         function norm = findnorm(d,keyword)
-            idx = find(~cellfun(@isempty,regexp({d.info.stimuliname}.','norm')));
+            idx = find(~cellfun(@isempty,regexp(cellstr({d.info.stimuliname}.'),'norm')));
             norm = d.info(idx);
             if exist('keyword','var')
                 
-                kwidx = find(~cellfun(@isempty,regexp({norm.stimuliname}.',keyword)));
+                kwidx = find(~cellfun(@isempty,regexp(cellstr({norm.stimuliname}.'),keyword)));
                 norm = norm(kwidx);
             end
             

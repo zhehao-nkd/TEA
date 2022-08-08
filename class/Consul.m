@@ -1,3 +1,4 @@
+
 classdef Consul < handle
     % A consul held the highest elected political office of the Roman Republic 
     % So Consul do analysis for the whole data

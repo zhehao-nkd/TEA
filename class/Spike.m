@@ -25,10 +25,11 @@ classdef Spike < handle
             %data.waveform = T{:,4:end}; % number of columns may change
             
             vname = s.T.Properties.VariableNames;% name of vareiables
-            
             % extract waveforms
             idxwaveform = find (~cellfun(@isempty, regexp(vname, '^Var\d+$')));
-            s.waveform = table2array(s.T(:,idxwaveform));
+            tabel_contain_Var = s.T(:,idxwaveform);
+            tabel_contain_Var(:,all(ismissing(tabel_contain_Var)))=[];
+            s.waveform = table2array(tabel_contain_Var);
             
             % extract PC values
             idxpc = find (~cellfun(@isempty, regexp(vname, '^pc\d+$'))); % idx of PCs
@@ -53,6 +54,7 @@ classdef Spike < handle
             
         end
           
+       
         function set_ephys_fs(s,ephys_fs)
             s.ephys_fs = ephys_fs;
         end
@@ -115,6 +117,21 @@ classdef Spike < handle
     
     methods(Static)
         
+        function which(path_txt) % to find out how many channel-unit exist in the path_txt file
+            separatedT = Spike.split(path_txt);
+            
+            for k = 1: length(separatedT)
+                temp = unique(separatedT{1}.channelname);
+                channel = temp{1};
+                temp = unique(separatedT{1}.unit);
+                unit = temp;
+                channel_unit = sprintf('%s-%u',channel,unit);
+                disp(channel_unit);
+                newline;
+            end
+        end
+        
+        
         function separatedT = split(path_txt) % split exported data to single channel-unit table, unit0 (unsorted) are removed
             
             rawT = readtable(path_txt);% sorted plus unsorted
@@ -122,36 +139,46 @@ classdef Spike < handle
             
             fid = fopen(path_txt);
             frewind(fid);
-            first_line = deblankl(fgetl(fid)); % deblankl for removal of blanks, as VariableNames can't include blanks
+            first_line = utl.deblankl(fgetl(fid)); % deblankl for removal of blanks, as VariableNames can't include blanks
             titlecell = split(first_line,',');
             lentitle = length(titlecell);
             rawT.Properties.VariableNames(1:lentitle) = titlecell;
             
             
-            T = rawT(startsWith(rawT.channelname,'SPKC'),:); % Remove non-SPKC channels
-            if isempty(T)
-                 T = rawT(startsWith(rawT.channelname,'SPK'),:);
-                 warning('Dangerous !!! No SPKC detected, using SPK instead.'); % to fit jelena's data
-            end
-            channel_name = unique(T.('channelname')); % Get SPKC channel names
-            
-            separatedT = {};
-            k = 1;
-            for n = 1:length(channel_name)
-                
-                temp = T(startsWith(T.channelname,channel_name{n}),:);
-                
-                unit_name = unique(temp.('unit'));
-                
-                for m = 1:length(unit_name)
-                    
-                    separatedT{k}= temp((temp.unit == unit_name(m)),:);
-                    k = k + 1;
+            if ~isempty(find(strcmp('channelname',rawT.Properties.VariableNames)))
+                T = rawT(startsWith(rawT.channelname,'SPKC'),:); % Remove non-SPKC channels
+                if isempty(T)
+                    T = rawT(startsWith(rawT.channelname,'SPK'),:);
+                    warning('Dangerous !!! No SPKC detected, using SPK instead.'); % to fit jelena's data
                 end
-              %disp('MAGA!')  
+                
+                channel_name = unique(T.('channelname')); % Get SPKC channel names
+                separatedT = {};
+                k = 1;
+                for n = 1:length(channel_name)
+                    temp = T(startsWith(T.channelname,channel_name{n}),:);
+                    unit_name = unique(temp.('unit'));
+                    for m = 1:length(unit_name)
+                        separatedT{k}= temp((temp.unit == unit_name(m)),:);
+                        k = k + 1;
+                    end
+                end
+            
+            elseif ~isempty(find(strcmp('channel',rawT.Properties.VariableNames))) % 如果导出格式不对，没有导出channelname而是channel时
+                channel = unique(rawT.('channel'));
+                separatedT = {};
+                count = 0;
+                for n = 1:length(channel)
+                    temp = rawT(rawT.channel == channel(n),:);
+                    unit_name = unique(temp.('unit'));
+                    for m = 1:length(unit_name)
+                        count = count + 1;
+                        separatedT{count}= temp((temp.unit == unit_name(m)),:);
+                    end
+                end
                 
             end
-            
+              
             separatedT = Spike.rm0(separatedT);  % to get the unsorted spikes,what I need is to extract 0 
             
         end
@@ -164,7 +191,7 @@ classdef Spike < handle
             % These codes are for uniforming the column name of the rawT
             fid = fopen(path_txt);
             frewind(fid);
-            first_line = deblankl(fgetl(fid)); % deblankl for removal of blanks, as VariableNames can't include blanks
+            first_line = utl.deblankl(fgetl(fid)); % deblankl for removal of blanks, as VariableNames can't include blanks
             titlecell = split(first_line,',');
             lentitle = length(titlecell);
             rawT.Properties.VariableNames(1:lentitle) = titlecell;

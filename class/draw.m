@@ -11,6 +11,27 @@ classdef draw
             plot(x,y);
             xlim([0,length(y)/fs]);
         end
+        
+        function twoForPoster(y,sptimes,fs)
+            figure('Position',[305 596 1413 492])
+            ax = tight_subplot(2, 1, 0.05, 0.16, 0.07);
+            axes(ax(1));
+            draw.spec(y,fs);
+            yticks([0 8000 16000])
+            yticklabels({'0','8k','16k'})
+            ylabel('F(Hz)')
+            xticklabels('');
+            set(gca,'FontSize',18)
+            axes(ax(2));
+            draw.rasterBeta(sptimes,y,fs,1.4,'k')
+             yticks([0 5 10])
+            yticklabels({'0','5','10'})
+            xticks([0 1 2 3 4 5 6 7])
+            xticklabels({'0','1','2','3','4','5','6','7'})
+            xlabel('T(s)')
+            set(gca,'FontSize',18)
+        
+        end
             
         function spec6(y,fs)
             
@@ -72,6 +93,27 @@ classdef draw
            % h.Label.String = 'Power/frequency (dB/Hz)';
         end
 
+        function temp_compare_spec_and_nooutput_spec(y,fs)
+            figure;
+            subplot(211)
+            spectrogram(y,hamming(512),512-round(fs/1e3),512,fs,'yaxis');
+            colorbar('off')
+            colormap('jet')
+            %spectrogram(y,hamming(512),512-round(fs/1e3),512,fs);
+            subplot(212)
+            [S,F,T] = spectrogram(y,hamming(512),512-round(fs/1e3),512,fs);
+            imagesc(T, F, log(1+abs(S)) ); %plot the log spectrum
+            set(gca,'YDir','normal');
+            colormap('jet')
+            set(gca, 'CLim', [0, 3])  % change the contrast
+            %xlim([min(T),max(T)]);
+             ylim([min(F),max(F)]);
+            xlim([0,length(y)/fs]);
+            xlim([min(T),max(T)]);
+            disp('')
+            
+        end
+        
         function spec(y,fs) %这个是目前最正确的一个!!!!!!
             y = 3*y;%myAxe = app.UIAxes;
             [S,F,T] = spectrogram(y,hamming(512),512-round(fs/1e3),512,fs);
@@ -80,24 +122,14 @@ classdef draw
             colormap('jet')
             set(gca, 'CLim', [0, 3])  % change the contrast
             %xlim([min(T),max(T)]);
+             ylim([min(F),max(F)]);
             xlim([0,length(y)/fs]);
-            ylim([min(F),max(F)]);
+            xlim([min(T),max(T)]);
+           
            
         end
         
-        function spectest(y,fs) %这个是目前最正确的一个!!!!!!
-             figure;
-            y = 3*y;%myAxe = app.UIAxes;
-            [S,F,T] = spectrogram(y,hamming(512),512-round(fs/1e3),512,fs);
-            imagesc(T, F, log(1+abs(S)) ); %plot the log spectrum
-            set(gca,'YDir','normal');
-            colormap('jet')
-            set(gca, 'CLim', [0, 3])  % change the contrast
-            %xlim([min(T),max(T)]);
-            xlim([0,length(y)/fs]);
-            ylim([min(F),max(F)]);
-           
-         end
+
 
         function spec4(y,fs)   % rescaled x to 0 ~length(y)/fs
             [~,F,T,P] = spectrogram(y,hamming(1024),1024-round(fs/1e3),1024,32000,'yaxis');
@@ -452,8 +484,8 @@ classdef draw
             x = linspace(0,length(msdf),length(msdf))*resolution;
             plot(x,msdf);
            % xlim([0,max(x)]) ???????????????????????????????????????
-            xlim([0,length(y)/fs])
-            ylim([0,40])
+            xlim([0,length(y)/fs]);
+            ylim([0,40]);
             
         
         end

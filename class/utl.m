@@ -4,6 +4,7 @@ classdef utl
   
     methods(Static)
         
+        
         function padded = pad(y,targetlen)
             % pad zero to data in both side
             % here length(y) must < targetlen
@@ -37,8 +38,52 @@ classdef utl
             end
         end
         
+        
+        function coreThree(path_txt,path_plx,path_folder)
+            b = Batch(path_txt,path_plx,path_folder);
+            b.select;
+            neuronlist = b.getn;
+            
+            for k = 1: length(neuronlist)
+                thisn = neuronlist{k};
+                thisn.three;
+                thisn.rawthree;
+                %thisn.ResponseBasedOrderedThreePlots;
+            end
+        end
        
+        function s = deblankl(x)
+            if ~isempty(x)
+                s = lower(x);
+                s = s(find(s~=32));
+            else
+                s = [];
+                
+            end
+        end
+        
+        function p = UpdateParforWaitbar(data, h)
+            persistent TOTAL COUNT H
+            if nargin == 2
+                % initialisation mode
+                H = h;
+                TOTAL = data;
+                COUNT = 0;
+            else
+                % afterEach call, increment COUNT
+                COUNT = 1 + COUNT;
+                p = COUNT / TOTAL;
+                waitbar(p, H,sprintf('此为总共%u个神经元中的%u',TOTAL,COUNT));
+            end
+        end
+            
+           
         
     end
+    
+    
+    
+    
+    
 end
 

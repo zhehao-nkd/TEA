@@ -1,22 +1,29 @@
 % a class to extract trigger info
 
 classdef Trigger < handle
-    
+    % To extract and process trigger signals from .plx files
+    % Trigger signal用来标定stimuli出现的时间
     properties
         equipment
         info
         plxname
         raw
-        ephys_fs
+        trigger_fs
+        inputpath
     end
     
     methods
         
-        function t = Trigger(path_plx,mergeIdx)
+        function t = Trigger(path_plx,mergeIdx) % mergeIdx非必须
             
+            t.inputpath = path_plx;
             [~,t.plxname,~] = fileparts(path_plx);
             path_plx = convertStringsToChars(path_plx);
+            
+           
+           
             plexonfile = readPLXFileC(path_plx,'events'); % read .plx files as a structure
+
             
             PULSE_LOCATION = 0;
             %
@@ -26,7 +33,7 @@ classdef Trigger < handle
             % Find the trigger plexonfile.EventChannels(1).Timestamps
             for n = 1:length(plexonfile.EventChannels)
                 
-                if  strcmp(plexonfile.EventChannels(n).Name, 'DIG01')
+                if  strcmp(plexonfile.EventChannels(n).Name, 'DIG01') %只要存在dig channel，就认定为zeus
                     PULSE_LOCATION = n;
                     t.equipment = 'ZEUS';
                     t.raw = plexonfile.EventChannels(PULSE_LOCATION);
@@ -116,7 +123,7 @@ classdef Trigger < handle
             
             
             fs = 30000;
-            t.ephys_fs = fs;
+            t.trigger_fs = fs;
             pulse_initials = t.raw.Timestamps;
             
             
@@ -202,7 +209,7 @@ classdef Trigger < handle
         function info = extract(t)
 
             fs = t.raw.ADFrequency; % avoid hard-coding;
-            t.ephys_fs = fs;
+            t.trigger_fs = fs;
             %dbstop if error
             pulse_channel = t.raw.Values;
             %detecting triggers and recording their time
@@ -358,7 +365,7 @@ classdef Trigger < handle
             
             fs = 30000;
             
-           
+            t.trigger_fs = fs;
             group_split_thres = 5000; % 0.1667 seconds, to split dig timestmaps to different groups for different stimuli
             raws = t.raw.Timestamps;
             diff_between_pulse = diff(raws);
@@ -408,8 +415,7 @@ classdef Trigger < handle
             end
             
         end
-        
-        
+       
         
     end
     
@@ -474,7 +480,63 @@ classdef Trigger < handle
                 
                 [~,name,~] = fileparts(files{n});
                 audiowrite(sprintf('%s/%s-%02uPulses.wav',outdir,name,n + from_which - 1),yOut,fs);
-                from_which = from_which + 1;
+                %from_which = from_which + 1;
+                
+            end
+            
+        end
+        
+        function binary_but_rand_gap(outdir,from_which,range)
+             dbstop if error     
+            if ~exist('range','var')
+                range = [0.5,0.75]; % unit is second
+            end
+             pre_length = 0;
+             
+            GAP_DURATION = 1*8e-3; PULSE_DURATION = 5*8e-3; AMPLITUDE = 1;
+            
+            if exist('from_which','var')
+                
+            else
+                from_which = 1;
+            end
+                
+            dirpath = uigetdir();
+            files = extract.filename(dirpath, '*.wav');
+            files = flip(files,1);
+            %outdir = 'AAAAAA'
+            mkdir (outdir);
+            
+            for n = 1:length(files)
+                
+                post_length = (range(2)-range(1))*rand + range(1);
+                
+                [y,fs] = audioread(files{n}); % y means original y
+                binary_code = de2bi(n + from_which - 1); 
+                zero_pulse = [zeros(GAP_DURATION*fs,1);AMPLITUDE*ones(GAP_DURATION*fs,1)];  % 0-1
+                one_pulse = [zeros(GAP_DURATION*fs,1);zeros(GAP_DURATION*fs,1);AMPLITUDE*ones(GAP_DURATION*fs,1)]; % 0-0-1
+                
+                % write data channel
+                yD = [zeros(pre_length*fs,1);y;zeros(round(post_length*fs),1)];
+                
+                % write trigger channel
+                pulses = AMPLITUDE*ones(GAP_DURATION*fs,1); % Here the initial state of variable-pulses is a pulse
+                coder.varsize(pulses); % yT means y Trigger channel
+                
+                for m = 1:length(binary_code)
+                    if binary_code(m) == 0
+                        pulses = [pulses;zero_pulse];
+                    elseif binary_code(m) == 1
+                        pulses = [pulses;one_pulse];
+                    end
+                end
+                
+                yT = [zeros(pre_length*fs,1);pulses;zeros(length(yD) - length(pulses) - pre_length*fs,1)]; % padding zeros
+                yOut = [yT,yD];
+                
+                [~,name,~] = fileparts(files{n});
+                audiowrite(sprintf('%s/%s-%02uPulses.wav',outdir,name,n + from_which - 1),yOut,fs);
+                %from_which = from_which + 1;
                 
             end
             
@@ -533,8 +595,39 @@ classdef Trigger < handle
 
         end
         
+        function tobject = get_it(path_plx)
+            
+            tobject = Trigger(path_plx);
+            
+        end
+        
+        function t = shiftTrigger(path_plx,shift_value) % shift_value in seconds
+            % 此函数移动trigger signal以纠偏
+            t = Trigger(path_plx)
+            % Edit t.info
+            for k = 1: length(t.info)
+                t.info(k).time = t.info(k).time + shift_value;
+            end
+            
+            % Edit t.raw
+            t.raw.Timestamps = t.raw.Timestamps + shift_value*t.trigger_fs;
+            
+        end
+
+        function drawContinuousChannel(plx_path)
+            
+            plexonfile = readPLXFileC(convertStringsToChars(path_plx),'all');
+            
+            SPKC16 = plexonfile.ContinuousChannels(32).Values;
+            
+            triggerevent = plexonfile.EventChannels(1).Timestamps;
+            
+            % split the plexon file for drawing?
+        end
         
     end
+    
+    
     
     
     

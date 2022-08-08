@@ -4,6 +4,7 @@ classdef convert
     
     
     methods(Static)
+        
         function  c2mex()
             %UNTITLED2 Construct an instance of this class
             %   Detailed explanation goes here
@@ -53,8 +54,9 @@ classdef convert
         end
             
         function two2one(dir) % convert 2 channel to 1 channel wav
-            [~,rawdir,~] = fileparts(dir);
-            outdir = sprintf('SingleChannel_%s',rawdir);
+            [parentdir,rawdir,~] = fileparts(dir);
+            rawoutdir = sprintf('SingleChannel_%s',rawdir);
+            outdir = fullfile(parentdir,rawoutdir);
             mkdir(outdir);
             
             files = extract.filename(dir,'*.wav');
@@ -158,6 +160,174 @@ classdef convert
             
         end
         
+        function destineydir = mergeSubfolders(complexfolder,ext)
+            
+            % "C:\Users\Zhehao\Desktop\ComplexFolder"
+            
+            FS = filesep;
+            parts = split(complexfolder,FS);
+            parts(length(parts)) = strcat('Merged_',parts(length(parts)));
+            destineydir = fullfile(parts{:});
+            mkdir(destineydir);
+            files = extract.filesAllLevel(complexfolder,ext);
+            for k = 1: length(files)
+                
+              [~,name,ext] = fileparts(files{k});
+              
+              if strcmp(ext, '.') || strcmp(ext, '..')
+                  continue
+              end
+              
+              nameext = strcat(name,ext);
+              SourceFile = files{k};
+              DestinyFile = fullfile(destineydir,nameext);
+              copyfile(SourceFile, DestinyFile, 'f');
+              
+            end
+        end
+        
+        function renameAllLevel(targetdir,ext,old,new)
+            dbstop if error
+            files = extract.filesAllLevel(targetdir, ext);
+            
+            wb = waitbar(0,'Processing...');
+            
+            for id = 1:length(files)
+                
+                waitbar(id/length(files),wb,sprintf('当前是所有%u个文件中的%u',length(files),id))
+                % Get the file name
+                oldname = files{id};
+                
+                [folder,oldfilename,ext] = fileparts(oldname);
+                newfilename = strrep(oldfilename,old,new);
+                
+                newname = fullfile(folder,strcat(newfilename,ext));
+                if ~strcmp(oldname,newname)
+                movefile(oldname, newname,'f');
+                end
+            end
+            
+            close(wb);
+
+        end   
+        
+        function newpath = path(oldpath,handle)
+            switch handle
+                case 'win' % 非常简陋，不一定是对的
+                    newpath = strrep(oldpath,'/','\');
+                case 'unix'
+                    %convert to a unix version:
+                    newpath = strrep(oldpath,'\','/');
+            end
+        end
+        
+        function colorifyImage(originalImage)
+            
+            figure
+            subplot(2,1,1);
+            imshow(originalImage);
+            % loops are unnecessary
+            % your mask does not depend on color selection
+            % and your color selection does not select what you think it selects
+            % these masks (very) roughly select the chips in the image
+            maskR = originalImage(:,:,1) > 200 & originalImage(:,:,2) < 100 & originalImage(:,:,3) < 100;
+            maskG = originalImage(:,:,1) < 50 & originalImage(:,:,2) > 100 & originalImage(:,:,3) < 150;
+            maskB = originalImage(:,:,1) < 10 & originalImage(:,:,2) < 100 & originalImage(:,:,3) > 220;
+            maskW = originalImage(:,:,1) == 255 & originalImage(:,:,2) == 255 & originalImage(:,:,3) == 255;
+            % i'm not dealing with a tedious prompt.  feel free to change
+            colormode = 'white';
+            % you can also specify a color other than black
+            newcolor = [220 0 0];
+            outpict = originalImage;
+            switch lower(colormode)
+                case 'red'
+                    selectedmask = repmat(maskR,[1 1 3]);
+                case 'green'
+                    selectedmask = repmat(maskG,[1 1 3]);
+                case 'blue'
+                    selectedmask = repmat(maskB,[1 1 3]);
+                case 'white'
+                    selectedmask = repmat(maskW,[1 1 3]);
+                otherwise
+                    error('ha ha you typed the wrong thing and got an error')
+            end
+            outpict(selectedmask) = 0;
+            outpict = outpict + uint8(selectedmask.*permute(newcolor,[1 3 2]));
+            % of course, that depends on the class of the input image
+            subplot(2,1,2);
+            imshow(outpict);
+            
+        end
+        
+        function originalImage = colorEdge(originalImage,color)
+            
+            switch color
+                case 'r'
+                    targetcolor = [225,0,0];
+                case 'b'
+                    targetcolor = [0,0,225];
+                case 'g'
+                    targetcolor = [0,225,0];
+            end
+            
+            range = 9;
+            
+            for k = 1: size(originalImage,2)
+                for kk = 1: range
+                    originalImage(kk,k,:) = targetcolor;
+                    originalImage(size(originalImage,1)-kk+1,k,:) = targetcolor;
+                end
+            end
+            
+            for k = 1: size(originalImage,1)
+                for kk = 1: range
+                    originalImage(k,kk,:) = targetcolor;
+                    originalImage(k,size(originalImage,2)-kk+1,:) = targetcolor;
+                end
+            end
+         
+        end
+        
+        
+        function breakdownEphysTxt(txtfile)
+            
+            [pathstr, oldname, ext] = fileparts(txtfile);
+            
+            bid = regexp(oldname,'[OGBYR]\d{3}','match');
+            zpid = regexp(oldname,'[ZP]\d+F\d+','match');
+            
+            
+            rawT = readtable(txtfile);% sorted plus unsorted
+            fid = fopen(txtfile);
+            frewind(fid);
+            first_line = utl.deblankl(fgetl(fid)); % deblankl for removal of blanks, as VariableNames can't include blanks
+            titlecell = split(first_line,',');
+            lentitle = length(titlecell);
+            rawT.Properties.VariableNames(1:lentitle) = titlecell;
+            
+            temp = unique(rawT.channelname);
+            spkc_ids = find(~cellfun(@isempty,regexp(temp,'SPKC')));
+            spkc_names = {temp{spkc_ids}}.';
+            
+            for k = 1:length(spkc_names)
+                spkc_num = regexp(spkc_names{k},'(?<=SPKC)\d{2}','match');
+                num_ids = find(~cellfun(@isempty,regexp(rawT.channelname,spkc_num{1})));
+                subsetT = rawT(num_ids,:);
+                unitnames = unique(subsetT.unit);
+                unitnames( unitnames==0) = []; % Remove the unit zero,cause everyone has it
+                %if length(unique(subsetT.unit)) > 1 % for this channel, there are at least some sorted spikes
+                for kk = 1: length(unitnames)
+                    newname = strjoin({convertStringsToChars(bid),convertStringsToChars(zpid),spkc_names{k},...
+                        sprintf('U%u',unitnames(kk))},'_'); % U means unit
+                    subsetname = fullfile(pathstr,strcat(newname,ext));
+                    writetable(subsetT,subsetname);
+                end
+               % end
+            end
+              
+        end
+        
     end
+    
 end
 

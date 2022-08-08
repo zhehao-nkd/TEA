@@ -33,7 +33,8 @@ classdef Sound < handle
         sapterminal
         sapexcel
         whole_stimuli_set_coding_method
-        
+        zpt
+        npt
         % an xls-fomratted excel table containing sap-segmented syllable/element
     end
     
@@ -63,14 +64,23 @@ classdef Sound < handle
 %            s.inifeature; % initialize feature   trmporaliy delete this
 %            part
 
-            wavinfo = audioinfo(path_wav);
+            %wavinfo = audioinfo(path_wav);
             
-            if isempty(wavinfo.Comment) % if segmentation information is not stored in the  wav file
-                s.segment;
-                s.setcorey;
-                s.initial = [s.fragment.initial].';
-                s.terminal = [s.fragment.terminal].';
-            end
+            s.zpt = find(s.rawy>0, 1 );
+            s.npt = find(s.rawy>0, 1, 'last' );
+      
+            
+            
+            
+%             if isempty(wavinfo.Comment) % if segmentation information is not stored in the  wav file
+%                 s.segment;
+%                 s.setcorey;
+%                 s.initial = [s.fragment.initial].';
+%                 s.terminal = [s.fragment.terminal].';
+%             end
+% The above part was commented on 08.08.2022
+            
+            
             % unfortunately I have not giot time to write about the another
             % possibility
             
@@ -93,8 +103,7 @@ classdef Sound < handle
             temp = SAT_hijack(s.rawy,s.fs);
             s.feature = temp.features;
         end
-        
-        
+         
         function thissap = getsap(s)
             dbstop if error
             if isempty(s.sapexcel)  % if there is no sapexcel
@@ -132,6 +141,15 @@ classdef Sound < handle
             
             s.fragment = segment(s.rawy,s.fs).seg5;
             warning('Now the segment method is seg5!!');
+        end
+        
+        function s = updatefragment_for_fixsegmentation(s)
+            
+             for idx = 1: length(s.initial)
+                s.fragment(idx).initial = s.initial(idx);
+                s.fragment(idx).terminal = s.terminal(idx);
+                s.fragment(idx).y = s.rawy(s.initial(idx):s.terminal(idx));
+            end
         end
         
         function rmsy = normalize(s) % function for normalize the sound
@@ -176,8 +194,7 @@ classdef Sound < handle
         function rawy = getY(s)
             rawy = s.rawy;
         end
-        
-        
+                
         function difftype = getPulseDiffType(s)
             yT = s.raw(:,1);
             
@@ -263,15 +280,48 @@ classdef Sound < handle
             end
             
         end
-        
-        
-        
+               
     end
     
     
     methods(Static)
-        function files= split(folder_wav)
-            files = extract.filename(folder_wav,'*.wav');
+        function files= extract(folder_wav)
+            
+            % judge how many  folder_wav exist in the folder_wav dir
+            
+            if iscell(folder_wav)&&length(folder_wav) == 1
+                % Judge how many subfolders exist
+                S = dir(folder_wav);
+                N = nnz(~ismember({S.name},{'.','..'})&[S.isdir]);
+                if N == 0
+                    files = extract.filename(folder_wav,'*.wav');
+                elseif N > 0
+                    files = extract.filesAllLevel(folder_wav,'*.wav');
+                end
+            elseif (iscell(folder_wav)||strcmp(class(folder_wav),'string'))&&length(folder_wav)>1 % if there are multiple folders as input
+                
+                for k = 1: length(folder_wav)
+                    S = dir(folder_wav{k});
+                    N = nnz(~ismember({S.name},{'.','..'})&[S.isdir]);
+                    if N == 0
+                        files{k} = extract.filename(folder_wav{k},'*.wav');
+                    elseif N > 0
+                        files{k} = extract.filesAllLevel(folder_wav{k},'*.wav');
+                    end
+                end
+                
+                files = vertcat(files{:});
+                
+            elseif ~iscell(folder_wav)
+                S = dir(folder_wav);
+                N = nnz(~ismember({S.name},{'.','..'})&[S.isdir]);
+                if N == 0
+                    files = extract.filename(folder_wav,'*.wav');
+                elseif N > 0
+                    files = extract.filesAllLevel(folder_wav,'*.wav');
+                end
+            end
+           
         end
         
         function intercepted = intercept(rawy,fs,start,stop) % tpoint is the time in seconds

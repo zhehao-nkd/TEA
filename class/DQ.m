@@ -560,8 +560,8 @@ classdef DQ
                 case "duration_change"
                     % Make the duration change, while keep the frequency unchanged
                     
-                    new_data_0 = birdsong_transform(data, fs, "frequency_change", transform_scale);
-                    new_data = birdsong_transform(new_data_0, fs, "speed_change", 1 / transform_scale);
+                    new_data_0 = DQ.transform(data, fs, "frequency_change", transform_scale);
+                    new_data = DQ.transform(new_data_0, fs, "speed_change", 1 / transform_scale);
                     
                     % normalize the power
                     new_data = mean(abs(data), 'all') / mean(abs(new_data), 'all')  * new_data;
@@ -570,11 +570,23 @@ classdef DQ
                     % add Gaussian noise
                     new_data = data + transform_scale * mean(abs(data), 'all') * randn(size(data, 1), size(data, 2));
                     
-                case "strength_change"
+                case "strength_change" % in db
                     % I modified here, Zhehao, 07082021
                     % !!!!!!!!!!!!!!!!!!!!!!!
+                    
                     new_data = transform_scale ^ 0.5 * data;   % sound density is proportional to the square of wave amplitude
+           
+                    
+                case "strength_change_db"  % very wierd
+                    oldrms = rms(data);
+                    
+                    newrms = oldrms^transform_scale;
+                    new_data = data*(newrms/oldrms);
+                    
+            
             end
+            
+            
             
             %% ---- Uncomment the below  plotting code for visualizing the spectrogram of old and new data ---------------
             wlen = 300;

@@ -47,7 +47,7 @@ for m = con_ids(:).' % for each element of CONs, generate the corresponding stim
     disp('画栋朝飞南浦云');
     
     num_all_near = ss.from_senatus_near_find_all_near(ss.num_of_near,m);
-    ss.set_near(20);
+    ss.set_near(20); 
     ss.with_sampling_writeFrag_near_from_all(m,num_all_near);
     disp('珠帘暮卷西山雨');
     
@@ -56,17 +56,17 @@ for m = con_ids(:).' % for each element of CONs, generate the corresponding stim
     %     ss.writeRepla_far_from_all(m);
     %     disp('闲云潭影日悠悠');
     
-    ss.set_far(36);
+    ss.set_far(36); % Repla FarfromSenatus
     ss.writeRepla_far_from_senatus(m);
     disp('物换星移几度秋');
     
     if ~ismember(m,first_ids)
         
-        ss.set_near(12);
+        ss.set_near(12); % Repla NearfromSenatus
         ss.writeRepla_near_from_senatus(m);
         disp('阁中帝子今何在');
         
-        ss.set_near(12);
+        ss.set_near(12); % Repla Near from All
         num_all_near = ss.from_senatus_near_find_all_near(ss.num_of_near,m-1);
         ss.with_sampling_writeRepla_near_from_all(m,num_all_near);
         

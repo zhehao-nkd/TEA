@@ -233,6 +233,7 @@ classdef stimuli < handle
             end
         end
         
+        
         function writereplace(s,radish,pit)
             nowtime = datestr(datetime('now'),'yyyy-mmm-dd-HH-MM-SS');
             dir = sprintf('%s/replaced_%s',pa.TEAOutputFolder,nowtime);
@@ -954,7 +955,7 @@ classdef stimuli < handle
             figure
             set(gca,'Color','w')
             hold on
-            scale = 30;
+            scale = 50;
             axis([min([mergedeleinf.coor_1]*scale) max([mergedeleinf.coor_1]*scale) min([mergedeleinf.coor_2]*scale) max([mergedeleinf.coor_2]*scale)])
             
             for w = 1: 100
@@ -1116,6 +1117,8 @@ classdef stimuli < handle
                 end
                 %drawnow
             end
+
+
             
             
         end
@@ -1614,10 +1617,6 @@ classdef stimuli < handle
         
     end
         
-    
-
-
-    
     methods(Static)
         
         function sylinf = syl(dir) % this function convert songs from a folder into a single syl struct
@@ -1864,6 +1863,98 @@ classdef stimuli < handle
 
         end
        
+        function fromConRespCopyResponsiveFrags(conresp_siginfo)
+            
+            dbstop if error
+            % 找到所有在EachSongFrags里的文件的path
+            outdir = '.\RespElicitingFrags';
+            mkdir(outdir);
+            
+            sharedDepot = "G:\SharedDepot";
+            specialDepot = "G:\SpecialDepot";
+            
+            temp1 = extract.foldersAllLevel(sharedDepot).';
+            temp2 = extract.foldersAllLevel(specialDepot).';
+            temp = vertcat(temp1,temp2);
+            
+            eachfragids = find(~cellfun(@isempty,regexp(cellstr(temp),'EachSongFrags')));
+            fragsfolders = temp(eachfragids);
+            
+            for k = 1: length(conresp_siginfo)
+                
+                dirids = find(~cellfun(@isempty, regexp(fragsfolders,conresp_siginfo(k).songid)));
+                contain_frag_dir = fragsfolders(dirids);
+                
+                files_in_dir = extract.filename(contain_frag_dir,'*.wav');
+                regexpression =  sprintf('%s\\S+%02u',conresp_siginfo(k).songid,conresp_siginfo(k).fragid);
+                
+                fileid = find(~cellfun(@isempty, regexp(files_in_dir,regexpression)));
+                target_file_path = files_in_dir{fileid};
+                
+                [~,nameonly,ext] = fileparts(target_file_path);
+                
+                purename = strcat(nameonly,ext);
+                destiney_file_path = fullfile(outdir,purename);
+                copyfile(target_file_path,destiney_file_path);    
+            end
+              
+        end
         
+        function new_conresp_siginfo = expand_siginfo(conresp_siginfo,before)
+            
+            % 扩展之后更不容易漏掉 response-eliciting elements
+            count = 0;
+            extra = struct;
+            for k = 1:length(conresp_siginfo)
+                for a = 1:before
+                    if conresp_siginfo(k).fragid -a > 0
+                        count = count + 1;
+                        extra(count).songname = conresp_siginfo(k).songname;
+                        extra(count).songid = conresp_siginfo(k).songid;
+                        extra(count).fragid = conresp_siginfo(k).fragid - a;   
+                    end
+                end
+            end 
+            
+            new_conresp_siginfo = horzcat(conresp_siginfo, extra);
+            
+        end
+         
+        
+        function  wavTransformer(audiopath)
+            outdir = './transformed'
+            
+            
+            [y,fs] = audioread(audiopath);
+            [dir,name,ext] = fileparts(audiopath);
+            
+             mkdir(outdir);
+     
+            % strength_change
+            for scale = [0.5^4,0.125,0.25,0.5,1,2,4]
+                newy = DQ.transform(y,fs,'strength_change',scale);  
+                audiowrite(sprintf('%s/trans-strength-%g-%s.wav',outdir,scale,name),newy,fs);
+            end
+            
+            % frequency change
+            
+            for scale = [0.4,0.6,0.8,1.2,1.4,1.6]
+                newy = DQ.transform(y,fs,'frequency_change',scale);
+                
+                audiowrite(sprintf('%s/trans-freq-%g-%s.wav',outdir,scale,name),newy,fs);
+            end
+            
+            % duration change
+            
+            
+            for scale = [0.2,0.4,0.6,0.8,1.2,1.4,1.6,1.8,2]
+                newy = DQ.transform(y,fs,'duration_change',scale);
+                
+                audiowrite(sprintf('%s/trans-dur-%g-%s.wav',outdir,scale,name),newy,fs);
+            end
+             
+            
+        
+        end
     end
 end

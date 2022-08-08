@@ -24,8 +24,42 @@ classdef extract
             
         end
         
-        function filenames = filename(dirpath,extension)
+        function filenames = filename(dirpath,extension) % extract filename only in dirpath folder, but not in target folder
+            
+            switch class(dirpath)
+                
+                case {'char','string'}
+                    
+                    fileExt = extension;
+                    files = dir(fullfile(dirpath,fileExt));
+                    filenames = {};
+                    coder.varsize(filenames);
+                    for n=1:size(files,1)
+                        filenames{n} = fullfile(dirpath,files(n,1).name);
+                    end
+                    
+                case 'cell'
+                    
+                    filenames = {};
+                    for k = 1:length(dirpath)
+                        fileExt = extension;
+                        files = dir(fullfile(dirpath{k},fileExt));
+                        for n=1:size(files,1)
+                            filenames_sub{n} = fullfile(dirpath{k},files(n,1).name);
+                        end
+                        filenames{k} = filenames_sub;
+                    end
+                    filenames = horzcat(filenames{:});
+            end
+            
+            filenames = filenames.'; % Trasnpose only for convinient checking variables
+            
+            fclose('all') 
+         end
+        
+        function filenames = Classical_filename(dirpath,extension)
             fileExt = extension;
+            dirpath = convertCharsToStrings(dirpath);
             files = dir(fullfile(dirpath,fileExt));
             len = size(files,1);
             
@@ -45,6 +79,7 @@ classdef extract
             % 函数的输入为ParentFolder：父文件夹路径。eg: 'D:\Program Files'
             % 函数的输出为SubFolders：子文件夹路径。为一个元胞数组，eg: {'D:\Program Files\FileZilla FTP Client\docs'}
             
+            ParentFolder = convertCharsToStrings(ParentFolder);
             SubFolderNames = dir(ParentFolder);
             for i=1:length(SubFolderNames)
                 if( isequal( SubFolderNames( i ).name, '.' )||...
@@ -55,6 +90,10 @@ classdef extract
                 SubFolder(i).SubFolderName = fullfile( ParentFolder, SubFolderNames( i ).name );
             end
             
+            if ~exist('SubFolder','var')
+                SubFolders = []; %#ok<NASGU>
+                return
+            end
             temp = {SubFolder.SubFolderName};
             idx = cellfun(@(x)~isempty(x),temp,'UniformOutput',true); % 利用cellfun函数得到元胞数组中所有非空元素的下标
             SubFolders = temp(idx);
@@ -161,7 +200,6 @@ classdef extract
 
         end
         
-        
         function new_sptimes = sptimes(spike_times, initial, terminal)
             
             new_sptimes = {};
@@ -181,6 +219,38 @@ classdef extract
             
         end
         
+        function new_sptimes = sptimes_resetSP(spike_times, initial, terminal)
+            new_sptimes = {};
+            for k = 1: length(spike_times)
+                local_spt = spike_times{k};
+                if isempty(local_spt)
+                    new_sptimes{k} = [];
+                    continue
+                end
+                ids = find((local_spt>initial )& (local_spt<terminal));
+                if isempty(ids)
+                    new_sptimes{k} = [];
+                    continue
+                end
+                new_sptimes{k} = local_spt(ids);
+            end
+            
+            new_sptimes = convert.sptimesOnset2Zero(new_sptimes, initial);
+            
+        end
+        
+        
+        function parent_dir = parentDir(input_dir) % 找到一个dir 的 parent dir
+            
+           % input_dir = "C:\Users\Zhehao\Desktop\ComplexFolder\P01"
+           f = filesep;
+           parts = split(input_dir,f);
+           parentparts = parts(1:length(parts)-1);
+           parent_dir = fullfile(parentparts{:});
+
+        end
+        
+      
     end
     
     
