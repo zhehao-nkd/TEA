@@ -68,25 +68,20 @@ classdef Sound < handle
             
             s.zpt = find(s.rawy>0, 1 );
             s.npt = find(s.rawy>0, 1, 'last' );
-      
-            
-            
-            
-%             if isempty(wavinfo.Comment) % if segmentation information is not stored in the  wav file
-%                 s.segment;
-%                 s.setcorey;
-%                 s.initial = [s.fragment.initial].';
-%                 s.terminal = [s.fragment.terminal].';
-%             end
-% The above part was commented on 08.08.2022
-            
-            
+            s.corey = s.rawy(s.zpt:s.npt);
+            %             if isempty(wavinfo.Comment) % if segmentation information is not stored in the  wav file
+            %                 s.segment;
+            %                 s.setcorey;
+            %                 s.initial = [s.fragment.initial].';
+            %                 s.terminal = [s.fragment.terminal].';
+            %             end
+            % The above part was commented on 08.08.2022
             % unfortunately I have not giot time to write about the another
             % possibility
             
-          %  s.sapsegment;
-          %  s.sapinitial = [s.sapfragment.initial].';
-          %  s.sapterminal = [s.sapfragment.terminal].';
+            %  s.sapsegment;
+            %  s.sapinitial = [s.sapfragment.initial].';
+            %  s.sapterminal = [s.sapfragment.terminal].';
             disp('Sound一回！');
         end
         
@@ -270,7 +265,7 @@ classdef Sound < handle
                 
         end
         
-        function s = setcorey(s) % rawy with real sound signal, without silent duration
+        function s = Deprecated_setcorey(s) % rawy with real sound signal, without silent duration
             
             global extend
             if ~isempty(extend)

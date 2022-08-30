@@ -1530,14 +1530,14 @@ classdef Sultan
             wb = waitbar(0,'Start processing');
             num_files = length(s.anas);
             % Dummy call to nUpdateWaitbar to initialise
-            utl.nUpdateWaitbar(num_files, wb);
+            utl.UpdateParforWaitbar(num_files, wb);
             % Go back to simply calling nUpdateWaitbar with the data
             D = parallel.pool.DataQueue;
-            afterEach(D, @utl.nUpdateWaitbar);
+            afterEach(D, @utl.UpdateParforWaitbar);
             
             conallneurons = struct;
             ana_pathes = s.anas;
-            parfor k = 1: length(ana_pathes) % should be par-for
+            for k = 1: length(ana_pathes) % should be par-for
                 loaded = load(ana_pathes{k});
                 A = loaded.A;
                 A.judgeConResp_FR;
@@ -3256,7 +3256,6 @@ classdef Sultan
             close(wuhu);
         end
         
-        
         function runBatch(dirpath)
             if ~exist('dirpath','var')
                 dirpath = './';
@@ -3270,7 +3269,6 @@ classdef Sultan
             end
             
         end
-        
         
         function applySameFunctionForAll(dirpath)
             dbstop if error

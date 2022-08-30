@@ -46,7 +46,7 @@ classdef stimuli < handle
         function s = stimuli(info)
             %initialize the eleinf's uniqueid
             
-            parfor k = 1: length(info)
+            for k = 1: length(info)
                 info(k).uniqueid = k;
             end
             
@@ -93,14 +93,19 @@ classdef stimuli < handle
         
         function s = getprepro(s)
             temp = stimuli.highpass(s.raw,450);
+            %temp = stimuli.fadeout_all(temp);
+            %temp = stimuli.fadein_all(temp);
             temp = stimuli.normalize(temp, 0.05);
+            
             if length(temp) == 1
                 s.prepro = temp;
             else
                 s.prepro = table2struct(sortrows(struct2table(temp),'uniqueid','ascend')); % re-order
             end
         end  %% already highpass-filtered and normalized for each song
-             
+        
+        
+       
         function replaced = replace(s,radish,pit)    % 一个萝卜一个坑
             % I have a variable of syl info which indicate whether this
             % sylinf can activate a neuron within a asong and another
@@ -356,12 +361,11 @@ classdef stimuli < handle
                 
             end
         end
-        
-        
+     
         function writereverses(s,~,~)
             
             
-            dir = sprintf('%s/Reverse_CONs',s.outdir);
+            dir = sprintf('%s/MirrorReverse',s.outdir);
             mkdir(dir);
             
             fraginf = s.prepro;
@@ -392,7 +396,7 @@ classdef stimuli < handle
         function writemirrors(s,~,~)
             
             
-            dir = sprintf('%s/Mirror_CONs',s.outdir);
+            dir = sprintf('%s/MirrorReverse',s.outdir);
             mkdir(dir);
             
             fraginf = s.prepro;
@@ -414,8 +418,7 @@ classdef stimuli < handle
             
             
         end
-        
-        
+    
         function pregap = getpregap(s,num)
             
             pregap = s.raw(num).pregap;
@@ -1576,8 +1579,7 @@ classdef stimuli < handle
                 close(wb);
             
         end
-        
-        
+             
         function draw_frag_scatter_from_folder(s,dirpath)
             
             
@@ -1618,6 +1620,71 @@ classdef stimuli < handle
     end
         
     methods(Static)
+        
+        
+        function yFaded = fadeOut(y,fs)
+            % Create a fading envelope signal.
+            numSamples = length(y);
+            fadenum = 500;
+            % Create a fading envelope
+            fadeSignal = [ones(1, numSamples-fadenum), linspace(1, 0, fadenum)]';
+            yFaded = y .* fadeSignal;
+            % Plot fading signal.
+            
+            if exist('fs','var')
+                figure
+                subplot(3, 1, 1);
+                draw.spec(y,fs);
+                grid on;
+                
+                subplot(3, 1, 2);
+                plot(fadeSignal, '-', 'LineWidth', 2);
+                %title('Fading Envelope Signal', 'FontSize', fontSize);
+                grid on;
+                % Apply the fading by multiplying
+                
+                % Plot fading signal.
+                subplot(3, 1, 3);
+                draw.spec(yFaded,fs);
+                %title('Faded Waveform', 'FontSize', fontSize);
+                grid on;
+                % audiowrite('2.wav' ,y,Fs);
+                
+            end
+            
+        end
+        
+         function yFaded = fadeIn(y,fs)
+            % Create a fading envelope signal.
+            numSamples = length(y);
+            fadenum = 500;
+            % Create a fading envelope
+            fadeSignal = [ linspace(1, 0, fadenum),ones(1, numSamples-fadenum)]';
+            yFaded = y .* fadeSignal;
+            % Plot fading signal.
+            
+            if exist('fs','var')
+                figure
+                subplot(3, 1, 1);
+                draw.spec(y,fs);
+                grid on;
+                
+                subplot(3, 1, 2);
+                plot(fadeSignal, '-', 'LineWidth', 2);
+                %title('Fading Envelope Signal', 'FontSize', fontSize);
+                grid on;
+                % Apply the fading by multiplying
+                
+                % Plot fading signal.
+                subplot(3, 1, 3);
+                draw.spec(yFaded,fs);
+                %title('Faded Waveform', 'FontSize', fontSize);
+                grid on;
+                % audiowrite('2.wav' ,y,Fs);
+                
+            end
+            
+        end
         
         function sylinf = syl(dir) % this function convert songs from a folder into a single syl struct
             
@@ -1733,6 +1800,22 @@ classdef stimuli < handle
             
             newinfo = stimuli.merge(newsplited); 
             
+        end
+        
+        function fraginf = fadeout_all(fraginf)  % this normalize works for every song
+
+            for k = 1: length(fraginf)
+                fraginf(k).y = stimuli.fadeOut(fraginf(k).y);
+            end
+     
+        end
+        
+        function fraginf = fadein_all(fraginf)  % this normalize works for every song
+
+            for k = 1: length(fraginf)
+                fraginf(k).y = stimuli.fadeIn(fraginf(k).y);
+            end
+     
         end
         
         function splited = split(fraginf) % input is the s.sylinf, output is the sylinf for each each song
@@ -1920,7 +2003,6 @@ classdef stimuli < handle
             
         end
          
-        
         function  wavTransformer(audiopath)
             outdir = './transformed'
             

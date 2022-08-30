@@ -462,21 +462,22 @@ classdef getInf < handle
         
         function all_eleinf = Sylinf(subdirs,id_thres,matFolder)  % 遍历 all the subdirs
             
-            % If there is eleinf , then assemble into element level, while
-            % if there is no eleinf but only sylinf, assemble into sylinf
+            % assemble into eleinf
             
             % This function can be applied to both syldata or eledata
             all_collect = {};
-            
             to_delete = [];
+            
             for w = 1:length(subdirs)
                 birdid  = split(subdirs{w},'\');
                 birdid = regexp(birdid{end},'\d+','match');
+                
                 if ~isempty(birdid) % 当subidr是以birdid来命名的时候
                     birdid = str2double(birdid{1});
+                    
                     if exist('id_thres','var')
                         if birdid < id_thres
-                            to_delete = [to_delete,w]; % 去掉某个birdid数字以前的bird的数据
+                            to_delete = [to_delete,w];
                         end
                     end
                 else
@@ -485,8 +486,6 @@ classdef getInf < handle
             end
             
             subdirs(to_delete) = []; % delete those does not match the id threshold
-            
-            
             
             for r = 1:length(subdirs)  % par-for can be used here
                 
@@ -498,23 +497,53 @@ classdef getInf < handle
                 for m = 1: length(matfiles)
                     
                     loaded = load(matfiles{m});
-                    alledges = sort( vertcat(loaded.segdata.syledge(:)));
-                    fs = loaded.segdata.fs;
+                    
+                    
+                    alledges = sort(loaded.segdata.syledge(:));
+
+                    
+                    
+                    % the following is a very bad temporily code
+                    if ~isfield(loaded.segdata,'fs') % if there is no such field named fs
+                        fs = 32000;
+                    else
+                        fs = loaded.segdata.fs;
+                    end
+                    
+                    if ~isfield(loaded.segdata,'rawy')
+                        %song_eleinf = struct;
+                        continue
+                    end
+                    
                     fiy = bandpass(loaded.segdata.rawy,[900 6000],fs); %% It is very important that here the y should be fiy !!!!! filtered y instead of the raw y
                     I = cal.spec(fiy,fs);
+                    
                     initials = alledges(1:2:end);
                     terminals = alledges(2:2:end);
+                    
                     song_eleinf = struct;
+                    
                     
                     for w = 1: length(initials) % can add a par-for
                         song_eleinf(w).initial = initials(w)*fs/1000;
                         song_eleinf(w).terminal = terminals(w)*fs/1000;
                         song_eleinf(w).songname = loaded.segdata.birdid;
                         if isfield(loaded.segdata,'rawy')
-                            song_eleinf(w).y = loaded.segdata.rawy(initials(w)*fs/1000:terminals(w)*fs/1000);
+                            if initials(w)== 0
+                                % when the stimuli starts from the very beginning
+                                song_eleinf(w).y = loaded.segdata.rawy(1:terminals(w)*fs/1000);
+                            else
+                                song_eleinf(w).y = loaded.segdata.rawy(initials(w)*fs/1000:terminals(w)*fs/1000);
+                            end
                         end
                         song_eleinf(w).fs = fs;
-                        song_eleinf(w).fragI = imresize(I(:,initials(w):terminals(w)),[257,50]);
+                        
+                        if initials(w)== 0
+                            % when the stimuli starts from the very beginning
+                            song_eleinf(w).fragI = imresize(I(:,1:terminals(w)),[257,50]);
+                        else
+                            song_eleinf(w).fragI = imresize(I(:,initials(w):terminals(w)),[257,50]);
+                        end
                     end
                     
                     for f = 1:length(song_eleinf)
@@ -527,14 +556,16 @@ classdef getInf < handle
                 
                 folder_eleinf = horzcat(song_collect{:});
                 
-                
                 all_collect{r} = folder_eleinf;
-                
                 
                 
             end
             
             all_eleinf = horzcat(all_collect{:});
+            
+            % parfor a = 1:length(all_eleinf)
+            %     all_eleinf(a).uniqueid = a;
+            % end
             
             
         end

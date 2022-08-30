@@ -96,10 +96,10 @@ classdef stimcore
             sumy = vertcat(ys{:});
             
             sumrms = rms(sumy);
-            
+            ratio = tarrms/sumrms;
             for k = 1: length(old)
-               
-                ratio = tarrms/sumrms;
+                
+                
                 new(k).y = ratio*old(k).y;
             end
  
@@ -114,8 +114,26 @@ classdef stimcore
            old = fraginf;
            new = old;
            
+           % Before, 08.30.2022, the highpass filter was applied for each
+           % fragment individually, which is not correct because it will
+           % cause sharp moving noise
+           
+           % after 08,30,2022 the high-pass filter was applied for the
+           % whole song
+           
+           for k = 1:length(old)
+               temp = {old(1:k-1).y}.';
+               old(k).firstdatapoint = length(vertcat(temp{:}))+1;
+               temp = {old(1:k).y}.';
+               old(k).lastdatapoint = length(vertcat(temp{:}));
+           end
+           
+           sumy = {old(:).y}.';
+           sumy = vertcat(sumy{:});
+           hp_sumy = highpass(sumy, hpf,old(1).fs);
+           
            for k = 1: length(old)
-               new(k).y = highpass(old(k).y, hpf,old(k).fs);
+               new(k).y = hp_sumy(old(k).firstdatapoint:old(k).lastdatapoint);
            end
             
         end

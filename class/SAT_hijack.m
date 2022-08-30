@@ -138,7 +138,7 @@ classdef SAT_hijack < handle % there will be only one copy of each SAT_sound
                     time_deriv(:,obj.num_slices) = (-fReal1(1:freq_range) .* fReal2(1:freq_range)) - (fImag1(1:freq_range) .* fImag2(1:freq_range));
                     freq_deriv(:,obj.num_slices) = (fImag1(1:freq_range) .* fReal2(1:freq_range)) - (fReal1(1:freq_range) .* fImag2(1:freq_range));
                     obj.num_slices=obj.num_slices+1;                    
-                end;
+                end
                 obj.num_slices=obj.num_slices-1; % the last increment in the loop has no values...  
                 obj.signal=zeros(1, obj.num_slices); % signal is a binary segmentation vector, false = silence, true = sound. 
                 obj.features.goodness(obj.num_slices)=0; % add one more value, to make the vector same size as all others...                

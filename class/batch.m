@@ -1,3 +1,4 @@
+
 % batch for data analysis
 classdef Batch < handle
     %UNTITLED6 Summary of this class goes here
@@ -99,7 +100,7 @@ classdef Batch < handle
 
         function neurons = getn_shift(b,shift_value)
            
-            for idx = 1: length(b.sneu) % heer should be parfor , i edited here just tio chelc the bug
+            parfor idx = 1: length(b.sneu) % heer should be parfor , i edited here just tio chelc the bug
                 NN = Neuron;
                 neurons{idx} = NN.shiftNeuron(b.sneu{idx},b.splx{idx},b.swavfolder{idx},shift_value);
             end
@@ -116,7 +117,7 @@ classdef Batch < handle
         
         function neurons = getn(b) % initiatialize neurons
             
-            for idx = 1: length(b.sneu) % Here should be parfor
+            parfor idx = 1: length(b.sneu) % Here should be parfor
                 neurons{idx} = Neuron(b.sneu{idx},b.splx{idx},b.swavfolder{idx});
                 
             end

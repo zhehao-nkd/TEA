@@ -577,7 +577,7 @@ classdef Archon
         end
         
         function A = genAnalysis(birdname,ZPid,channelname,unit) % generate Analysis
-            arch = Archon('D:/');
+            arch = Archon('./');%Archon('D:/');
             if ~isempty(find(~cellfun(@isempty, regexp(cellstr(extract.filesAllLevel('./','*.mat')),...
                     sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))))) % 如果当前folder已含有同名Analysis文件
                 disp('该Neuron的分析已经存在');
@@ -612,7 +612,7 @@ classdef Archon
             
             Ns = {};
             
-           for k = 1: length(plxfiles)
+           parfor k = 1: length(plxfiles)
                 
                 fid = regexp(plxfiles{k},'(?<=F)\d*','match'); % id for the file rank 
                 
@@ -668,7 +668,7 @@ classdef Archon
             
             
             
-            save(A.formated_imagename,'A','-v7.3');
+            save(A.formated_imagename,'A','-v7.3'); % 保存的路径上不能存在中文
             
         end
         

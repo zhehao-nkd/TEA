@@ -20,6 +20,7 @@ classdef PM % parameter
         % the function
         size3plots = [1986 97 895 672]
         size_wide = [1201 584 1732 407];
+        size1plot = [1947 500 1255 340];
         
         
     end

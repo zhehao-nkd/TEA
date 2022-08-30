@@ -22,8 +22,8 @@ classdef convert
         
         function newid = bid(rawid) % used for normalize the bird id to B345-like str
             
-            captured = regexp(rawid,'(?<letter>[a-zA-Z]+)(?<number>\d+)','names');
-            special_characters  = regexp(rawid,'(?<letter>TUT|BOS|Tut|Bos)','names');
+            captured = regexp(rawid,'(?<letter>[a-zA-Z]+)(?<number>\d{3})','names');
+            special_characters  = regexp(rawid,'(?<letter>TUT|BOS|Tut|Bos|V2)','names');
             if length(special_characters)~= 0
                 disp('It is a TUT or BOS!');
                 temp = convertStringsToChars(captured.letter); 
@@ -263,11 +263,11 @@ classdef convert
             
             switch color
                 case 'r'
-                    targetcolor = [225,0,0];
+                    targetcolor = uint8([225,0,0]);
                 case 'b'
-                    targetcolor = [0,0,225];
+                    targetcolor = uint8([0,0,225]);
                 case 'g'
-                    targetcolor = [0,225,0];
+                    targetcolor = uint8([0,225,0]);
             end
             
             range = 9;

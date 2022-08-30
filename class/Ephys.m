@@ -202,7 +202,8 @@ classdef Ephys < handle
        
     methods % 外部计算方法
         
-        function [pltsptimes,plty ] = allocate_variablePrePostLength(e, pltlen) % here the response is the collection of response
+        function [new_pltsptimes,plty] = allocate_variablePrePostLength(e, extlen)
+             % here the response is the collection of response
             
             n = e.sound.trigger;
             index = find([e.trigger.info.name].'== n);
@@ -213,15 +214,15 @@ classdef Ephys < handle
             for k = 1:length(initials)
                 e.sptimes{k} = e.spike.time( initials(k)<e.spike.time & e.spike.time<initials(k) + ylength)...
                     - initials(k);
-                presptimes{k} = e.spike.time( initials(k)- ylength<e.spike.time & e.spike.time<initials(k))- double((initials(k)-ylength));
-                pltsptimes{k} = e.spike.time( initials(k)- pltlen<e.spike.time& e.spike.time<initials(k) + ylength + pltlen)...
-                    - (initials(k)- e.pltext);
+                new_presptimes{k} = e.spike.time( initials(k)- ylength<e.spike.time & e.spike.time<initials(k))- double((initials(k)-ylength));
+                new_pltsptimes{k} = e.spike.time( initials(k)- extlen<e.spike.time& e.spike.time<initials(k) + ylength + extlen)...
+                    - (initials(k)- extlen);
             end
             
             
-            plty = [zeros(pltlen*e.fs,1);e.y;zeros(pltlen*e.fs,1)];
+            plty = [zeros(extlen*e.fs,1);e.y;zeros(extlen*e.fs,1)];
             
-            pltsptimes = e.pltsptimes;
+           
             
         end
 
@@ -485,19 +486,38 @@ classdef Ephys < handle
             draw.three(plty,e.fs,pltsptimes);
             xlabel(e.sound.name);
             subplot(3,1,1);
-            locs = e.getIndexOfSigSyllable;
-            for idx = 1: length(locs)
-                initial = (e.sound.initial(locs(idx))-e.sound.initial(1))/e.fs + e.pltext;
-                terminal = (e.sound.terminal(locs(idx))-e.sound.initial(1))/e.fs+ e.pltext;
-                line([initial,terminal],[10,10],'color','r');
-            end
+%             locs = e.getIndexOfSigSyllable;
+%             for idx = 1: length(locs)
+%                 initial = (e.sound.initial(locs(idx))-e.sound.initial(1))/e.fs + e.pltext;
+%                 terminal = (e.sound.terminal(locs(idx))-e.sound.initial(1))/e.fs+ e.pltext;
+%                 line([initial,terminal],[10,10],'color','r');
+%             end
             
         end
+        
+         function img = drawsaveSpec(e,ext)
+             fg = figure('Visible','off','color','w','Position',PM.size1plot);
+             [pltsptimes,plty ] = allocate_variablePrePostLength(e, ext);
+             draw.spec(plty,e.fs);
+             fr = getframe(fg);
+             [img,~] = frame2im(fr);
+             close(fg);
+         end
+         
+         function img = drawsaveRaster(e,ext)
+             fg = figure('Visible','off','color','w','Position',PM.size1plot);
+             [pltsptimes,plty ] = allocate_variablePrePostLength(e, ext);
+             draw.raster(pltsptimes,plty,e.fs);
+             fr = getframe(gcf);
+             [img,~] = frame2im(fr);
+             close(fg);
+         end
+         
         
         function e = threeWithFreqRelatedFeatures(e) % three plots for single syllable/element
             % e.updateplt;
             
-            figure('Visible','off','color','w');
+            figure('Visible','off','color','w','Position',PM.size3plots);
             %figure;
             %subplot(3,1,1);
             t = tiledlayout(3,1);
@@ -555,9 +575,7 @@ classdef Ephys < handle
             
             xlabel(e.sound.name);
         end
-        
-        
-        
+      
         function e = slendertwo(e) % slender version of two plots
             e.updateplt;
             figure('Visible','off','color','w','Position',[2104 35 468 1013])
@@ -614,15 +632,15 @@ classdef Ephys < handle
             figure('Position',[2157 670 560 420],'Color','w')
             draw.three(e.rawy,e.fs,e.rawsptimes);
             xlabel(e.sound.name);
-            subplot(3,1,1);
+           % subplot(3,1,1);
             %[~,locs] = e.getSigRespnse;
-            locs = e.getIndexOfSigSyllable(0) % arbitritary set latency as 0 !!!!!!
-            %locs = e.sig;
-            for idx = 1: length(locs) % To label response-eliciting elements
-                initial = e.sound.initial(locs(idx))/e.fs;
-                terminal = e.sound.terminal(locs(idx))/e.fs;
-                line([initial,terminal],[10,10],'color','r');
-            end
+%             locs = e.getIndexOfSigSyllable(0) % arbitritary set latency as 0 !!!!!!
+%             %locs = e.sig;
+%             for idx = 1: length(locs) % To label response-eliciting elements
+%                 initial = e.sound.initial(locs(idx))/e.fs;
+%                 terminal = e.sound.terminal(locs(idx))/e.fs;
+%                 line([initial,terminal],[10,10],'color','r');
+%             end
         end
         
         function respinfo = JudgeRespToWIthinSongFrags_fromStimuliToResponse(e,latency) % index of significant syllable

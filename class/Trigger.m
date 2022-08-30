@@ -10,100 +10,42 @@ classdef Trigger < handle
         raw
         trigger_fs
         inputpath
+        recording_time %记录时间
+        
     end
     
     methods
         
-        function t = Trigger(path_plx,mergeIdx) % mergeIdx非必须
+        function t = Trigger(path_plx)
             
             t.inputpath = path_plx;
             [~,t.plxname,~] = fileparts(path_plx);
             path_plx = convertStringsToChars(path_plx);
-            
-           
-           
-            plexonfile = readPLXFileC(path_plx,'events'); % read .plx files as a structure
-
-            
+            plexonfile = readPLXFileC(path_plx,'all'); % read .plx files as a structure
+            t.recording_time = datetime(plexonfile.Date,'ConvertFrom','datenum');
             PULSE_LOCATION = 0;
-            %
             % find the strat and stop field
-         
             
-            % Find the trigger plexonfile.EventChannels(1).Timestamps
-            for n = 1:length(plexonfile.EventChannels)
-                
-                if  strcmp(plexonfile.EventChannels(n).Name, 'DIG01') %只要存在dig channel，就认定为zeus
-                    PULSE_LOCATION = n;
-                    t.equipment = 'ZEUS';
-                    t.raw = plexonfile.EventChannels(PULSE_LOCATION);
-
-                    start_idx = find(~cellfun(@isempty, regexp({plexonfile.EventChannels.Name}.','Start')));
-                    stop_idx = find(~cellfun(@isempty, regexp({plexonfile.EventChannels.Name}.','Stop')));
-                    start_timestamps = plexonfile.EventChannels(start_idx).Timestamps;
-                    stop_timestamps = plexonfile.EventChannels(stop_idx).Timestamps;
-                    if length(start_timestamps) > 1
-                        if exist('mergeIdx','var')
-                            temp = t.raw.Timestamps(start_timestamps(mergeIdx)<= t.raw.Timestamps);
-                            raw_to_analysis = temp(temp<=stop_timestamps(mergeIdx));
-                        else
-                            raw_to_analysis = t.raw.Timestamps;
-                        end
-                    else
-                        raw_to_analysis = t.raw.Timestamps;
-                    end
-
-                    
-                    % to judge whether to use the binary-code decoder or
-                    % dig signal extractior
-%                     diff_raw = diff(t.raw.Timestamps);
-%                     
-%                    
-%                     diff_num = histcounts(diff_raw,unique(diff_raw));
-%                     [diff_num,~] = sort(diff_num);
-%                     sort(unique(diff_raw))
-                    newdiffs = [];
-                    diffs = diff(raw_to_analysis);
-                    
-                    for mm = 1: length(diffs)
-                        newdiffs(mm) = round( double(diffs(mm)),-2 );
-                    end
-                    
-                    method_choose_thres = 5000;
-                    
-                    newdiffs = newdiffs(newdiffs < method_choose_thres );
-                    
-                    if length(unique(newdiffs))== 1 % actually this is very dangerous !!!!!!!!!!!!!!!
-                        t.info = t.digextract; % digital
-                        clear plexonfile
-                        return           
-                    elseif length(unique(newdiffs))== 2
-                        
-                         t.info = t.digbidecode; % digital
-                        clear plexonfile
-                        return  % if system is zeus, the function will return here                    
-                    end        
+            if ~isempty(regexp(plexonfile.AcquiringSoftware,'Zeus'))
+                if  ~isempty(plexonfile.EventChannels(1).Timestamps)
+                    code_method = 1;
+                else
+                    code_method = 2;
                 end
-                
+            elseif ~isempty(regexp(plexonfile.AcquiringSoftware,'OmniPlex'))
+                code_method = 3;
             end
             
-            plexonfile = readPLXFileC(path_plx,'continuous');
-            
-            for m = 1:length(plexonfile.ContinuousChannels)
-                
-                if  strcmp(plexonfile.ContinuousChannels(m).Name, 'AI01')
-                    PULSE_LOCATION = m;
-                    t.equipment = 'PLEXON';
-                    t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
-                    t.info = t.extract; % not digital
-                    clear plexonfile
-                    return
-                end
+            switch code_method
+                case 1
+                    t.coreTriggerZeusDig(path_plx);
+                case 2
+                    t.coreTriggerZeusAna(path_plx);
+                case 3
+                    t.coreTriggerPlexAna(path_plx);
             end
             
-            
-            
-        end   
+        end
         
         function time = getTime(t, pulse_number)
             if exist('pulse_number','var')
@@ -112,7 +54,7 @@ classdef Trigger < handle
                 time = {t.info.time}.';
             end
         end
-  
+        
         function properties = getsingle(t, which)
             properties.equipment = t.equipment;
             properties.info = t.info(which);
@@ -136,7 +78,7 @@ classdef Trigger < handle
             
             % As different stimuli have different number of square pulses, this works for grouping pulse clusters
             
-           % WINDOW = fs; % The length of searching window, 30000samples means 1 second for Zeus
+            % WINDOW = fs; % The length of searching window, 30000samples means 1 second for Zeus
             % 07/11 2021 dynamic window
             intervals = pulse_initials(2:end) - pulse_initials(1:end-1);
             unique_intervals = unique(intervals,'sorted');
@@ -146,7 +88,7 @@ classdef Trigger < handle
                 
                 if n == length(pulse_initials)
                     groups{m}= [groups{m},pulse_initials(n)];
-
+                    
                 else
                     
                     if pulse_initials(n+1)-pulse_initials(n)<WINDOW
@@ -207,35 +149,35 @@ classdef Trigger < handle
         end
         
         function info = extract(t)
-
+            
             fs = t.raw.ADFrequency; % avoid hard-coding;
             t.trigger_fs = fs;
             %dbstop if error
             pulse_channel = t.raw.Values;
             %detecting triggers and recording their time
-
+            
             % debug pulse_channel = trigger.Values;
-
+            
             MIN_THRESHOLD = 25000; % May vary in different situations
             MAX_THRESHOLD = 40000; % May vary in different situations
-
+            
             pulse_channel(pulse_channel < MIN_THRESHOLD | pulse_channel > MAX_THRESHOLD) = 0; %Convert singals of pulse channel to 0 and 1
             %figure; plot(pulse_channel);
-
+            
             pulse_channel(pulse_channel ~= 0) = 1; % based on the threshold
             %figure; plot(pulse_channel);
-
-
-
+            
+            
+            
             k = find(pulse_channel);   % Find all the 1
-
+            
             if k(1) == 1 % incase that k(1) = 1, when there are noises interrrput the pulse channel
                 tempinitial = find(pulse_channel == 0);
                 newinitial = tempinitial(1);
                 pulse_channel = pulse_channel(newinitial:end);
                 k = find(pulse_channel);
             end
-
+            
             %    difference =  k(2:end)- k(1:end-1) ;
             %    idxDif = find(difference ~= 1);
             pulse_initials = k(pulse_channel(k - 1)==0);      % Find the initial of all the pulses
@@ -251,9 +193,9 @@ classdef Trigger < handle
             pulse_ends (isnan(pulse_ends)) = [];
             % 根据 diff的种类选择 decode 的 类型
             ini_diffs =  round(diff(pulse_initials),-1);
-
+            
             group_split_thres = 5000;
-
+            
             to_judge_decode_method = ini_diffs(ini_diffs < 5000);
             if length(unique(to_judge_decode_method)) == 1
                 % use the direct decode method
@@ -261,24 +203,24 @@ classdef Trigger < handle
                 groups ={};
                 coder.varsize(groups);
                 % As different stimuli have different number of square pulses, this works for grouping pulse clusters
-
+                
                 WINDOW = fs; % The length of searching window, 20000samples means 1 second
                 for n = 1: length(pulse_initials)
-
+                    
                     if n == length(pulse_initials)
                         groups{m}= [groups{m},pulse_initials(n)];
-
-
-
+                        
+                        
+                        
                     else
-
+                        
                         if pulse_initials(n+1)-pulse_initials(n)<WINDOW
                             if isempty(groups)
                                 groups{m} = pulse_initials(n);
                             else
                                 groups{m}=[ groups{m},pulse_initials(n)];
                             end
-
+                            
                         else
                             if isempty(groups)
                                 groups{m}= pulse_initials(n);
@@ -290,18 +232,18 @@ classdef Trigger < handle
                                 groups{m} =[];
                             end
                         end
-
-
-
+                        
+                        
+                        
                     end
-
+                    
                 end
                 % For collecting .time and .number
                 detection.samplepoint = [];
                 detection.name= [];
                 coder.varsize(detection.name,detection.samplepoint);
                 for o = 1:length(groups)
-
+                    
                     detection.samplepoint(o) = groups{o}(1);
                     detection.name(o) = length(groups{o});
                 end
@@ -354,12 +296,12 @@ classdef Trigger < handle
                         info(e).time(yy) = double(collects{yy}(1))/fs;   % fs equals to 30000
                     end
                 end
-               
+                
             end
             % line([pulse_initials,pulse_initials],[0,5]); %for debug
-
+            
         end
-
+        
         function info = digbidecode(t) % decode binary trigger information, which is compatible with the encoder
             
             
@@ -410,17 +352,109 @@ classdef Trigger < handle
                 for yy = 1: length(collects)
                     % important note here, here collects return int32, but what
                     % is necessary is double
-                     info(e).time(yy) = double(collects{yy}(1))/fs;   % fs equals to 30000
+                    info(e).time(yy) = double(collects{yy}(1))/fs;   % fs equals to 30000
                 end
             end
             
         end
-       
+        
+        function coreTriggerZeusDig(t,path_plx)
+            path_plx = convertStringsToChars(path_plx);
+            plexonfile = readPLXFileC(path_plx,'all'); % read .plx files as a structure
+            PULSE_LOCATION = 0;
+            
+            for n = 1:length(plexonfile.EventChannels)
+                
+                %if  strcmp(plexonfile.EventChannels(n).Name, 'DIG01') %只要存在dig channel，就认定为zeus,且rigger是digital
+                if  strcmp(plexonfile.EventChannels(n).Name, 'DIG01')
+                    PULSE_LOCATION = n;
+                    t.equipment = 'ZEUS';
+                    t.raw = plexonfile.EventChannels(PULSE_LOCATION);
+                    
+                    start_idx = find(~cellfun(@isempty, regexp({plexonfile.EventChannels.Name}.','Start')));
+                    stop_idx = find(~cellfun(@isempty, regexp({plexonfile.EventChannels.Name}.','Stop')));
+                    start_timestamps = plexonfile.EventChannels(start_idx).Timestamps;
+                    stop_timestamps = plexonfile.EventChannels(stop_idx).Timestamps;
+                    if length(start_timestamps) > 1
+                        if exist('mergeIdx','var')
+                            temp = t.raw.Timestamps(start_timestamps(mergeIdx)<= t.raw.Timestamps);
+                            raw_to_analysis = temp(temp<=stop_timestamps(mergeIdx));
+                        else
+                            raw_to_analysis = t.raw.Timestamps;
+                        end
+                    else
+                        raw_to_analysis = t.raw.Timestamps;
+                    end
+                    
+                    
+                    % to judge whether to use the binary-code decoder or
+                    % dig signal extractior
+                    %                     diff_raw = diff(t.raw.Timestamps);
+                    %
+                    %
+                    %                     diff_num = histcounts(diff_raw,unique(diff_raw));
+                    %                     [diff_num,~] = sort(diff_num);
+                    %                     sort(unique(diff_raw))
+                    newdiffs = [];
+                    diffs = diff(raw_to_analysis);
+                    
+                    for mm = 1: length(diffs)
+                        newdiffs(mm) = round( double(diffs(mm)),-2 );
+                    end
+                    
+                    method_choose_thres = 5000;
+                    
+                    newdiffs = newdiffs(newdiffs < method_choose_thres );
+                    
+                    if length(unique(newdiffs))== 1 % actually this is very dangerous !!!!!!!!!!!!!!!
+                        t.info = t.digextract; % digital
+                        clear plexonfile
+                        return
+                    elseif length(unique(newdiffs))== 2
+                        
+                        t.info = t.digbidecode; % digital
+                        clear plexonfile
+                        return  % if system is zeus, the function will return here
+                    end
+                end
+                
+            end
+            
+        end
+        
+        function coreTriggerZeusAna(t,path_plx)
+            
+            plexonfile = readPLXFileC(path_plx,'continuous');
+            
+            PULSE_LOCATION = find(~cellfun(@isempty, regexp({plexonfile.ContinuousChannels.Name}.', 'AIN02')));
+            t.equipment = 'ZEUS';
+            t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
+            t.raw.Values = -t.raw.Values;
+            t.info = t.extract; % not digital    
+        end
+        
+        function coreTriggerPlexAna(t,path_plx)
+            plexonfile = readPLXFileC(path_plx,'continuous');
+            
+            for m = 1:length(plexonfile.ContinuousChannels)
+                
+                if  strcmp(plexonfile.ContinuousChannels(m).Name, 'AI01')
+                    PULSE_LOCATION = m;
+                    t.equipment = 'PLEXON';
+                    t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
+                    t.info = t.extract; % not digital
+                    clear plexonfile
+                    return
+                end
+            end
+        end
         
     end
     
     
     methods(Static)
+        
+       
         
         function binary(outdir,from_which,pre,post) % add trigger channel to stimuli - Binary code
             
@@ -491,7 +525,7 @@ classdef Trigger < handle
             if ~exist('range','var')
                 range = [0.5,0.75]; % unit is second
             end
-             pre_length = 0;
+             %pre_length = 0;
              
             GAP_DURATION = 1*8e-3; PULSE_DURATION = 5*8e-3; AMPLITUDE = 1;
             
@@ -510,6 +544,7 @@ classdef Trigger < handle
             for n = 1:length(files)
                 
                 post_length = (range(2)-range(1))*rand + range(1);
+                pre_length = (range(2)-range(1))*rand + range(1);
                 
                 [y,fs] = audioread(files{n}); % y means original y
                 binary_code = de2bi(n + from_which - 1); 
@@ -517,7 +552,7 @@ classdef Trigger < handle
                 one_pulse = [zeros(GAP_DURATION*fs,1);zeros(GAP_DURATION*fs,1);AMPLITUDE*ones(GAP_DURATION*fs,1)]; % 0-0-1
                 
                 % write data channel
-                yD = [zeros(pre_length*fs,1);y;zeros(round(post_length*fs),1)];
+                yD = [zeros(round((pre_length*fs)),1);y;zeros(round(post_length*fs),1)];
                 
                 % write trigger channel
                 pulses = AMPLITUDE*ones(GAP_DURATION*fs,1); % Here the initial state of variable-pulses is a pulse
@@ -535,6 +570,7 @@ classdef Trigger < handle
                 yOut = [yT,yD];
                 
                 [~,name,~] = fileparts(files{n});
+                
                 audiowrite(sprintf('%s/%s-%02uPulses.wav',outdir,name,n + from_which - 1),yOut,fs);
                 %from_which = from_which + 1;
                 

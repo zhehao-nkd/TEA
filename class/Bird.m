@@ -316,13 +316,23 @@ classdef Bird < handle
             
             birds = horzcat(birdlog(:).Var4);
             
-            tokens = regexp(birds,'(?<name>[OBRGY]\d{3})♂\((?<anno>\d+/\d+)\)','tokens');  % find male birds with birthday wrote
+            % anno means annotation
+            tokens = regexp(birds,'(?<name>[OBRGY]\d{3})♂\((?<anno>\d+/\d+)(?<name2>, ?(ZC|BC|Big|BB|BF))?\)','tokens');  % find male birds with birthday wrote
+            %tokens = regexp(birds,'(?<name>[OBRGY]\d{3})♂\((?<anno>\d+/\d+), ZC\)','tokens')
             tokens = tokens';
             
-            candi = {};
+%             candi = {};
+%             for idx = 1: length(tokens)
+%                 candi{idx} = tokens{idx}{1};
+%                 %candi(idx).anno = tokens{idx}{2};
+%             end
+            
+            
+             candi = struct;
             for idx = 1: length(tokens)
-                candi{idx} = tokens{idx}{1};
-                %candi(idx).anno = tokens{idx}{2};
+                candi(idx).id = tokens{idx}{1};
+                candi(idx).birthdate = tokens{idx}{2};
+                candi(idx).reserve = tokens{idx}{3};
             end
             
             pathlist = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx";
@@ -333,7 +343,7 @@ classdef Bird < handle
             shortlist = struct;
             for trump = 1: length(candi)
                 
-                thisbird = find(strcmp({birdlist(:).BirdID}.',candi{trump}));
+                thisbird = find(strcmp({birdlist(:).BirdID}.',candi(trump).id));
                 
                 
                 birthdate = datetime( num2str(birdlist(thisbird).HatchDate),'InputFormat','yyMMdd');
@@ -342,11 +352,12 @@ classdef Bird < handle
                 
                 if dph > 90
                     s = s + 1;
-                    shortlist(s).id = candi{trump};
-                    shortlist(s).age = dph;
+                    shortlist(s).id = candi(trump).id;
                     
+                    shortlist(s).age = dph;
+                    shortlist(s).annotation = candi(trump).reserve;
                     var4 = {birdlog(:).Var4}.';
-                    idvar4 = find(~cellfun(@isempty,regexp(var4,candi{trump})));
+                    idvar4 = find(~cellfun(@isempty,regexp(var4,candi(trump).id)));
                     shortlist(s).cage =  birdlog(idvar4).Cage_;
                     shortlist(s).father =  birdlist(thisbird).father;
                 end
@@ -383,8 +394,8 @@ classdef Bird < handle
                     shortlist(b).record = '[ERROR]';
                 end
                 
-                disp(sprintf('Candidate%u------------%s---------%udph---------Cage%u----------%s',...
-                    b,shortlist(b).id,shortlist(b).age,shortlist(b).cage,shortlist(b).record ));
+                disp(sprintf('Candidate%u---------%s---------%udph--------Cage%u--------%s----——-备注：',...
+                    b,shortlist(b).id,shortlist(b).age,shortlist(b).cage,shortlist(b).record,shortlist(b).annotation ));
                 newline;
             end
             
@@ -398,8 +409,8 @@ classdef Bird < handle
             for no = 1: length(notyet)
                 
                 
-                disp(sprintf('Candidate%u------------%s---------%udph---------Cage%u----------%s',...
-                    no,notyet(no).id,notyet(no).age,notyet(no).cage,notyet(no).record ));
+                disp(sprintf('Candidate%u------------%s---------%udph---------Cage%u----------%s----——-备注：',...
+                    no,notyet(no).id,notyet(no).age,notyet(no).cage,notyet(no).record,notyet(no).annotation ));
                 newline;
             end
             
@@ -409,7 +420,7 @@ classdef Bird < handle
         function siblings_names = findSiblings(birdname)
             % configs for reading the table
             numVars = 5;
-            varNames = {'BirdID','Hatch date','Gender','father','mother','isolate'} ;
+            varNames = {'BirdID','Hatchdate','Gender','father','mother','isolate'} ;
             varTypes = {'string','string','string','string','string','string'} ;
             dataStartLoc = 'A2';
             
@@ -433,6 +444,13 @@ classdef Bird < handle
             
             siblings_index = setdiff(children_index, index);
             siblings_names = birdlist.BirdID(siblings_index);
+            hatch_dates =birdlist.Hatchdate(siblings_index);
+            
+            
+            for k = 1: length(siblings_names)
+                disp(sprintf('sibling is:  %s, hatching date: %s, recording state: %s',siblings_names{k},hatch_dates{k},Bird.have_been_recorded(siblings_names{k})));
+                newline;
+            end
             
         end
         
@@ -461,6 +479,38 @@ classdef Bird < handle
             
         end
        
+        function answer = have_been_recorded(birdname)
+            
+             fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
+            
+            folders = cellstr(extract.folder(fdir).');
+            folernames = {};
+            for k = 1: length(folders)
+                temp = split(folders{k},'\');
+                foldernames{k} = temp{length(temp)};
+                
+            end
+            
+            color = regexp(birdname,'[A-Z]','match');
+            number = regexp(birdname,'\d+','match');
+            
+            colorids = find(~cellfun(@isempty, regexp(foldernames,color{1})));
+            numberids = find(~cellfun(@isempty, regexp(foldernames,number{1})));
+            
+            sharedids = intersect(colorids,numberids);
+            
+            if isempty(sharedids)
+                answer = 'No';
+            elseif length(sharedids) == 1
+                answer = 'Yes';
+            elseif length(sharedids) >1
+                answer = 'More than one hits';
+            end
+%             folders (sharedids)
+            
+            
+%             tokens = regexp(folders,'(?<color>[OBRGY][A-Za-z]+)(?<number>\d{3})','tokens');
+        end
         
         function answer = areTheySiblings(birdname1,birdname2)
             %判断两只鸟是否是siblings
@@ -472,6 +522,28 @@ classdef Bird < handle
             end
             
         end
+        
+        function date = getHatchdate(birdname)
+            % the function to get hatch date
+            numVars = 5;
+            varNames = {'BirdID','Hatchdate','Gender','father','mother','isolate'} ;
+            varTypes = {'string','string','string','string','string','string'} ;
+            dataStartLoc = 'A2';
+            
+            opts = spreadsheetImportOptions('Sheet',1,'NumVariables',numVars,...
+                'VariableNames',varNames,...
+                'VariableTypes',varTypes,...
+                'DataRange', dataStartLoc);
+            
+           % preview('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts)
+            birdlist = readtable('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts);
+
+            % get the corresponding index, set fathername
+            index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
+            date = birdlist.Hatchdate(index);
+            disp(date);
+        end
+        
     end
 end
 
