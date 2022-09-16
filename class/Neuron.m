@@ -1713,7 +1713,93 @@
             hold off
         end
         
-        function IMG = pltthree(n) % draw three plot
+        function IMG = pltthree(n,mode) % draw three plot
+            
+            % Judge which mode to use
+            if ~exist('mode','var')
+                mode = 0; % default mode is 0
+            end
+             
+            enames = {};
+            for idx = 1: length(n.e)
+                n.e{idx}.pltthree(0);   enames{idx} = n.e{idx}.sound.name;
+                frame = getframe(gcf);  I{idx} = frame.cdata;  close(gcf);
+            end
+            
+            
+            if mode == 1 % MODE-1 arrange figure acoording to the birdnames
+                
+                % ids of different types of stimuli
+                normids = find(~cellfun(@isempty, regexp(cellstr(enames.'),'norm')));
+                mirids = find(~cellfun(@isempty, regexp(cellstr(enames.'),'mirror')));
+                revids = find(~cellfun(@isempty, regexp(cellstr(enames.'),'reverse')));
+                degids = find(~cellfun(@isempty, regexp(cellstr(enames.'),'deg|Deg')));
+                replaids = find(~cellfun(@isempty, regexp(cellstr(enames.'),'Catego|catego|repla|Repla')));
+                fragids = find(~cellfun(@isempty, regexp(cellstr(enames.'),'Frag|Syl|syl')));
+                garfids = find(~cellfun(@isempty, regexp(cellstr(enames.'),'Garf|garf')));
+                otherids = setdiff([1:length(n.e)].',[normids;mirids;revids;degids;replaids;fragids;garfids]);
+                
+                % get all the birdnames appeared within the stimuli set
+                modi_bnames1 = regexp(cellstr([enames{setdiff([1:length(n.e)].',replaids)}]).','[OGBYR]\d{3}|Fcall|Mcall|Het','match');
+                modi_bnames1 = horzcat(modi_bnames1{:}); % 非repla的stimuli对应的birdnames
+                fct1 = @(x) split(x,'-before'); fct2 = @(x) x{1}; % 这个trick很好！
+                repla_enames = cellfun(@(x) fct2(fct1(x)),cellstr({enames{replaids}}.'),'Uni',0);
+                modi_bnames2 = regexp(cellstr(repla_enames),'[OGBYR]\d{3}|Fcall|Mcall|Het','match'); % repla的stimuli对应的birdnames
+                modi_bnames2 = horzcat(modi_bnames2{:});
+                modi_bnames = unique(vertcat(modi_bnames1.',modi_bnames2.'));
+                
+                % rearrange all the figures
+                figure_map = {};
+                for k = 1:length(modi_bnames)
+                    derivatives = find(~cellfun(@isempty,regexp(cellstr(enames.'),modi_bnames{k})));
+                    sub_norm = intersect(normids,derivatives);
+                    sub_rev = intersect(revids,derivatives);
+                    sub_mir = intersect(mirids,derivatives);
+                    sub_deg = intersect(degids,derivatives);
+                    sub_frag = intersect(fragids,derivatives);
+                    sub_other = intersect(otherids,derivatives);
+                    repla = intersect(replaids,derivatives);
+                    figure_map{k} = [sub_norm(:);sub_rev(:);sub_mir(:);sub_deg(:);sub_frag(:)]; % force each to be column vectors
+                end
+                [~,idx] = sort(cellfun(@length,figure_map),'descend');
+                figure_map = figure_map(idx);
+                Icollect = {};
+                for k = 1:length(figure_map)
+                    Icollect{k} = {I{figure_map{k}}}.' ;
+                end
+                n.draw_waveform;     % draw waveform
+                frame = getframe(gcf);
+                Icollect{length( Icollect) + 1} = {frame.cdata};
+                close(gcf);
+                Iall = convert.mergeImage(Icollect);
+                imwrite(Iall,sprintf('Three_%s.png',n.neuronname));
+                return
+            end
+            
+            
+            % This is Mode-zero
+            n.draw_waveform;     % draw waveform
+            frame = getframe(gcf);
+            I{length( I) + 1} = frame.cdata;
+                
+            if length(I) > 30; lieshu = 9;
+            else;lieshu = 6; end;
+            
+            hangshu = ceil(length(I)/lieshu);
+            rest = lieshu*hangshu - length(I);
+            white = uint8(255*ones(size(I{1})));
+            
+            if rest > 0
+                for k = 1:rest;I = [I,white];end;
+            end
+            
+            reshapedI = reshape(I, lieshu,[])';clear I;
+            Iall = cell2mat(reshapedI);
+            imwrite(Iall,sprintf('Three_%s.png',n.neuronname));
+            
+        end
+        
+          function IMG = Two(n) % draw three plot
             
 %             enames = {};
 %             for k = 1:length(n.e)
@@ -1729,16 +1815,16 @@
             
             
             for idx = 1: length(n.e)
-                n.e{idx}.pltthree(0);%_with_sig_resp; % newer version of threeplot drawing method
+                n.e{idx}.two;%_with_sig_resp; % newer version of threeplot drawing method
                 frame = getframe(gcf);
                 I{idx} = frame.cdata;
                 close(gcf);
             end
             %
-            n.draw_waveform;     % draw waveform
-            frame = getframe(gcf);
-            I{length(I)+ 1} = frame.cdata;
-            close(gcf);
+            %n.draw_waveform;     % draw waveform
+%             frame = getframe(gcf);
+%             I{length(I)+ 1} = frame.cdata;
+%             close(gcf);
             
             % draw blank white
             if length(I) > 30

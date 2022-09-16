@@ -1,10 +1,10 @@
 % bird related function
 % A class to extract song from the bucket surver, birdsong folders
 classdef Bird < handle
-    %BIRD Summary of this class goes here
-    %   Detailed explanation goes here
+    %All stuff about selecting birds, check their siblings, father, song
+    %recording state
     
-  properties
+    properties
         folders
         selected
     end
@@ -18,10 +18,10 @@ classdef Bird < handle
                 display('iso exists!');
                 load('isoid.mat');
             else
-               display('iso mat do not exists!');
+                display('iso mat do not exists!');
                 pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx"
                 pathlist = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx"
-                isoid = Bird.extriso(pathlog, pathlist);    
+                isoid = Bird.extriso(pathlog, pathlist);
             end
             
             b.rmbad(isoid); % remove bad folder
@@ -29,7 +29,104 @@ classdef Bird < handle
             
         end
         
-        function b = rmbad(b,iso) % iso is a cell consists of isolated id
+        
+        function b = rand(b)
+            rng(1,'twister'); % repeatable random number
+            b.folders = b.folders(randperm(numel(b.folders)));
+        end
+        
+        function b = select(b,idx)
+            if exist('idx','var')
+                b.selected = b.folders(idx);
+            else
+                b.selected = b.folders;
+            end
+        end
+        
+        function collectsyllables(b,file_per_folder) % generate .mat file for avgn analysis
+            
+            dbstop if error
+            outdir = 'E:\automaticallyCollectedsyllables\bucket_avgn'
+            mkdir(outdir);
+            tic;
+            if isempty(b.selected)
+                disp('Specify folders to use!!!');
+                pause;
+            else
+                for n = 1: length(b.selected)
+                    %for n = 1: length(folders)
+                    fprintf('Current Folder:%s, %n out of %n ',b.selected{n}, n, length(b.selected));
+                    % for each folder
+                    [~,inputid,~] = fileparts(b.selected{n});
+                    filenames = extract.filename(b.selected{1,n},'*.wav');
+                    %filenames = extractAdult(filenames,inputid,pathlist);
+                    %filenames = restrictCentroid(filenames); % restricit filenames by its centroid
+                    filenames = filenames(randperm(numel(filenames))); % randomize filenames
+                    
+                    if isempty(filenames)
+                        disp('This folder contain only juvenile songs');
+                        newline;
+                        continue
+                    end
+                    
+                    if exist('file_per_folder','var')
+                        minlen = min(file_per_folder, length(filenames));
+                    else
+                        minlen = length(filenames);
+                    end
+                    
+                    filenames = filenames(1:minlen);
+                    
+                    
+                    %collect = cellfun(@(file) Raw(file).avgn, filenames,'UniformOutput',false);
+                    % cellfun is slow!!!!!!!!!!!!!!!
+                    
+                    parfor idx = 1: length(filenames)
+                        collect{idx} = Raw(filenames{idx}).avgn;
+                    end
+                    
+                    syllables =  horzcat(collect{:});
+                    parts = strsplit(b.selected{n},'\');
+                    save(sprintf('%s/%s.mat',outdir,convert.bid(parts{end})),'syllables');
+                    
+                    
+                    
+                    toc;
+                    newline;
+                end
+                
+                
+                
+            end
+            
+            
+        end
+        
+        
+    end
+    
+    
+    methods(Static)
+        
+        
+        function b = rmbad(input_dirs) % iso is a cell consists of isolated id
+            input_dirs = extract.folder("Z:\Yazaki-SugiyamaU\Bird-song").';
+            
+             numVars = 5;
+            varNames = {'BirdID','Hatchdate','Gender','father','mother','isolate'} ;
+            varTypes = {'string','string','string','string','string','string'} ;
+            dataStartLoc = 'A2';
+            
+            opts = spreadsheetImportOptions('Sheet',1,'NumVariables',numVars,...
+                'VariableNames',varNames,...
+                'VariableTypes',varTypes,...
+                'DataRange', dataStartLoc);
+            
+            % preview('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts)
+            birdlist = readtable('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts);
+            
+            
+            
             dbstop if error
             [~,fnames,~] = cellfun(@fileparts,b.folders,'UniformOutput',false);
             
@@ -44,7 +141,7 @@ classdef Bird < handle
                 
             end
             
-            % remove iso
+            % remove isolated birds
             for m = 1:length(iso)
                 
                 idxes = find (~cellfun(@isempty, regexpi(new_fnames, iso(m))));
@@ -85,88 +182,14 @@ classdef Bird < handle
             
         end
         
-        function b = rand(b)
-            rng(1,'twister'); % repeatable random number
-            b.folders = b.folders(randperm(numel(b.folders)));
-        end
         
-        function b = select(b,idx)
-            if exist('idx','var')
-                b.selected = b.folders(idx);
-            else 
-                b.selected = b.folders;
-            end
-        end
-        
-        function collectsyllables(b,file_per_folder) % generate .mat file for avgn analysis
-            
-            dbstop if error
-            outdir = 'E:\automaticallyCollectedsyllables\bucket_avgn'
-            mkdir(outdir);
-            tic;
-            if isempty(b.selected)
-                disp('Specify folders to use!!!');
-                pause;
-            else
-                for n = 1: length(b.selected)
-                    %for n = 1: length(folders)
-                    fprintf('Current Folder:%s, %n out of %n ',b.selected{n}, n, length(b.selected));
-                    % for each folder
-                    [~,inputid,~] = fileparts(b.selected{n});
-                    filenames = extract.filename(b.selected{1,n},'*.wav');
-                    %filenames = extractAdult(filenames,inputid,pathlist);
-                    %filenames = restrictCentroid(filenames); % restricit filenames by its centroid
-                    filenames = filenames(randperm(numel(filenames))); % randomize filenames
-
-                    if isempty(filenames)
-                        disp('This folder contain only juvenile songs');
-                        newline;
-                        continue
-                    end
-
-                    if exist('file_per_folder','var')
-                        minlen = min(file_per_folder, length(filenames));
-                    else
-                        minlen = length(filenames);
-                    end
-                     
-                    filenames = filenames(1:minlen);
-
-
-                    %collect = cellfun(@(file) Raw(file).avgn, filenames,'UniformOutput',false);
-                    % cellfun is slow!!!!!!!!!!!!!!!
-                    
-                    parfor idx = 1: length(filenames)
-                        collect{idx} = Raw(filenames{idx}).avgn;
-                    end
-                    
-                    syllables =  horzcat(collect{:});
-                    parts = strsplit(b.selected{n},'\');
-                    save(sprintf('%s/%s.mat',outdir,convert.bid(parts{end})),'syllables');
-                    
-                    
-                    
-                    toc;
-                    newline;
-                end
-            
-               
-               
-            end
-            
-            
-            end
-        
-        
-    end
-    
-    
-    methods(Static)
-        
-        
-    function isofromlog = extriso(pathlog, pathlist) % extract id of isolated bird
+        function isofromlog = extriso(pathlog, pathlist) % extract id of isolated bird
             dbstop if error
             % a function for extract id of isolated birds from birdlog
+            
+            pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx"
+            if ~exist(yourFolder, 'dir')
+            end
             
             %path = 'C:\Users\Zhehao\Desktop\Bird log2018 _ver_2.xlsx'
             
@@ -253,59 +276,63 @@ classdef Bird < handle
     
     methods(Static)
         function info = birdsong(~)
-           dbstop if error
-           fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
-
-           folders = cellstr(extract.folder(fdir).');
-
-           match = regexp(folders,'(?<color>[OBRGY][A-Za-z]+)(?<number>\d{3})','match');
-           
-           token = regexp(folders,'(?<color>[OBRGY])[A-Za-z]+(?<number>\d{3})','tokens');
-           
-           not0 = find(~cellfun(@isempty,token)); % idx of tokens that are not zero
-           
-           token = token(not0);
-           
-           for k = 1: length(token)
-               abbrev{k} = [token{k,1}{1}{1},token{k,1}{1}{2}];
-           end
-           
-           
-           pathlist = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx";
-           birdlist = table2struct(readtable(pathlist));
-           ID = {birdlist.BirdID}.';
-           
-           
-           for m = 1: length(abbrev)
-               thisidx = find(~cellfun(@isempty,regexp(ID,abbrev{m})));
-               if ~isempty(thisidx)
-                   info(m).name = abbrev{m};
-                   info(m).gender = birdlist(thisidx).x__;
-               end
-               
-           end
-           
+            dbstop if error
+            fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
+            
+            folders = cellstr(extract.folder(fdir).');
+            
+            match = regexp(folders,'(?<color>[OBRGY][A-Za-z]+)(?<number>\d{3})','match');
+            
+            token = regexp(folders,'(?<color>[OBRGY])[A-Za-z]+(?<number>\d{3})','tokens');
+            
+            not0 = find(~cellfun(@isempty,token)); % idx of tokens that are not zero
+            
+            token = token(not0);
+            
+            for k = 1: length(token)
+                abbrev{k} = [token{k,1}{1}{1},token{k,1}{1}{2}];
+            end
+            
+            
+            pathlist = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx";
+            birdlist = table2struct(readtable(pathlist));
+            ID = {birdlist.BirdID}.';
+            
+            
+            for m = 1: length(abbrev)
+                thisidx = find(~cellfun(@isempty,regexp(ID,abbrev{m})));
+                if ~isempty(thisidx)
+                    info(m).name = abbrev{m};
+                    info(m).gender = birdlist(thisidx).x__;
+                end
+                
+            end
+            
         end
+        
         
         function fem = female(~)
-           info = bird.birdsong;
-           gender = {info.gender}.';
-           idx = find(cellfun(@isempty,gender)); % Find the indexes of empty cell
-           gender(idx) = {'No'}; 
-
-           fidx = find( ~cellfun(@isempty, regexp(cellstr(gender),'♀') ));
-           
-           
-           fem = info(fidx);
-           
-                  % Replace the empty cells with '0000'
-     
-           
+            info = bird.birdsong;
+            gender = {info.gender}.';
+            idx = find(cellfun(@isempty,gender)); % Find the indexes of empty cell
+            gender(idx) = {'No'};
+            
+            fidx = find( ~cellfun(@isempty, regexp(cellstr(gender),'♀') ));
+            
+            
+            fem = info(fidx);
+            
+            % Replace the empty cells with '0000'
+            
+            
         end
         
-        function findcandidates
+        function findCandidates
             % A script to find out candidate  birds for Ephys experiments
             pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx"
+            
+            pathlist = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx";
+            
             birdlog = table2struct(readtable(pathlog, 'Sheet','today'));
             
             birdlog = birdlog(1:30); % 只取前30行
@@ -321,14 +348,7 @@ classdef Bird < handle
             %tokens = regexp(birds,'(?<name>[OBRGY]\d{3})♂\((?<anno>\d+/\d+), ZC\)','tokens')
             tokens = tokens';
             
-%             candi = {};
-%             for idx = 1: length(tokens)
-%                 candi{idx} = tokens{idx}{1};
-%                 %candi(idx).anno = tokens{idx}{2};
-%             end
-            
-            
-             candi = struct;
+            candi = struct;
             for idx = 1: length(tokens)
                 candi(idx).id = tokens{idx}{1};
                 candi(idx).birthdate = tokens{idx}{2};
@@ -350,17 +370,17 @@ classdef Bird < handle
                 currentdate = datetime('today');
                 dph = days(currentdate - birthdate);
                 
-                if dph > 90
-                    s = s + 1;
-                    shortlist(s).id = candi(trump).id;
-                    
-                    shortlist(s).age = dph;
-                    shortlist(s).annotation = candi(trump).reserve;
-                    var4 = {birdlog(:).Var4}.';
-                    idvar4 = find(~cellfun(@isempty,regexp(var4,candi(trump).id)));
-                    shortlist(s).cage =  birdlog(idvar4).Cage_;
-                    shortlist(s).father =  birdlist(thisbird).father;
-                end
+                
+                s = s + 1; % 此前限制了dph < 90,现在取消该限制
+                shortlist(s).id = candi(trump).id;
+                
+                shortlist(s).age = dph;
+                shortlist(s).annotation = candi(trump).reserve;
+                var4 = {birdlog(:).Var4}.';
+                idvar4 = find(~cellfun(@isempty,regexp(var4,candi(trump).id)));
+                shortlist(s).cage =  birdlog(idvar4).Cage_;
+                shortlist(s).father =  birdlist(thisbird).father;
+                
                 
             end
             
@@ -393,6 +413,7 @@ classdef Bird < handle
                 else
                     shortlist(b).record = '[ERROR]';
                 end
+                
                 
                 disp(sprintf('Candidate%u---------%s---------%udph--------Cage%u--------%s----——-备注：',...
                     b,shortlist(b).id,shortlist(b).age,shortlist(b).cage,shortlist(b).record,shortlist(b).annotation ));
@@ -429,9 +450,9 @@ classdef Bird < handle
                 'VariableTypes',varTypes,...
                 'DataRange', dataStartLoc);
             
-           % preview('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts)
+            % preview('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts)
             birdlist = readtable('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts);
-
+            
             % get the corresponding index, set fathername
             index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
             fathername = birdlist.father(index);
@@ -448,7 +469,7 @@ classdef Bird < handle
             
             
             for k = 1: length(siblings_names)
-                disp(sprintf('sibling is:  %s, hatching date: %s, recording state: %s',siblings_names{k},hatch_dates{k},Bird.have_been_recorded(siblings_names{k})));
+                disp(sprintf('sibling is:  %s, hatching date: %s, recording state: %s',siblings_names{k},hatch_dates{k},Bird.recording_state(siblings_names{k})));
                 newline;
             end
             
@@ -467,9 +488,9 @@ classdef Bird < handle
                 'VariableTypes',varTypes,...
                 'DataRange', dataStartLoc);
             
-           % preview('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts)
+            % preview('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts)
             birdlist = readtable('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts);
-
+            
             % get the corresponding index, set fathername
             index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
             fathername = birdlist.father(index);
@@ -478,10 +499,10 @@ classdef Bird < handle
             end
             
         end
-       
-        function answer = have_been_recorded(birdname)
+        
+        function answer = recording_state(birdname,mode)
             
-             fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
+            fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
             
             folders = cellstr(extract.folder(fdir).');
             folernames = {};
@@ -506,10 +527,37 @@ classdef Bird < handle
             elseif length(sharedids) >1
                 answer = 'More than one hits';
             end
-%             folders (sharedids)
+            
+            if exist('mode','var')&& mode == 1 % Mode1: care about whether the recorded song is adult or juvenile song
+                
+                
+            end
+            %             folders (sharedids)
             
             
-%             tokens = regexp(folders,'(?<color>[OBRGY][A-Za-z]+)(?<number>\d{3})','tokens');
+            %             tokens = regexp(folders,'(?<color>[OBRGY][A-Za-z]+)(?<number>\d{3})','tokens');
+        end
+        
+        
+        function answer = adultsongexist(birdname)
+            fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
+            
+            folders = cellstr(extract.folder(fdir).');
+            folernames = {};
+            for k = 1: length(folders)
+                temp = split(folders{k},'\');
+                foldernames{k} = temp{length(temp)};
+                
+            end
+            
+            color = regexp(birdname,'[A-Z]','match');
+            number = regexp(birdname,'\d+','match');
+            
+            colorids = find(~cellfun(@isempty, regexp(foldernames,color{1})));
+            numberids = find(~cellfun(@isempty, regexp(foldernames,number{1})));
+            
+            sharedids = intersect(colorids,numberids);
+            
         end
         
         function answer = areTheySiblings(birdname1,birdname2)
@@ -535,9 +583,9 @@ classdef Bird < handle
                 'VariableTypes',varTypes,...
                 'DataRange', dataStartLoc);
             
-           % preview('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts)
+            % preview('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts)
             birdlist = readtable('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts);
-
+            
             % get the corresponding index, set fathername
             index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
             date = birdlist.Hatchdate(index);

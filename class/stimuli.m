@@ -92,19 +92,16 @@ classdef stimuli < handle
         end
         
         function s = getprepro(s)
+               
             temp = stimuli.highpass(s.raw,450);
-            %temp = stimuli.fadeout_all(temp);
-            %temp = stimuli.fadein_all(temp);
             temp = stimuli.normalize(temp, 0.05);
-            
+
             if length(temp) == 1
                 s.prepro = temp;
             else
                 s.prepro = table2struct(sortrows(struct2table(temp),'uniqueid','ascend')); % re-order
             end
         end  %% already highpass-filtered and normalized for each song
-        
-        
        
         function replaced = replace(s,radish,pit)    % 一个萝卜一个坑
             % I have a variable of syl info which indicate whether this
@@ -180,7 +177,6 @@ classdef stimuli < handle
             
         end
         
-        
         function deg = degressive2(s,singlesyl, initial, terminal)  % initial-terminal
             deg = struct;
             diff = terminal - initial + 1;
@@ -231,14 +227,13 @@ classdef stimuli < handle
                 dir = sprintf('%s/Deg-%s',s.outdir,degname);
                 mkdir(dir);
                 
-                for nn = 1: length(deg)
+                for nn = 2: length(deg)
                     audiowrite(sprintf('%s/deg-%s-%02u.wav',dir,degname,deg(nn).rank),deg(nn).y,s.fs);
                 end
                 
             end
         end
-        
-        
+         
         function writereplace(s,radish,pit)
             nowtime = datestr(datetime('now'),'yyyy-mmm-dd-HH-MM-SS');
             dir = sprintf('%s/replaced_%s',pa.TEAOutputFolder,nowtime);
@@ -341,7 +336,7 @@ classdef stimuli < handle
                 
             else
                 
-                dir = sprintf('%s/CONs',s.outdir);
+                dir = sprintf('%s/ConsMirsRevs',s.outdir);
                 mkdir(dir);
                 
                 source = stimuli.split(s.prepro);
@@ -365,7 +360,7 @@ classdef stimuli < handle
         function writereverses(s,~,~)
             
             
-            dir = sprintf('%s/MirrorReverse',s.outdir);
+            dir = sprintf('%s/ConsMirsRevs',s.outdir);
             mkdir(dir);
             
             fraginf = s.prepro;
@@ -396,7 +391,7 @@ classdef stimuli < handle
         function writemirrors(s,~,~)
             
             
-            dir = sprintf('%s/MirrorReverse',s.outdir);
+            dir = sprintf('%s/ConsMirsRevs',s.outdir);
             mkdir(dir);
             
             fraginf = s.prepro;
@@ -570,6 +565,56 @@ classdef stimuli < handle
         % to use the following functions, the eleinf must contain
         % coordinate information, which might be acquired from
         % Neuron-object
+        
+        function writeReplace_fixedEleinfToReplace(s,number,replace_eleinf)
+              
+            dbstop if error
+            
+            % extract the samesong_eleinf after the target_index ele
+            mergedeleinf = s.prepro;
+            [local_eleinf,local_id] = stimuli.samesong(mergedeleinf,number);
+            targetsongname = mergedeleinf(number).songname;
+            if ~isempty(s.repla_pregap)
+               local_eleinf(local_id).pregap = s.repla_pregap;
+            end
+            local_eleinf(1:local_id-1) = [];
+            
+            % assemble the eleinf to continuous y values
+            collect = [];
+            for k = 1: length(local_eleinf)
+                if local_eleinf(k).pregap == inf
+                    local_eleinf(k).pregap = 0.05; % Dangerous code!!
+                end
+                collect = [collect;zeros([round(local_eleinf(k).pregap*local_eleinf(k).fs),1]);local_eleinf(k).y];
+            end
+            
+            %dir/path issues
+            dir = sprintf('%s/Detail-%s-%02u',s.outdir,targetsongname,local_id);
+            mkdir(dir);
+            
+            % write nearby-replace songs
+            rng(1);
+            random_ids = randperm (numel(replace_eleinf));
+           %far_ids = random_ids(1:s.num_of_far);
+  
+            for h = 1: length(replace_eleinf)
+                
+                to_be_summed = replace_eleinf(h).y;
+                summedy = [to_be_summed;collect];
+                % figure; draw.spec(summedy,32000)
+                audiowrite(sprintf('%s/Repla-%s-%02u-before-%s-%02u-gapis-%s.wav',dir,replace_eleinf(h).songname,replace_eleinf(h).fragid,targetsongname,local_id,num2str(mergedeleinf(number).pregap)),summedy,s.fs);
+                
+            end
+            
+%             % draw to verify  
+%             s.draw_scatter(far_ids,number);
+%             title('Repla_far_from_all');
+%             saveas(gcf,sprintf('%s/Repla-far-from-all.png',dir));
+%             close(gcf)
+        
+                
+            
+        end
         
         function writeFrag_samesong(s,global_id) % given the index of a simuli, write every single element from the same song
             
@@ -1556,6 +1601,30 @@ classdef stimuli < handle
             
         end
         
+        function writeFlippedEachSongFrag(s)
+            source = stimuli.split(s.prepro);
+            
+            wb = waitbar(0,'In Progress');
+            for m = 1: length(source)
+                
+                %wait bar
+                local_eleinf = source{m};
+                waitbar(m/length(source),wb,sprintf('In Progress...%s',local_eleinf(1).songname));
+                
+                %write
+                dir = sprintf('%s/EachSongFrags-%s',s.outdir,local_eleinf(1).songname);
+                mkdir(dir);
+                for k = 1: length(local_eleinf)
+                    % Garf means fliped fragments
+                    audiowrite(sprintf('%s/Garf-%s-%02u.wav',dir,local_eleinf(k).songname,local_eleinf(k).fragid), flip(local_eleinf(k).y),s.fs);
+                end
+                disp(string(unique(cellstr({source{m}.songname}.'))));
+                
+            end
+            close(wb);
+            
+        end
+        
          function writeEachSongFragInOneFolder(s) % in each folder
        
                 source = stimuli.split(s.prepro);
@@ -2039,4 +2108,48 @@ classdef stimuli < handle
         
         end
     end
+    
+    
+     methods(Static)
+         
+         function finalelen = timeSpent(dir_path)
+             % calculate the time it takes for stimuli presentation
+             
+             files = extract.filename(dir_path,'*.wav');
+             
+             len = [];
+             for k = 1: length(files)
+                 
+                 [y,fs] = audioread(files{k});
+                 
+                 len(k) = size(y,1)/fs;
+             end
+             
+             finallen = sum(len*10)/60; % mins
+             
+             fprintf('It takes %f mins\n',finallen);
+             
+         end
+         
+         function copyStimuli(varargin)
+             % copy  all the stimuli of specific birdname as inputs
+             % 后续应该手动删掉不需要的stimuli,这样比在copy阶段筛选更快
+             
+             outdir = './Copied';   mkdir(outdir);
+             STIMULI_DEPOT = "E:\Stimuli_Synthesis_Source\StimuliDepot";
+             
+             files = extract.filesAllLevel(STIMULI_DEPOT,'*.wav');
+             for k = 1:length(varargin)
+                 selected_filenames = {files{find(~cellfun(@isempty, regexp(files,varargin{k})))}}.';
+                 for kk = 1:length(selected_filenames)
+                     [~,name,ext] = fileparts(selected_filenames{kk});
+                     copyfile(selected_filenames{kk},fullfile(outdir,strcat(name,ext)) );
+                 end
+             end
+             
+         end
+         
+         
+     end
+    
 end

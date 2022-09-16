@@ -20,36 +20,29 @@ classdef convert
             
         end
         
-        function newid = bid(rawid) % used for normalize the bird id to B345-like str
+        function newid = bid(rawid,which_to_keep) % used for normalize the bird id to B345-like str
             
             captured = regexp(rawid,'(?<letter>[a-zA-Z]+)(?<number>\d{3})','names');
-            special_characters  = regexp(rawid,'(?<letter>TUT|BOS|Tut|Bos|V2)','names');
-            if length(special_characters)~= 0
-                disp('It is a TUT or BOS!');
-                temp = convertStringsToChars(captured.letter); 
-                newletter = upper(temp(1));
-                newid = strcat(newletter,captured.number,special_characters.letter);
-                return
-            end
-            % 3 to 6 letter, red to orange{3,6}
-            if length(captured) ~= 1
-                captured2 = regexp(rawid,'(?<letter>Fcall|Mcall|WNS|Het)','names');
-                
-                if length(captured2) == 1
-                    fprintf('hey! current id is a %s',captured2.letter);
-                    newid = captured2.letter;
-                    return
-                else
-                    warning('%s may not be correctly converted!',rawid);
-                    newid = rawid;
-                    return
-                end
-            end
-           
-            temp = convertStringsToChars(captured.letter);
+            special_characters  = regexp(rawid,'(?<letter>TUT|BOS|V2|Fcall|Mcall|WNS|Het)','names');
             
-            newletter = upper(temp(1));
-            newid = strcat(newletter,captured.number);
+            if length(captured)== 0 && length(special_characters)== 0
+                newid = rawid; disp('Message@ convert.bid: No change'); return; 
+            end
+            
+            if length(captured)== 0
+                captured(1).letter =[];
+            end
+            
+            if length(special_characters)== 0
+                special_characters(1).letter =[];
+            end
+            
+            if length(captured) > 1 % if captured are more than one, choose which to keep
+                captured = captured(which_to_keep);
+            end
+
+            newid = upper(strcat(captured.letter,captured.number,special_characters.letter));
+            
                     
         end
             
@@ -288,6 +281,32 @@ classdef convert
          
         end
         
+        function Iall = mergeImage(Icollect)
+            % Merge images in one, Icollect is {5x1 cell,4x1 cell, 3x1 cell}
+            I_eachColumn = {};
+            for k = 1:length(Icollect)
+                temp = Icollect{k};
+                I_eachColumn{k} = vertcat(temp{:});
+            end
+            
+            size1 = [];
+            for oo = 1: length(I_eachColumn)
+                size1(oo) = size(I_eachColumn{oo},1);
+            end
+            
+            [max_size1,max_oo] = max(size1);
+            
+            Ipad = {};
+            for oo = 1: length(I_eachColumn)
+                localI = I_eachColumn{oo};
+                Ibase= uint8(256*ones( size(I_eachColumn{max_oo} ) ));
+                Ibase(1:size(localI,1),1:size(localI,2),1:size(localI,3)) = localI;
+                Ipad{oo} = Ibase;
+            end
+            
+            Iall = horzcat(Ipad{:});
+            
+        end
         
         function breakdownEphysTxt(txtfile)
             
@@ -317,8 +336,14 @@ classdef convert
                 unitnames( unitnames==0) = []; % Remove the unit zero,cause everyone has it
                 %if length(unique(subsetT.unit)) > 1 % for this channel, there are at least some sorted spikes
                 for kk = 1: length(unitnames)
+                    
+                    if ~isempty(bid)&&~isempty(zpid)
                     newname = strjoin({convertStringsToChars(bid),convertStringsToChars(zpid),spkc_names{k},...
                         sprintf('U%u',unitnames(kk))},'_'); % U means unit
+                    else
+                        newname = strjoin({convertStringsToChars(oldname),spkc_names{k},...
+                        sprintf('U%u',unitnames(kk))},'_'); % if filename is not in the correct format, then keep using the oldname
+                    end
                     subsetname = fullfile(pathstr,strcat(newname,ext));
                     writetable(subsetT,subsetname);
                 end

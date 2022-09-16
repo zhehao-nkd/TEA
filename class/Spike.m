@@ -87,8 +87,17 @@ classdef Spike < handle
         
         function mean_waveform(s) % calculate the mean waveform
             
-            figure;
-            plot(s.waveform.')
+            this_waveform = s.waveform;
+            figure('Color','w');
+            hold on
+            plot(this_waveform.','Color',[.5,.5,.5]);
+            plot(max(this_waveform),'--','Color','blue');
+            plot(min(this_waveform),'--','Color','blue');
+            plot(mean(this_waveform),'Color','red');
+            set(gcf,'defaultTextInterpreter','none');
+            title(sprintf('%s_%u',s.channel{1},s.unit));
+            hold off
+            
         end
         
         function meandiff = cal_wavelength(s)
@@ -233,8 +242,18 @@ classdef Spike < handle
             
             zeroOnlyT  = separatedT(is0);  % 
                    
-          end
+        end
         
+          
+        function checkWaveform(path_txt)
+            % Quickly check the waveform based on txt file, to decide
+            % whether the neuron should be resorted
+            separatedT = Spike.split(path_txt);
+            for k = 1:length(separatedT)
+                spikes = Spike(separatedT{k});
+                spikes.mean_waveform;
+            end
+        end
             
     end
     

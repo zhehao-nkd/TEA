@@ -1,5 +1,6 @@
 classdef autoSap
-    %U automatically run sap2011
+    % 自动运行SAP2011 Automatically run sap2011
+    % based on autogui
     
     properties
         Property1

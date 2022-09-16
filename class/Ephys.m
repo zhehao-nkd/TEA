@@ -69,6 +69,8 @@ classdef Ephys < handle
                 e.pltext = 2;
             elseif ~isempty(regexp(e.sound.name,'frag|Frag|syl', 'once'))
                 e.pltext = 0.6;
+            else
+                e.pltext = 2; % Sarah's case
             end
             
             laten = 0.1; % 100ms的latency
@@ -87,7 +89,7 @@ classdef Ephys < handle
             sptimes = {}; presptimes = {}; pltsptimes = {};  judgerespsptimes = {};
             prejudgerespsptimes = {}; rawsptimes = {}; %#ok<*PROP>
             
-            parfor k = 1:length(initials)
+          for k = 1:length(initials) % here should be par-for
                 sptimes{k} = e.spike.time( initials(k)<e.spike.time & e.spike.time<initials(k) + ylength)...
                     - initials(k);
                 presptimes{k} = e.spike.time( initials(k)- ylength<e.spike.time & e.spike.time<initials(k))- double((initials(k)-ylength));%??
@@ -569,7 +571,7 @@ classdef Ephys < handle
         
         function e = two(e) % three plots for single syllable/element
             %         e.updateplt;
-            figure('color','w')
+            figure('Position',[-41 147 2974 966],'color','w')
             %figure('Visible','off','color','w')
             draw.two(e.y,e.fs,e.sptimes);
             

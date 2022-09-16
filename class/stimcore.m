@@ -21,6 +21,7 @@ classdef stimcore
 
         
         function r = replace(inf)
+            
         end
         
         function new = normalize2(s,tarrms)

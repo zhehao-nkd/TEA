@@ -1,6 +1,6 @@
 classdef autogui < handle
-    %UNTITLED2 Summary of this class goes here
-    %   Detailed explanation goes here
+    % automatic gui robot
+    % 自动点击器
     
     properties
         rob
@@ -10,7 +10,6 @@ classdef autogui < handle
     end
     
     methods
-        
         function a = autogui
             import java.awt.*;
             import java.awt.event.*;
@@ -124,28 +123,27 @@ classdef autogui < handle
             a.rob.mouseRelease(a.leftbutton);
         end
         
-       
         function img = capture(a,lefttop,rightbottom) % screenshot
-         a.rectangle.x = lefttop(1);
-         a.rectangle.y = lefttop(2);
-         a.rectangle.width = rightbottom(1) -lefttop(1);
-         a.rectangle.height = rightbottom(2) -lefttop(2);
-         image = a.rob.createScreenCapture(a.rectangle);
-         data = image.getData();
-         % 获取像素信息
-         temp = zeros(a.rectangle.width*a.rectangle.height*3,1); % 初始化数组用于存储RGB像素信息（长*宽*通道数）
-         temp = data.getPixels(0,0,a.rectangle.width,a.rectangle.height,temp);
-         temp = uint8(temp);
-         % 提取三通道像素值
-         R = temp(1:3:end);
-         G = temp(2:3:end);
-         B = temp(3:3:end);
-         % 修改数据尺寸
-         R = reshape(R,[a.rectangle.width,a.rectangle.height]);
-         G = reshape(G,[a.rectangle.width,a.rectangle.height]);
-         B = reshape(B,[a.rectangle.width,a.rectangle.height]);
-         R = R'; G = G'; B = B';% 转置
-         img = cat(3,R,G,B); % 合并
+            a.rectangle.x = lefttop(1);
+            a.rectangle.y = lefttop(2);
+            a.rectangle.width = rightbottom(1) -lefttop(1);
+            a.rectangle.height = rightbottom(2) -lefttop(2);
+            image = a.rob.createScreenCapture(a.rectangle);
+            data = image.getData();
+            % 获取像素信息
+            temp = zeros(a.rectangle.width*a.rectangle.height*3,1); % 初始化数组用于存储RGB像素信息（长*宽*通道数）
+            temp = data.getPixels(0,0,a.rectangle.width,a.rectangle.height,temp);
+            temp = uint8(temp);
+            % 提取三通道像素值
+            R = temp(1:3:end);
+            G = temp(2:3:end);
+            B = temp(3:3:end);
+            % 修改数据尺寸
+            R = reshape(R,[a.rectangle.width,a.rectangle.height]);
+            G = reshape(G,[a.rectangle.width,a.rectangle.height]);
+            B = reshape(B,[a.rectangle.width,a.rectangle.height]);
+            R = R'; G = G'; B = B';% 转置
+            img = cat(3,R,G,B); % 合并
         end
         
         function mcolor = meancolor(~,image) %  判断平均颜色
@@ -154,6 +152,7 @@ classdef autogui < handle
             meanB = mean(image(:,:,3),'all');
             mcolor = [meanR,meanG,meanB];
         end
+        
         function id = char2id(a,inputchar)
             id = a.writelist(inputchar==[a.writelist.key].').id;
         end
@@ -173,12 +172,11 @@ classdef autogui < handle
                 clicky = endy;
                 
             end
-
+            
         end
     end
     
     methods(Static)
-        
         function outputArg = method1(obj,inputArg)
             %METHOD1 Summary of this method goes here
             %   Detailed explanation goes here

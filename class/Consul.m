@@ -1,5 +1,6 @@
 
 classdef Consul < handle
+    % has been deprecated by Sultan
     % A consul held the highest elected political office of the Roman Republic 
     % So Consul do analysis for the whole data
     

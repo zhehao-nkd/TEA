@@ -117,6 +117,7 @@ classdef Batch < handle
         
         function neurons = getn(b) % initiatialize neurons
             
+            neurons = {};
             parfor idx = 1: length(b.sneu) % Here should be parfor
                 neurons{idx} = Neuron(b.sneu{idx},b.splx{idx},b.swavfolder{idx});
                 
@@ -182,6 +183,7 @@ classdef Batch < handle
    methods(Static)
        
        function neuronlist = pipline(path_txt,path_plx,path_folder)
+           dbstop if error
            addpath(genpath("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA"))
            b = Batch(path_txt,path_plx,path_folder);
            b.select;
@@ -193,7 +195,7 @@ classdef Batch < handle
               % A = Analysis(thisn);
                %save(thisn.neuronname,'A','-v7.3');
                %thisn.three;
-               thisn.rawthree;
+               thisn.pltthree(1);
                %thisn.ResponseBasedOrderedThreePlots;
            end
        end

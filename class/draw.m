@@ -129,8 +129,6 @@ classdef draw
            
         end
         
-
-
         function spec4(y,fs)   % rescaled x to 0 ~length(y)/fs
             [~,F,T,P] = spectrogram(y,hamming(1024),1024-round(fs/1e3),1024,32000,'yaxis');
             %imagesc(T, F, 10*log10(P+eps)) % add eps like pspectrogram does
@@ -178,7 +176,7 @@ classdef draw
            % h.Label.String = 'Power/frequency (dB/Hz)';
         end
 
-        function rasterBeta(sptimes,y,fs,linewidth,color)
+        function raster(sptimes,y,fs,linewidth,color)
             %find initial of stimuli
             if ~exist ('color','var')
                 color = 'k'; % default color
@@ -233,51 +231,55 @@ classdef draw
             xlim([0-zpt length(y)/fs-zpt]);   %%%%%%%%%%%%%%%%%???????????????????????????????? 哪里不太对
         end
 
-        function raster(sptimes,y,fs)
-            
-            idx = find(y,1);
-            
-            %initial_timestamps = idx;
-            % y = y - initial_timestamps;
-            
-            zpt = idx/fs;
-            zpt = 0; %%%% close zpt compensation
-            
-            % calculation...
-            hold on
-            ylabel('Trials','FontSize',18);
-            % calculation...
-            for nUnits = 1:length(sptimes)
-                
-                spks            = sptimes{nUnits}';  % Get all spikes of respective trial
-                
-                xspikes         = repmat(spks,2,1);         % Replicate array
-                yspikes      	= nan(size(xspikes));       % NaN array
-                
-                % if ~isempty(yspikes)
-                yspikes(1,:) = nUnits-1;                % Y-offset for raster plot
-                yspikes(2,:) = nUnits;
-                % end
-                if ~isempty(xspikes) % in case that xspikes is empty
-                    plot(xspikes-zpt, yspikes, 'Color', 'k','linewidth',1)
-                end
-                
-            end
-            
-            %figure configuration
-            
-            ylim([0 length(sptimes)]);
-            
-            %ax.XLabel.String  	= 'Time (s)';
-            
-            ydata = get(gca,'Ylim');
-            if ~exist ('color','var')
-                line([0,0],[min(ydata),max(ydata)],'color','r');
-            end
-            
-            xlim([0-zpt length(y)/fs-zpt]);   %%%%%%%%%%%%%%%%%???????????????????????????????? 哪里不太对
-        end
-        
+%         function raster(sptimes,y,fs,ticksize)
+%             
+%             idx = find(y,1);
+%             
+%             %initial_timestamps = idx;
+%             % y = y - initial_timestamps;
+%             
+%             zpt = idx/fs;
+%             zpt = 0; %%%% close zpt compensation
+%             
+%             % calculation...
+%             hold on
+%             if ~exist('ticksize','var')
+%                 ticksize = 18;
+%             end
+%                 
+%             ylabel('Trials','FontSize',ticksize);
+%             % calculation...
+%             for nUnits = 1:length(sptimes)
+%                 
+%                 spks            = sptimes{nUnits}';  % Get all spikes of respective trial
+%                 
+%                 xspikes         = repmat(spks,2,1);         % Replicate array
+%                 yspikes      	= nan(size(xspikes));       % NaN array
+%                 
+%                 % if ~isempty(yspikes)
+%                 yspikes(1,:) = nUnits-1;                % Y-offset for raster plot
+%                 yspikes(2,:) = nUnits;
+%                 % end
+%                 if ~isempty(xspikes) % in case that xspikes is empty
+%                     plot(xspikes-zpt, yspikes, 'Color', 'k','linewidth',1)
+%                 end
+%                 
+%             end
+%             
+%             %figure configuration
+%             
+%             ylim([0 length(sptimes)]);
+%             
+%             %ax.XLabel.String  	= 'Time (s)';
+%             
+%             ydata = get(gca,'Ylim');
+%             if ~exist ('color','var')
+%                 line([0,0],[min(ydata),max(ydata)],'color','r');
+%             end
+%             
+%             xlim([0-zpt length(y)/fs-zpt]);   %%%%%%%%%%%%%%%%%???????????????????????????????? 哪里不太对
+%         end
+%         
         function rasterpartial(sptimes,y,fs,which_trials)
             %find initial of stimuli
             sptimes = sptimes{1:which_trials};
@@ -503,7 +505,7 @@ classdef draw
             subplot(2,1,1)
             draw.spec(y,fs);
             subplot(2,1,2)
-            draw.raster(sptimes, y, fs);
+            draw.raster(sptimes, y, fs,5);
          end
          
         function four(y,fs,sptimes)

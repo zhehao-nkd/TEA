@@ -1,5 +1,5 @@
 classdef Analysis < handle
-    %ANALYZE Summary of this class goes here
+    % The class to do all the analysis for a single neuron
     %   Detailed explanation goes here
     
     properties % 必须
@@ -75,7 +75,10 @@ classdef Analysis < handle
                 a.zpid = regexp(a.neurons{1}.plxname,'[ZP]\d{2}','match');
                 a.channelname = a.neurons{1}.channelname;
                 a.unitname = a.neurons{1}.unitname;
+                try
                 a.formated_imagename = sprintf('%s_%s_%s_%u',a.birdid,a.zpid{1},a.channelname,a.unitname);
+                catch ME
+                end
                 a.fig_size1 = [2091 -14 755 620];
                 %a.judgeFragResp;
                 %a.judgeConResp;
@@ -669,6 +672,60 @@ classdef Analysis < handle
             
         end
         
+        
+        function sponFrInfo = getSponFR_Sarah(a,range)
+            % calculate spontaneous firing rate
+            sponFrInfo = struct;
+            all_es = a.getAllEphysObject;
+            for m = 1: length(all_es)
+                
+                
+                % for prey
+                sponFrInfo(m).triggerNum = all_es{m}.sound.trigger;
+                sponFrInfo(m).presptimes = all_es{m}.presptimes
+                sponFrInfo(m).preylen = length(all_es{m}.y)/all_es{m}.fs;
+                sponFrInfo(m).repnum = size(all_es{m}.presptimes,2);
+                temp = all_es{m}.presptimes.';
+                sponFrInfo(m).localSpFr = length(find(vertcat(vertcat(temp{:}))))/(sponFrInfo(m).preylen*sponFrInfo(m).repnum);
+                % for plty
+                sponFrInfo(m).pltsptimes = all_es{m}.pltsptimes
+                sponFrInfo(m).pltlen = length(all_es{m}.plty)/all_es{m}.fs;
+                
+            end
+            
+            
+%             localSFR = {};
+%             if exist('range','var')
+%                 
+%                 for k = 1: length(range)
+%                     
+%                     if k < length(range)
+%                         ids_in_range = intersect(find(range(k) <=[sponFrInfo.triggerNum].'), find( [sponFrInfo.triggerNum].' <range(k + 1)))
+%                     elseif k == length(range)
+%                         ids_in_range = find(range(k) <=[sponFrInfo.triggerNum].');
+%                     end
+%                     
+%                     
+%                     selected_sponFrInfo = sponFrInfo(ids_in_range);
+%                     
+%                     localSFR{k} = [selected_sponFrInfo.localSpFr].'
+%                     
+%                 end
+%             end
+            %             % for pre_y
+            %             sponFrInfo(k).concat_pre_sptimes = concat_presptimes;
+            %             sponFrInfo(k).concat_pre_len = sum_prelen;
+            %             sponFrInfo(k).mean_pre_fr = length(concat_presptimes)/sum_prelen;
+            %
+            %             % for plt_y
+            %             sponFrInfo(k).concat_plt_sptimes = concat_pltsptimes;
+            %             sponFrInfo(k).concat_plt_len = sum_pltlen;
+            %             sponFrInfo(k).mean_plt_fr = length(concat_pltsptimes)/sum_pltlen;
+           % [h,p]= ttest2(localSFR{1},localSFR{2});
+            
+        end
+        
+        
         function fraglist = to2ndAcousticSpace(a)
             % 2nd acoustic space？
             ids = find(~cellfun(@isempty, regexp({a.list.stimuliname}.','repla'))); % find all frags
@@ -1006,8 +1063,9 @@ classdef Analysis < handle
             concat_presptimes = []; % concatenated prey sptimes
             
             sum_pltlen = 0; %summed prey( stimuli y, not plty or rawy) length
+            sum_ylen = 0;
             concat_pltsptimes = []; %  % concatenated y sptimes
-            
+             concat_ysptimes = [];
             all_es = a.getAllEphysObject;
             
             for m = 1: length(all_es)
@@ -1026,6 +1084,14 @@ classdef Analysis < handle
                 concat_pltsptimes = [concat_pltsptimes;vertcat(vertcat(temp{:}))+ sum_pltlen];
                 sum_pltlen = sum_pltlen +  fr_info.pltlen{m};
                 
+                % for y only
+                
+                fr_info.ysptimes{m} = all_es{m}.sptimes
+                fr_info.ylen{m} = length(all_es{m}.y)/all_es{m}.fs;
+                temp = all_es{m}.sptimes.';
+                concat_ysptimes = [concat_ysptimes;vertcat(vertcat(temp{:}))+ sum_ylen];
+                sum_ylen = sum_ylen +  fr_info.ylen{m};
+                
             end
             
             % for norm songs, degressive songs, adn detailed
@@ -1040,6 +1106,11 @@ classdef Analysis < handle
             fr_info.concat_plt_sptimes = concat_pltsptimes;
             fr_info.concat_plt_len = sum_pltlen;
             fr_info.mean_plt_fr = length(concat_pltsptimes)/sum_pltlen;
+            
+            % for y only
+            fr_info.concat_y_sptimes = concat_ysptimes;
+            fr_info.concat_y_len = sum_ylen;
+            fr_info.mean_y_fr = length(concat_ysptimes)/sum_ylen;
             
         end
         
@@ -1791,11 +1862,23 @@ classdef Analysis < handle
             normids = find(~cellfun(@isempty,regexp(cellstr({a.list.stimuliname}.'),'norm')));
             mirrorids = find(~cellfun(@isempty,regexp(cellstr({a.list.stimuliname}.'),'mirror')));
             
-            % count the number of reserved songs, get their ids
+            % find out the songs that are tested with the reversed version
             bids = cellfun(@(x) convert.bid(x),cellstr({a.list(reverseids).stimuliname}.'),'Uni',0);
             
+             IMG = {};
+             
+             
+            if isempty(bids)
+                 figure('Position',[552 -116 2410 1221],'Color','w');;
+                 %draw.three(a.list(sameFile_mirror_ids).plty,a.list(sameFile_mirror_ids).fs,a.list(sameFile_mirror_ids).pltsptimes); 
+                 frame = getframe(gcf);
+                 IMG{1,1} = frame.cdata;
+                 IMG{2,1} = frame.cdata;
+                 IMG{3,1} = frame.cdata;
+                 close(gcf);
+            end
             
-           IMG = {};
+          
             
             for k = 1:length(bids)
                 
@@ -1812,20 +1895,20 @@ classdef Analysis < handle
                 sameFile_reverse_ids = intersect(samefileids,sb_reverse_ids);
                 sameFile_mirror_ids = intersect(samefileids,sb_mirror_ids);
                 
-                 fig1 = figure;
-                 draw.three(a.list(sameFile_norm_ids).plty,a.list(sameFile_norm_ids).fs,a.list(sameFile_norm_ids).pltsptimes); 
+                 fig1 = figure('Position',[552 -116 2410 1221],'Color','w');
+                 draw.three(a.list(sameFile_norm_ids).y,a.list(sameFile_norm_ids).fs,a.list(sameFile_norm_ids).sptimes); % plty
                  frame = getframe(fig1);
                  IMG{1,k} = frame.cdata;
                  close(fig1)
                  
-                 fig2 = figure;
-                 draw.three(a.list(sameFile_reverse_ids).plty,a.list(sameFile_reverse_ids).fs,a.list(sameFile_reverse_ids).pltsptimes); 
+                 fig2 = figure('Position',[552 -116 2410 1221],'Color','w');
+                 draw.three(a.list(sameFile_reverse_ids).y,a.list(sameFile_reverse_ids).fs,a.list(sameFile_reverse_ids).sptimes); 
                  frame = getframe(fig2);
                  IMG{2,k} = frame.cdata;
                  close(fig2)
                  
-                 fig3 = figure;
-                 draw.three(a.list(sameFile_mirror_ids).plty,a.list(sameFile_mirror_ids).fs,a.list(sameFile_mirror_ids).pltsptimes); 
+                 fig3 = figure('Position',[552 -116 2410 1221],'Color','w');
+                 draw.three(a.list(sameFile_mirror_ids).y,a.list(sameFile_mirror_ids).fs,a.list(sameFile_mirror_ids).sptimes); 
                  frame = getframe(fig3);
                  IMG{3,k} = frame.cdata;
                  close(fig3);
@@ -3552,130 +3635,98 @@ classdef Analysis < handle
             tic
             
             % 首先，定义songlist
-            songlist = a.list(find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'norm'))));
-           
-            %songlist = songlist(postunique);
-            degids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'Deg|deg') ));
-            if isempty(degids); return; end
-            deglist = a.list(degids);
-            deg_bids = unique(cellfun(@convert.bid,cellstr({deglist.stimuliname}.'),'Uni',0));
+            songlist = a.list(find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'norm')))); % find all conspecific songs
             
-            I_song = {};
-            for w = 1: length(deg_bids)
+            all_degids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'Deg|deg') ));
+            all_fragids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'frag|Frag|syl|Syl') ));
+            if isempty(all_degids); return; end % If no Degs at all, no need to draw
+            bname_degAttached = unique(cellfun(@convert.bid,cellstr({a.list(all_degids).stimuliname}.'),'Uni',0));
+            I_of_each_birdname = {};
+            
+            for w = 1: length(bname_degAttached)
                 
+                tempCollect = {};
+                sub_normlist_degAttached  = songlist(... % 有对应degressive song 存在的普通所有norm songs
+                    find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),bname_degAttached{w}))));
                 
-                Icollect = {};
-                degexist_norm_list  = songlist(find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),deg_bids{w}))));
-                
-                for k = 1; length(degexist_norm_list)
-                    smallfig = figure('Color','w','Position',[406 675 1378 420]);
-                    draw.two(degexist_norm_list(k).plty,degexist_norm_list(k).fs,degexist_norm_list(k).pltsptimes);
-                    xlabel(degexist_norm_list(k).stimuliname);
-                    frame = getframe(smallfig); Icollect{1} = frame.cdata;close(gcf)
-                    
+                for k = 1: length(sub_normlist_degAttached)
+                    tempfig = figure('Color','w','Position',[7 347 2960 714]);
+                    draw.two(sub_normlist_degAttached(k).plty,sub_normlist_degAttached(k).fs,sub_normlist_degAttached(k).pltsptimes);
+                    xlabel(sub_normlist_degAttached(k).stimuliname);
+                    frame = getframe(tempfig); tempCollect{1} = frame.cdata;close(gcf)
                 end
+                Inorm = vertcat(tempCollect{:});
                 
-                I_song{w} = vertcat(Icollect{:});
-                
-            end
-            [~,postunique] = unique(cellstr(cellfun(@convert.bid,{songlist.stimuliname}.','Uni',0)));
-            songlist = songlist(postunique);
-            
-            % 其二，找到deressive songs对应的birdid
-            degids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'Deg|deg') ));
-            if isempty(degids); return; end
-            deglist = a.list(degids);
-            for m = 1: length(deglist)
-                birdid_collect{m} = convert.bid(deglist(m).stimuliname);
-                ids_norm = find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),birdid_collect{m}) ) );
-                if ~isempty(ids_norm)& length(ids_norm) == 1
-                    [deglist(m).sylIni,trump_diffvalue] = Analysis.findIni(songlist(ids_norm).plty,deglist(m).y);
-                    fprintf('%s has the DIFFVALUE as: %u and INI as: %f \n ',deglist(m).stimuliname,trump_diffvalue,deglist(m).sylIni/32000);
-                    deglist(m).pady = [zeros([deglist(m).sylIni-1-deglist(m).fs*deglist(m).pltext,1]);deglist(m).plty;zeros(length(songlist(ids_norm).plty)...
-                        - (deglist(m).sylIni-1-deglist(m).fs*deglist(m).pltext) - length(deglist(m).plty),1)];
-                    deglist(m).padsptimes = cellfun( @(x) x + (deglist(m).sylIni-1-deglist(m).fs*deglist(m).pltext)/deglist(m).fs, deglist(m).pltsptimes,'uni',0);
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                deglist = a.list(intersect(all_degids,...
+                    find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),bname_degAttached{w}))))); % conatin only and all deg stimuli
+                ids_norm = find(... % 假设不会存在一首song的Degs在不同plx文件里出现
+                    strcmp(deglist(1).Fid,{sub_normlist_degAttached.Fid}.')); % To find the normsong which (1) same birdid (2) same Fid
+                if isempty(ids_norm); ids_norm = 1; disp('Warning!!!! Norm absent'); end
+                for m = 1: length(deglist)
+                    %if no normsong with same Fid, then use the first normsong instead
+                    if ~isempty(ids_norm)&& length(ids_norm) == 1 % Based on ids_norm , pad Zeros
+                        [deglist(m).sylIni,diffvalue] = Analysis.findIni(sub_normlist_degAttached(ids_norm).plty,deglist(m).y); % reference is the plty
+                        fprintf('%s has the DIFFVALUE as: %u and INI as: %f \n ',deglist(m).stimuliname,diffvalue,deglist(m).sylIni/32000);
+                        deglist(m).pady = [zeros([deglist(m).sylIni-1-deglist(m).fs*deglist(m).pltext,1]);deglist(m).plty;zeros(length(sub_normlist_degAttached(ids_norm).plty)...
+                            - (deglist(m).sylIni-1-deglist(m).fs*deglist(m).pltext) - length(deglist(m).plty),1)];
+                        deglist(m).padsptimes = cellfun( @(x) x + (deglist(m).sylIni-1-deglist(m).fs*deglist(m).pltext)/deglist(m).fs, deglist(m).pltsptimes,'uni',0);
+                    end
                 end
-            end
-            
-            unique_bid = unique(cellstr(birdid_collect));
-            normlist = songlist(find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),strjoin(unique_bid,'|')) )));
-            
-            I_Deg = {}; % 最初定义
-            for w = 1: length(normlist)
-                
-                birdid = convert.bid(normlist(w).stimuliname);
-                ids_indeg = find(~cellfun(@isempty, regexp(cellstr({deglist.stimuliname}.'),birdid) ) );
-                selected_deglist = deglist(ids_indeg);
-                [~,temp_index] = sortrows([selected_deglist.sylIni].');
-                selected_deglist = selected_deglist(temp_index);
                 
                 % draw the norm figure
-                Icollect = {};figure('Color','w','Position',[406 675 1378 420]);
-                draw.two(normlist(w).plty,normlist(w).fs,normlist(w).pltsptimes);
-                xlabel(normlist(w).stimuliname);
-                frame = getframe(gcf); Icollect{1} = frame.cdata;close(gcf)
+                tempCollect = {};figure('Color','w','Position',[7 347 2960 714]);
                 
+                draw.two(sub_normlist_degAttached(ids_norm).plty,...
+                    sub_normlist_degAttached(ids_norm).fs,sub_normlist_degAttached(ids_norm).pltsptimes);
+                xlabel(sub_normlist_degAttached(ids_norm).stimuliname);
+                frame = getframe(gcf); tempCollect{1} = frame.cdata;close(gcf);
                 % draw the deg figure
-                for hh = 1: length(selected_deglist)
-                    figure('Color','w','Position',[406 675 1378 420]);
-                    draw.two(selected_deglist(hh).pady,selected_deglist(hh).fs,selected_deglist(hh).padsptimes);
-                    xlabel(selected_deglist(hh).stimuliname);
-                    frame = getframe(gcf); Icollect{1 + hh} = frame.cdata;close(gcf);
+                for hh = 1: length(deglist)
+                    figure('Color','w','Position',[7 347 2960 714]);
+                    draw.two(deglist(hh).pady,deglist(hh).fs,deglist(hh).padsptimes);
+                    xlabel(deglist(hh).stimuliname);
+                    frame = getframe(gcf); tempCollect{1 + hh} = frame.cdata;close(gcf);
                 end
+                I_Deg = vertcat(tempCollect{:});
                 
-                I_Deg{w} = vertcat(Icollect{:});
-            end
-            
-            % 其三，找到对应birdid的frags
-            fragids1 = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'frag|Frag|syl|Syl') ));
-            unique_bid = unique(cellstr(birdid_collect));
-            fragids2 = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),strjoin(unique_bid,'|')) ));
-            fragids = intersect(fragids1,fragids2);
-            if ~isempty(fragids)
-                fraglist = a.list(fragids);
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                fraglist = a.list(intersect(all_fragids,...
+                    find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),bname_degAttached{w}))))); % conatin only and all deg stimuli
+                ids_norm = find(... % 假设不会存在一首song的Degs在不同plx文件里出现
+                    strcmp(fraglist(1).Fid,{sub_normlist_degAttached.Fid}.')); % To find the normsong which (1) same birdid (2) same Fid
+                if isempty(ids_norm); ids_norm = 1; disp('Warning!!!! Norm absent'); end
                 for m = 1: length(fraglist)
-                    
-                    birdid = convert.bid(fraglist(m).stimuliname);
-                    ids_norm = find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),birdid) ) );
-                    
+                    %birdid_collect{m} = convert.bid(deglist(m).stimuliname);
+                    %if no normsong with same Fid, then use the first normsong instead
                     if ~isempty(ids_norm)& length(ids_norm) == 1
-                        fraglist(m).sylIni = Analysis.findIni(songlist(ids_norm).plty,fraglist(m).y);
-                        fraglist(m).pady = [zeros([fraglist(m).sylIni-1-fraglist(m).fs*fraglist(m).pltext,1]);fraglist(m).plty;zeros(length(songlist(ids_norm).plty)...
+                        fraglist(m).sylIni = Analysis.findIni(sub_normlist_degAttached(ids_norm).plty,fraglist(m).y);
+                        fraglist(m).pady = [zeros([fraglist(m).sylIni-1-fraglist(m).fs*fraglist(m).pltext,1]);fraglist(m).plty;zeros(length(sub_normlist_degAttached(ids_norm).plty)...
                             - (fraglist(m).sylIni-1-fraglist(m).fs*fraglist(m).pltext) - length(fraglist(m).plty),1)];
                         fraglist(m).padsptimes = cellfun( @(x) x + (fraglist(m).sylIni-1-fraglist(m).fs*fraglist(m).pltext)/fraglist(m).fs, fraglist(m).pltsptimes,'uni',0);
                     end
                 end
-            end
-            
-            I_Frag = {};
-            for w = 1: length(normlist)
                 
-                if ~isempty(fragids)
-                    birdid = convert.bid(normlist(w).stimuliname);
-                    ids_infrag = find(~cellfun(@isempty, regexp(cellstr({fraglist.stimuliname}.'),birdid) ) );
-                    selected_fraglist = fraglist(ids_infrag);
-                    [~,temp_index] = sortrows([selected_fraglist.sylIni].');
-                    selected_fraglist = selected_fraglist(temp_index);
+                % draw the norm figure
+                tempCollect = {};figure('Color','w','Position',[7 347 2960 714]);
+                
+                draw.two(sub_normlist_degAttached(ids_norm).plty,...
+                    sub_normlist_degAttached(ids_norm).fs,sub_normlist_degAttached(ids_norm).pltsptimes);
+                xlabel(sub_normlist_degAttached(ids_norm).stimuliname);
+                frame = getframe(gcf); tempCollect{1} = frame.cdata;close(gcf);
+                % draw the deg figure
+                for hh = 1: length(fraglist)
+                    figure('Color','w','Position',[7 347 2960 714]);
+                    draw.two(fraglist(hh).pady,fraglist(hh).fs,fraglist(hh).padsptimes);
+                    xlabel(fraglist(hh).stimuliname);
+                    frame = getframe(gcf); tempCollect{1 + hh} = frame.cdata;close(gcf);
                 end
+                I_Frag = vertcat(tempCollect{:});
                 
-                Icollect = {};figure('Color','w','Position',[406 675 1378 420]);
-                draw.two(normlist(w).plty,songlist(w).fs,normlist(w).pltsptimes);  xlabel(normlist(w).stimuliname);
-                frame = getframe(gcf);   Icollect{1} = frame.cdata; close(gcf)
+                I_of_each_birdname{w} = {Inorm,I_Deg,I_Frag};
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 
-                if ~isempty(fragids)
-                    for bb = 1: length(selected_fraglist)
-                        figure('Color','w','Position',[406 675 1378 420]);
-                        draw.two(selected_fraglist(bb).pady,selected_fraglist(bb).fs,selected_fraglist(bb).padsptimes);
-                        xlabel(selected_fraglist(bb).stimuliname);
-                        frame = getframe(gcf);Icollect{1 + bb} = frame.cdata;close(gcf);
-                    end
-                end
-                I_Frag{w} = vertcat(Icollect{:});
             end
-            
-            
-            
-       
             
             % 其末 draw and save
             a.drawFirstWaveform;
@@ -3683,7 +3734,7 @@ classdef Analysis < handle
             w_img = temp.cdata;
             I_WF{1} = w_img;
             
-            I_of_each_column = horzcat(I_song,I_Deg,I_Frag,I_WF);
+            I_of_each_column = horzcat(I_of_each_birdname{:},I_WF);
             % padding each I based on the maximum size of local I
             size1 = [];
             for oo = 1: length(I_of_each_column)
@@ -3705,10 +3756,8 @@ classdef Analysis < handle
             imwrite(Iall,sprintf('Sibling_Songs_%s.png',a.formated_imagename));
             toc
             
-            
-            
-            
         end
+        
     end
     
     methods(Static) % 静态方法

@@ -309,6 +309,11 @@ classdef cal
             
         end
         
+        
+        function timeStimuliPresentation(dirpath)
+            
+            filenames = extract.filename(dirpath);
+        end
     end
     
 end

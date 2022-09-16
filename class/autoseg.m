@@ -80,6 +80,9 @@ classdef autoseg
                 %通过低精度的分割找到大概有多少个bout，从而 restrict bout
                 fiy = highpass(sumy, 500, 32000);
                 img = cal.spec(fiy,32000);
+               
+                %img = flip(log(1+abs(S)));
+            
                 proI = smooth(mean(img),960); % preocessed I
                 used_for_seg = proI;
                 seg_threshold = 0.06;
@@ -405,8 +408,8 @@ classdef autoseg
             envy = rescale(smooth(abs(fiy),150)); % amplitude envelope of y
             %powery = downsample(fiy.^2/length(fiy),fs/1000);
             %downy = downsample(abs(fiy),fs/1000);
-            I = cal.spec(fiy,fs); % I is the image of the whole song
-            
+            I = cal.spec(fiy,fs); % I is the image of the whole song   
+            [S,F,T] = spectrogram(2*fiy,hamming(512),512-round(fs/1e3),512,fs);
             % if the input stimuli is white noise
             if regexp(birdid,'WNS|wns|Wns')
                 eleedge = [];
@@ -757,8 +760,8 @@ classdef autoseg
             
             
             % assign syllable edges and also element edges
-            syledge = edges;
-            eleedge = tp_sum;
+            syledge = T(edges);
+            eleedge = T(tp_sum);
             
             
             disp('长风几万里，吹度玉门关')

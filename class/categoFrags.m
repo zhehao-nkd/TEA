@@ -30,24 +30,31 @@ classdef categoFrags
             end
             
             birdcollect = {};
-           % wb = waitbar(0,'Categorizing Fragments...');
-            parfor omega = 1: length(bird_ele_collect)
+            % wb = waitbar(0,'Categorizing Fragments...');
+            for omega = 1: length(bird_ele_collect)
                 birdcollect{omega} = categoFrags.core( bird_ele_collect{omega});
                 %waitbar(omega/length(bird_ele_collect),wb,sprintf('Categorizing Fragments...%u of %u',omega,length(bird_ele_collect) ));
             end
-           % close(wb);
+            % close(wb);
             
             unique_eleinf = horzcat(birdcollect{:});
-
-%             fields = {};
-%             for p = 1: length(birdcollect)
-%                 fields{p} = fieldnames(birdcollect{p});
-%                 disp(fields{p}.')
-%                 disp(p)
-%             end
+            
+            %             fields = {};
+            %             for p = 1: length(birdcollect)
+            %                 fields{p} = fieldnames(birdcollect{p});
+            %                 disp(fields{p}.')
+            %                 disp(p)
+            %             end
         end
         
-        
+        function output_fraginf = forall(c,thres)
+            % categorize the global_eleinf as a whole
+            if ~exist('thres','var')
+                thres = 0.9;
+            end
+            output_fraginf = categoFrags.core(c.global_eleinf,thres);
+            
+        end
         function unique_eleinf = include_con(c,con_eleinf)
             % this function categorize eleinf for each unique songname
             oteeleinf = c.global_eleinf;
@@ -66,9 +73,9 @@ classdef categoFrags
                 con_eleinf = rmfield(con_eleinf,'catego');
             end
             
-%             if isfield(oteeleinf,'fragI')
-%                 oteeleinf = rmfield(oteeleinf,'fragI');
-%             end
+            %             if isfield(oteeleinf,'fragI')
+            %                 oteeleinf = rmfield(oteeleinf,'fragI');
+            %             end
             
             mergedeleinf = horzcat(oteeleinf,con_eleinf);
             
@@ -90,32 +97,43 @@ classdef categoFrags
             parfor omega = 1: length(bird_ele_collect)
                 
                 birdcollect{omega} = categoFrags.core( bird_ele_collect{omega});
-               % waitbar(omega/length(bird_ele_collect),wb,sprintf('Categorizing Fragments...%u of %u',omega,length(bird_ele_collect) ));
+                % waitbar(omega/length(bird_ele_collect),wb,sprintf('Categorizing Fragments...%u of %u',omega,length(bird_ele_collect) ));
             end
             %close(wb);
             
             unique_eleinf = horzcat(birdcollect{:});
             
-%             fields = {};
-%             parfor p = 1: length(birdcollect)
-%                 fields{p} = fieldnames(birdcollect{p});
-%                 disp(fields{p}.')
-%                 disp(p)
-%             end
+            %             fields = {};
+            %             parfor p = 1: length(birdcollect)
+            %                 fields{p} = fieldnames(birdcollect{p});
+            %                 disp(fields{p}.')
+            %                 disp(p)
+            %             end
         end
-        
-        
-       
     end
     
     
     
     methods(Static)
-         function bird_eleinf = core(bird_eleinf)
+         function bird_eleinf = core(bird_eleinf, similarity_thres)
             % @-----@ This section is for finding the similar fragments
             frag_img = {};
-            for u = 1: length(bird_eleinf)
-                frag_img{u} = bird_eleinf(u).fragI;
+            if isfield(bird_eleinf,'fragI')
+                for u = 1: length(bird_eleinf)
+                    frag_img{u} = bird_eleinf(u).fragI;
+                end
+            else % This code may be dangerous
+                for k = 1:length(bird_eleinf)
+                    fg = figure('Position',[1146 532 50 257])%,'Visible','off'); % a bug with visible off!!!!!!!$
+                    draw.spec(bird_eleinf(k).y,bird_eleinf(k).fs);
+                    set(gca,'xtick',[],'ytick',[]);
+                    axis tight
+                    %set(gca,'visible','off');
+                    frag_img{k} = getframe(gca).cdata;
+                    bird_eleinf(k).fragI = frag_img{k};
+                    close(fg);
+                end
+                
             end
             
             %figure; montage(frag_img)
@@ -147,8 +165,12 @@ classdef categoFrags
             %figure; heatmap(heatT,'first','second','ColorVariable','sim')
             group = {}; %v this is very important for par-for
             
+            if ~exist('similarity_thres','var')
+                similarity_thres = 0.7; % default as 0.7
+            end
+            
             for c = 1:length(img_sim)
-                group{c} = find(img_sim(c,:)>0.7);  %% I don't know whether this value is good or not !!!!!!!
+                group{c} = find(img_sim(c,:)>similarity_thres);  %% I don't know whether this value is good or not !!!!!!!
             end
             
             if isempty(group) % in case that group is empty
@@ -156,7 +178,9 @@ classdef categoFrags
                     bird_eleinf(L).catego = L;
                 end
                 % remove field fragI
-                bird_eleinf = rmfield(bird_eleinf,'fragI');
+                if isfield(bird_eleinf,'fragI')
+                    bird_eleinf = rmfield(bird_eleinf,'fragI');
+                end
             
                 return
             end

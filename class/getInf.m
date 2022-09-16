@@ -19,14 +19,40 @@ classdef getInf < handle
             
         end
         
-        function  moveFromBucket(bf, singleFolder) 
+      
+    end
+    
+    
+    methods(Static)
+        
+        function splited = split(fraginf) % input is the s.sylinf, output is the sylinf for each each song
+            dbstop if error
+            songs = unique(cellstr({fraginf(:).songname}.'));
+            
+            parfor kk = 1: length(songs)  % I change for to par-for 1103
+                idxs = find( strcmp(cellstr({fraginf(:).songname}.') ,songs{kk}) );
+                if length(idxs) == 1
+                    thisT = struct2table(fraginf(idxs),'AsArray',1);
+                else
+                    thisT =  struct2table(fraginf(idxs));
+                end
+                
+                thisT = sortrows(thisT,'fragid');  % 这里可能会改   order the struct based on the syllable number
+                splited{kk} = table2struct(thisT);
+                
+            end
+            
+        end
+        
+           
+        function  moveFromBucket(singleFolder)
             % To extract several song files from a target folder
             % singleFolder is the path of a single folder in bucket server
             
             rawfiles = extract.filename(singleFolder,'*.wav');
             rawfiles = rawfiles(randperm(length(rawfiles))); % shuffling the order of the sound files
             
-            num_f2c = 6; % 6 files to copy for each folder
+            num_f2c = 30; % 6 files to copy for each folder
             ids = [];
             
             iteration = 0; % how many turns of iteration
@@ -34,6 +60,8 @@ classdef getInf < handle
             
             filejudge = []; % judge whether a file is to be ignored ( not a good song file)
             
+            
+            %datetime('2022-06-07_10-31-03','InputFormat','yyyy-MM-dd_hh-mm-ss')
             while length(ids) < num_f2c
                 
                 iteration = iteration + 1;
@@ -173,44 +201,32 @@ classdef getInf < handle
                 % rawspec{w}  = imresize(cal.spec(fiy,fs),[257 2000]) ;
             end
             
-            % draw the spec of the rest of the signals
-            % figure
-            % montage(spec)
-            % colormap('jet')
+            % montage ???
             
-            % figure
-            % montage(rawspec) % raw spectrogram of selected
-            % colormap('jet')
-            
-            target_dir = bf.inout_dir; % "E:\WavsCollection" % destination
+            target_dir = '.\'; %bf.inout_dir; % "E:\WavsCollection" % destination
             temptemp = split(singleFolder ,'\');
             birdid = temptemp{end};
             output_dir = sprintf('%s\\%s',target_dir,birdid);
             mkdir(sprintf('%s\\%s',target_dir,birdid));
             
-            parfor a = 1: length(picked_files)
+            fileinfo = struct;
+            for a = 1: length(picked_files)
                 
                 oldname = picked_files{a};
                 temp = split(oldname,'\');
-                %     birdid = temp{end-1};
                 individual = temp{end};
-                %destination = sprintf('%s\\%s\\%s-%s',target_dir,birdid,birdid,individual);
+                newname{a} = sprintf('%s-%u.wav',birdid,a);
                 destination = sprintf('%s\\%s\\%s-%u.wav',target_dir,birdid,birdid,a);
                 copyfile(oldname,destination);
-                
+                fileinfo(a).newname = newname{a};
+                fileinfo(a).oldname = oldname;
             end
             
+            writetable(struct2table(fileinfo),sprintf('%s\\%s-%s.txt',birdid,birdid,'DataInfo'),'FileType','text');
             
             
         end
-        
-
-    end
-    
-    
-    methods(Static)
-        
-        
+                
         function  moveNoiseFiles(sourcedir, destineydir) 
             % to move pure noise files out of the sourcedir
             tic;
@@ -253,9 +269,7 @@ classdef getInf < handle
             
             
         end
-        
-        
-        
+              
         function all_eleinf = Fraginf(subdirs,id_thres,matFolder)  % 遍历 all the subdirs
             
             % If there is eleinf , then assemble into element level, while
@@ -356,7 +370,7 @@ classdef getInf < handle
             all_collect = {};
             to_delete = [];
             
-            for w = 1:length(subdirs)
+            for w = 1:length(subdirs) % here should be parfor
                 birdid  = split(subdirs{w},'\');
                 birdid = regexp(birdid{end},'\d+','match');
                 
@@ -375,7 +389,7 @@ classdef getInf < handle
             
             subdirs(to_delete) = []; % delete those does not match the id threshold
             
-            for r = 1:length(subdirs)  % par-for can be used here
+           for r = 1:length(subdirs)  % par-for can be used here
                 
                 matfiles = extract.filename(sprintf('%s\\%s',subdirs{r},matFolder),'*.mat'); % matFolder is the folder containing segdata.mat,
                 % which can be SegData or SylData or EleData
@@ -416,24 +430,26 @@ classdef getInf < handle
                     
                     
                     for w = 1: length(initials) % can add a par-for
-                        song_eleinf(w).initial = initials(w)*fs/1000;
-                        song_eleinf(w).terminal = terminals(w)*fs/1000;
+                        song_eleinf(w).initial = initials(w)*fs;
+                        song_eleinf(w).terminal = terminals(w)*fs;
                         song_eleinf(w).songname = loaded.segdata.birdid;
+                        hp_y = highpass(loaded.segdata.rawy,450,fs);
                         if isfield(loaded.segdata,'rawy')
                             if initials(w)== 0
                                 % when the stimuli starts from the very beginning
-                                song_eleinf(w).y = loaded.segdata.rawy(1:terminals(w)*fs/1000);
+                                song_eleinf(w).y = hp_y(1:terminals(w)*fs);
                             else
-                                song_eleinf(w).y = loaded.segdata.rawy(initials(w)*fs/1000:terminals(w)*fs/1000);
+                                song_eleinf(w).y = hp_y(initials(w)*fs:terminals(w)*fs); % originally loaded.segdata.rawy
                             end
                         end
                         song_eleinf(w).fs = fs;
-                        
                         if initials(w)== 0
-                            % when the stimuli starts from the very beginning
-                            song_eleinf(w).fragI = imresize(I(:,1:terminals(w)),[257,50]);
+                            %when the stimuli starts from the very beginning
+                            imgratio = size(I,2)/(length(hp_y)/fs);
+                            song_eleinf(w).fragI = imresize(I(:,1:round(terminals(w)*imgratio)),[257,50]);
                         else
-                            song_eleinf(w).fragI = imresize(I(:,initials(w):terminals(w)),[257,50]);
+                            imgratio = size(I,2)/(length(hp_y)/fs);
+                            song_eleinf(w).fragI = imresize(I(:,round(initials(w)*imgratio):round(terminals(w)*imgratio)),[257,50]);
                         end
                     end
                     

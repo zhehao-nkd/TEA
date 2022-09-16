@@ -34,6 +34,9 @@ classdef Trigger < handle
                 end
             elseif ~isempty(regexp(plexonfile.AcquiringSoftware,'OmniPlex'))
                 code_method = 3;
+                
+            else % Sarah's case
+                    code_method = 3;
             end
             
             switch code_method
@@ -160,6 +163,11 @@ classdef Trigger < handle
             
             MIN_THRESHOLD = 25000; % May vary in different situations
             MAX_THRESHOLD = 40000; % May vary in different situations
+            
+            if max(pulse_channel) < MIN_THRESHOLD % Sarah's case
+                MAX_THRESHOLD = 10000;
+                MIN_THRESHOLD = 3000;
+            end
             
             pulse_channel(pulse_channel < MIN_THRESHOLD | pulse_channel > MAX_THRESHOLD) = 0; %Convert singals of pulse channel to 0 and 1
             %figure; plot(pulse_channel);
@@ -519,6 +527,83 @@ classdef Trigger < handle
             end
             
         end
+        
+        
+        function adaptTime(outdir,from_which) % add trigger channel to stimuli - Binary code
+            
+            dbstop if error
+            
+%             if exist('pre','var')
+%                 pre_length = pre;
+%             else
+%                 pre_length = 0;
+%             end
+%             
+%             if exist('post','var')
+%                 post_length = post;
+%             else
+%                 post_length = 3; % default
+%             end
+%             
+            
+            GAP_DURATION = 1*8e-3; PULSE_DURATION = 5*8e-3; AMPLITUDE = 1;
+            
+            if exist('from_which','var')
+                
+            else
+                from_which = 1;
+            end
+            
+            dirpath = uigetdir();
+            files = extract.filename(dirpath, '*.wav');
+            files = flip(files,1);
+            %outdir = 'AAAAAA'
+            mkdir (outdir);
+            
+            for n = 1:length(files)
+                
+                [y,fs] = audioread(files{n}); % y means original y
+                
+                dur_y = length(y)/fs;
+                
+                if dur_y < 1
+                    pre_length = 0.7; % minimum set to 0.8
+                    post_length = 0.7;
+                else
+                    pre_length = dur_y;
+                    post_length = dur_y;
+                end
+                
+                binary_code = de2bi(n + from_which - 1);
+                zero_pulse = [zeros(GAP_DURATION*fs,1);AMPLITUDE*ones(GAP_DURATION*fs,1)];  % 0-1
+                one_pulse = [zeros(GAP_DURATION*fs,1);zeros(GAP_DURATION*fs,1);AMPLITUDE*ones(GAP_DURATION*fs,1)]; % 0-0-1
+                
+                % write data channel
+                yD = [zeros(round(pre_length*fs),1);y;zeros(round(post_length*fs),1)];
+                
+                % write trigger channel
+                pulses = AMPLITUDE*ones(GAP_DURATION*fs,1); % Here the initial state of variable-pulses is a pulse
+                coder.varsize(pulses); % yT means y Trigger channel
+                
+                for m = 1:length(binary_code)
+                    if binary_code(m) == 0
+                        pulses = [pulses;zero_pulse];
+                    elseif binary_code(m) == 1
+                        pulses = [pulses;one_pulse];
+                    end
+                end
+                
+                yT = [zeros(round(pre_length*fs),1);pulses;zeros(length(yD) - length(pulses) - round(pre_length*fs),1)]; % padding zeros
+                yOut = [yT,yD];
+                
+                [~,name,~] = fileparts(files{n});
+                audiowrite(sprintf('%s/%s-%02uPulses.wav',outdir,name,n + from_which - 1),yOut,fs);
+                %from_which = from_which + 1;
+                
+            end
+            
+        end
+        
         
         function binary_but_rand_gap(outdir,from_which,range)
              dbstop if error     

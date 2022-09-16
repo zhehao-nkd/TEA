@@ -3,6 +3,7 @@ classdef extract
     %   Detailed explanation goes here
     
     methods(Static)
+        
         function features = feature(y,fs)
             
             features = SAT_hijack(y,fs).features;
@@ -54,7 +55,7 @@ classdef extract
             
             filenames = filenames.'; % Trasnpose only for convinient checking variables
             
-            fclose('all') 
+            fclose('all') ;
          end
         
         function filenames = Classical_filename(dirpath,extension)
@@ -164,7 +165,6 @@ classdef extract
             
         end
         
-        
         function files = filesAllLevel(path, extension)
             
             folders = extract.foldersAllLevel(path);
@@ -239,7 +239,6 @@ classdef extract
             
         end
         
-        
         function parent_dir = parentDir(input_dir) % 找到一个dir 的 parent dir
             
            % input_dir = "C:\Users\Zhehao\Desktop\ComplexFolder\P01"
@@ -249,12 +248,8 @@ classdef extract
            parent_dir = fullfile(parentparts{:});
 
         end
-        
-      
-    end
-    
-    
-    
+              
+    end  
    
 end
 

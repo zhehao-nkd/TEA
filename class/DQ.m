@@ -7,9 +7,9 @@ classdef DQ
     
     methods(Static)
         
-        function label(dataDir)
+        function label_OldVersion(dataDir)
             % dataDir = "C:\Users\v-dongqihan\Downloads\autoCollectedSyllables\autoCollectedSyllables\";
-            dataDir = "C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\Eleinff\";
+          %  dataDir = "C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\Eleinff\";
             
             fg = figure ;
             
@@ -73,7 +73,7 @@ classdef DQ
                     continue
                 end
                 
-                dataPath = dataDir + dataFile;
+                dataPath = fullfile(dataDir,dataFile);
                 
                 data = load(dataPath);
                 
@@ -107,7 +107,7 @@ classdef DQ
                     data.syllables = data.eleinf;
                 end
                 
-                
+                % Here I need to extract all edges from syledge and eleedge
                 while n_s < length(data.syllables)
                     
                     n_s = n_s + 1;
