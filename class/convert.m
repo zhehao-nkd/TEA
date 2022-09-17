@@ -22,28 +22,23 @@ classdef convert
         
         function newid = bid(rawid,which_to_keep) % used for normalize the bird id to B345-like str
             
-            captured = regexp(rawid,'(?<letter>[a-zA-Z]+)(?<number>\d{3})','names');
-            special_characters  = regexp(rawid,'(?<letter>TUT|BOS|V2|Fcall|Mcall|WNS|Het)','names');
-            
-            if length(captured)== 0 && length(special_characters)== 0
-                newid = rawid; disp('Message@ convert.bid: No change'); return; 
+            captured = regexp(rawid,'(?<letter>[OGBYR][a-zA-Z]*)\s*(?<number>\d{3})?(?<spe>TUT|BOS|V2|Fcall|Mcall|WNS|Het)?','names');
+            if isempty(captured) % 如果没有发现B521这种ID，那么继续找有没有特殊标签
+                captured = regexp(rawid,'(?<letter>[OGBYR][a-zA-Z]*)\s*(?<number>\d{3})?|(?<spe>TUT|BOS|V2|Fcall|Mcall|WNS|Het)?','names');
+            end
+            % 之所以用上面letter的regexp方式是因为大小不同，枚举过难
+            % 而 \s*是为了防止空格
+            if isempty(captured)% If nothing is detected ruturn the warning message
+                newid = rawid; fprintf('Message@ convert.bid: No change, keep raw input--%s\n',rawid); return;
             end
             
-            if length(captured)== 0
-                captured(1).letter =[];
-            end
-            
-            if length(special_characters)== 0
-                special_characters(1).letter =[];
-            end
-            
-            if length(captured) > 1 % if captured are more than one, choose which to keep
+            if length(captured) > 1 % if More than 1, choose which to keep
                 captured = captured(which_to_keep);
             end
-
-            newid = upper(strcat(captured.letter,captured.number,special_characters.letter));
             
-                    
+            % Switch to 1
+            newid = upper(strcat(captured.letter(1),captured.number,captured.spe)); % 取首字母
+            
         end
             
         function two2one(dir) % convert 2 channel to 1 channel wav

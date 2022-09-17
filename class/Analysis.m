@@ -35,7 +35,6 @@ classdef Analysis < handle
         plx_data_fs
         other_id
         
-        
         birdname
         zpid
         channelname
@@ -52,6 +51,7 @@ classdef Analysis < handle
     end
     
     methods % 核心方法
+        
         function a = Analysis(neurons)
             % 构造方法
             if exist('neurons','var')
@@ -70,13 +70,13 @@ classdef Analysis < handle
                 temp = regexp(a.neurons{1}.plxname,'[RBOYRG]\d{3}','match');
                 % set birdid uniqueid and formated_imagename
                 if ~isempty(temp)
-                a.birdid = temp{1};
+                    a.birdid = temp{1};
                 end
                 a.zpid = regexp(a.neurons{1}.plxname,'[ZP]\d{2}','match');
                 a.channelname = a.neurons{1}.channelname;
                 a.unitname = a.neurons{1}.unitname;
                 try
-                a.formated_imagename = sprintf('%s_%s_%s_%u',a.birdid,a.zpid{1},a.channelname,a.unitname);
+                    a.formated_imagename = sprintf('%s_%s_%s_%u',a.birdid,a.zpid{1},a.channelname,a.unitname);
                 catch ME
                 end
                 a.fig_size1 = [2091 -14 755 620];
@@ -93,10 +93,10 @@ classdef Analysis < handle
             to_calculate = setdiff(1: length(a.neurons),to_remove_id);
             whether_update_figure_or_not = 1;
             for k = 1: length(to_calculate)
-
-                    templist = a.neurons{to_calculate(k)}.todisplay(whether_update_figure_or_not);
-                    [templist.whichNeuron] = deal(k);
-                    lists{k} = templist;
+                
+                templist = a.neurons{to_calculate(k)}.todisplay(whether_update_figure_or_not);
+                [templist.whichNeuron] = deal(k);
+                lists{k} = templist;
             end
             a.list = horzcat(lists{:});
         end
@@ -251,7 +251,7 @@ classdef Analysis < handle
                 a.song_id = a.song_id_redundant;
             elseif length(a.song_id_redundant)~=0
                 
-               a.song_id = min(a.song_id_redundant);
+                a.song_id = min(a.song_id_redundant);
                 %[~,a.song_id] = max(cellfun(@length,{a.neuinfo(a.song_id_redundant).keywords}));
                 % find the id which have max length of keywords, if the
                 % result is multipl ids, then select the first one
@@ -280,16 +280,12 @@ classdef Analysis < handle
                 
                 presdf = cal.sdf(a.list(thisi).prejudgerespsptimes,zeros(length(a.list(thisi).judgerespy),1),a.list(thisi).fs,0.001,0.02);
                 sdf = cal.sdf(a.list(thisi).judgerespsptimes,a.list(thisi).judgerespy,a.list(thisi).fs,0.001,0.02); % 0.001,0.004
-                
-                presdf = cal.sdf(a.list(thisi).prejudgerespsptimes,zeros(length(a.list(thisi).judgerespy),1),a.list(thisi).fs,0.001,0.02);
-                sdf = cal.sdf(a.list(thisi).judgerespsptimes,a.list(thisi).judgerespy,a.list(thisi).fs,0.001,0.02); % 0.001,0.004
                 [maxpresdf,~] = max(presdf);
                 [maxsdf,maxidx] = max(sdf);
                 
-                
                 pre_frs = cal.eachTrialFiringRate(a.list(thisi).prejudgerespsptimes,length(a.list(thisi).judgerespy)/a.list(thisi).fs);
                 sti_frs = cal.eachTrialFiringRate(a.list(thisi).judgerespsptimes,length(a.list(thisi).judgerespy)/a.list(thisi).fs);
-                [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05)
+                [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
                 a.list(thisi).pvalue = p;
                 a.list(thisi).label = 0; % 初始化
                 if h == 1
@@ -303,8 +299,7 @@ classdef Analysis < handle
                 end
             end
             
-        end
-        
+        end     
         
     end
     
@@ -387,9 +382,9 @@ classdef Analysis < handle
             for n = 1: length(ids)
                 thisi = ids(n);
                 
-                presdf = cal.sdf(a.list(thisi).prejudgerespsptimes,zeros(length(a.list(thisi).judgerespy),1),a.list(thisi).fs,0.001,0.02);
-                sdf = cal.sdf(a.list(thisi).judgerespsptimes,a.list(thisi).judgerespy,a.list(thisi).fs,0.001,0.02); % 0.001,0.004
-                
+%                 presdf = cal.sdf(a.list(thisi).prejudgerespsptimes,zeros(length(a.list(thisi).judgerespy),1),a.list(thisi).fs,0.001,0.02);
+%                 sdf = cal.sdf(a.list(thisi).judgerespsptimes,a.list(thisi).judgerespy,a.list(thisi).fs,0.001,0.02); % 0.001,0.004
+%                 
                 presdf = cal.sdf(a.list(thisi).prejudgerespsptimes,zeros(length(a.list(thisi).judgerespy),1),a.list(thisi).fs,0.001,0.02);
                 sdf = cal.sdf(a.list(thisi).judgerespsptimes,a.list(thisi).judgerespy,a.list(thisi).fs,0.001,0.02); % 0.001,0.004
                 [maxpresdf,~] = max(presdf);
@@ -421,7 +416,7 @@ classdef Analysis < handle
             end
             a.updatelist;
             
-            ids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'norm|deg|repla'))); % find all norms
+            ids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'norm|deg'))); % find all norms
             % ’syl'可以兼容旧的stimuli命名规则
             
             for n = 1: length(ids)
@@ -469,7 +464,54 @@ classdef Analysis < handle
             
         end
         
- 
+        function  a = judgeReplaResp(a)
+            
+            % evaluate the responsiveness of song replacements
+            replaids = find( ~cellfun(@isempty, regexp([a.list.stimuliname].','Repla') ));
+            
+            % Find out that the repla stimuliname correspond to how many natrual songs
+            bnames = unique(cellfun(@(x)convert.bid(x,2),[a.list(replaids).stimuliname].','Uni',0));
+            
+            findCorrespConID = @(x) intersect(find( ~cellfun(@isempty, regexp([a.list.stimuliname].','norm') )),...
+                find( ~cellfun(@isempty, regexp([a.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
+            
+            findCorrespReplaID = @(x) intersect(find( ~cellfun(@isempty, regexp([a.list.stimuliname].','Repla') )),...
+                find( ~cellfun(@isempty, regexp([a.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
+            
+            for k = 1:length(bnames)
+                nid = findCorrespConID(bnames{k}); % 有可能得到多个nid
+                rids = findCorrespReplaID(bnames{k});
+                
+                for kk = 1:length(rids)
+                    [Ini_y,Ini_replay] = Analysis.findConergentPointBetwenNormAndRepla(...
+                        a.list(nid).y,...
+                        a.list(rids(kk)).y );
+                    a.list(rids(kk)).targety = a.list(rids(kk)).y(Ini_replay:Ini_replay + 0.1*32000); % 截取100ms
+                    a.list(rids(kk)).targetsptimes = extract.sptimes_resetSP(a.list(rids(kk)).sptimes,Ini_replay,Ini_replay + 0.1*32000);
+                    % corresponding pre (targety) data
+                    a.list(rids(kk)).pretargety = a.list(nid).prey(end - 0.1*32000:end); % 截取100ms
+                    a.list(rids(kk)).pretargetsptimes = extract.sptimes_resetSP(...
+                        a.list(rids(kk)).presptimes,length(a.list(rids(kk)).prey)/32000 -0.1*32000,length(a.list(rids(kk)).prey)/32000 );
+                    %calculate and judege whether the neuron respond to the target area or not
+                    [a.list(rids(kk)).replaresp,a.list(rids(kk)).replaPvalue] = Analysis.UseTtestToJudegeRespOrNot(...
+                        a.list(rids(kk)).targety,a.list(rids(kk)).targetsptimes,...
+                        a.list(rids(kk)).pretargety ,a.list(rids(kk)).pretargetsptimes ,32000)
+                end
+                a.list(nid).target = a.list(nid).y(Ini_y:Ini_y + 0.1*32000); % 截取100ms
+                a.list(nid).targetsptimes = extract.sptimes_resetSP(a.list(nid).sptimes,Ini_y,Ini_y + 0.1*32000);
+               
+                
+                
+            end
+            
+            
+        end
+        
+        function a = judgeDegResp(a)
+            % evaluate the responsiveness of song degressive deletion
+            
+            % based on the name of replaced song, find out the corresponding % norm song
+        end
     end
     
     methods % 外部计算方法
@@ -614,7 +656,7 @@ classdef Analysis < handle
             elseif ~isempty(regexp(a.zpid,'P')) % plexon
                 a.plx_data_fs = 40000;
             end
-           
+            
             meanWL =  mean(wavlen_units*(1/a.plx_data_fs)*1000); % ms
             
             
@@ -694,24 +736,24 @@ classdef Analysis < handle
             end
             
             
-%             localSFR = {};
-%             if exist('range','var')
-%                 
-%                 for k = 1: length(range)
-%                     
-%                     if k < length(range)
-%                         ids_in_range = intersect(find(range(k) <=[sponFrInfo.triggerNum].'), find( [sponFrInfo.triggerNum].' <range(k + 1)))
-%                     elseif k == length(range)
-%                         ids_in_range = find(range(k) <=[sponFrInfo.triggerNum].');
-%                     end
-%                     
-%                     
-%                     selected_sponFrInfo = sponFrInfo(ids_in_range);
-%                     
-%                     localSFR{k} = [selected_sponFrInfo.localSpFr].'
-%                     
-%                 end
-%             end
+            %             localSFR = {};
+            %             if exist('range','var')
+            %
+            %                 for k = 1: length(range)
+            %
+            %                     if k < length(range)
+            %                         ids_in_range = intersect(find(range(k) <=[sponFrInfo.triggerNum].'), find( [sponFrInfo.triggerNum].' <range(k + 1)))
+            %                     elseif k == length(range)
+            %                         ids_in_range = find(range(k) <=[sponFrInfo.triggerNum].');
+            %                     end
+            %
+            %
+            %                     selected_sponFrInfo = sponFrInfo(ids_in_range);
+            %
+            %                     localSFR{k} = [selected_sponFrInfo.localSpFr].'
+            %
+            %                 end
+            %             end
             %             % for pre_y
             %             sponFrInfo(k).concat_pre_sptimes = concat_presptimes;
             %             sponFrInfo(k).concat_pre_len = sum_prelen;
@@ -721,7 +763,7 @@ classdef Analysis < handle
             %             sponFrInfo(k).concat_plt_sptimes = concat_pltsptimes;
             %             sponFrInfo(k).concat_plt_len = sum_pltlen;
             %             sponFrInfo(k).mean_plt_fr = length(concat_pltsptimes)/sum_pltlen;
-           % [h,p]= ttest2(localSFR{1},localSFR{2});
+            % [h,p]= ttest2(localSFR{1},localSFR{2});
             
         end
         
@@ -849,18 +891,18 @@ classdef Analysis < handle
             insonglist = cons_neuron.todisplayInsong;
             
         end
-              
-        function ainf = calPropertiesForClustering(a) 
+        
+        function ainf = calPropertiesForClustering(a)
             % calculate lifetime sparseness,correlation index, number of
             % responsive songs, spontaneous firing rate, spike width
             % 目的是通过计算这些性质的值对neurons进行划分
             
             % number of responsive songs
             
-%             for kk = 1: length( a.neurons{a.song_id}.e)
-%                 a.neurons{a.song_id}.e{kk}.setExtAndAllocate;
-%             end
-%             a.updatelist;
+            %             for kk = 1: length( a.neurons{a.song_id}.e)
+            %                 a.neurons{a.song_id}.e{kk}.setExtAndAllocate;
+            %             end
+            %             a.updatelist;
             
             
             conkeywords = {'B346','B512','B521','B554','B606','G429','G506','G518','G548','G573',...
@@ -878,7 +920,7 @@ classdef Analysis < handle
             end
             conids = rmmissing(conids);
             normids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'norm')));
-
+            
             normlist = a.list(intersect(conids,normids));
             
             %thres = 0.001; % 1ms
@@ -944,7 +986,7 @@ classdef Analysis < handle
                 
                 
                 % judge whether significant repsonse or not
-
+                
                 presdf = cal.sdf(normlist(m).prejudgerespsptimes,zeros(length(normlist(m).judgerespy),1),normlist(m).fs,0.001,0.02);
                 sdf = cal.sdf(normlist(m).judgerespsptimes,normlist(m).judgerespy,normlist(m).fs,0.001,0.02); % 0.001,0.004
                 [maxpresdf,~] = max(presdf);
@@ -958,7 +1000,7 @@ classdef Analysis < handle
                     fraction_above(k) = length(find(sdf>hundredthres(k)))/length(sdf);
                 end
                 
-
+                
                 
                 Avalue = trapz(hundredthres,fraction_above)/100;
                 ainf.eachsparseness(m) = 1 - 2*Avalue;
@@ -1040,17 +1082,17 @@ classdef Analysis < handle
             avgsdf = mean(sumsdf);
             
             summer = [];
-
+            
             for k = 1: length(sumsdf)
                 summer(k) = ((sumsdf(k) - avgsdf)/devisdf)^4;
             end
-
+            
             
             ainf.kurtosis = sum(summer)/length(sumsdf) -3;
             
             sumAvalue = trapz(sumhundredthres,sumfraction_above)/100;
             ainf.sumsparseness = 1 - 2*sumAvalue;
-                 
+            
             
         end
         
@@ -1065,7 +1107,7 @@ classdef Analysis < handle
             sum_pltlen = 0; %summed prey( stimuli y, not plty or rawy) length
             sum_ylen = 0;
             concat_pltsptimes = []; %  % concatenated y sptimes
-             concat_ysptimes = [];
+            concat_ysptimes = [];
             all_es = a.getAllEphysObject;
             
             for m = 1: length(all_es)
@@ -1193,7 +1235,7 @@ classdef Analysis < handle
             img2 = A.saveDrawAlignedConsDegs;
             img3 = A.saveDrawAlignedConsFrag;
             img4 = A.saveDrawAlignedConsReplas;
-            img5 = A.saveDrawSortedRespToFrags; 
+            img5 = A.saveDrawSortedRespToFrags;
             img234 = padFigures({img2,img3,img4});
             allimg = padFigures({img1,img234,img5});
             imwrite(allimg,sprintf('%s.png',a.formated_imagename));
@@ -1201,8 +1243,8 @@ classdef Analysis < handle
             % 首先生成一张大图
             % 之后可以生成一个报告
             %生成的A文件需要有自我更新的能力
-%             A.drawAllWaveform;
-%             A.drawFragScatter
+            %             A.drawAllWaveform;
+            %             A.drawFragScatter
             % probably draw it into one big figure
             
         end
@@ -1240,7 +1282,7 @@ classdef Analysis < handle
             
         end
         
-     
+        
         function drawFirstWaveform(a)
             
             % temporialriy a.neurons{1}
@@ -1428,7 +1470,7 @@ classdef Analysis < handle
             close(gcf);
         end
         
-
+        
         function saveDrawMeanFeatureVsResp(a)
             % draw the distribution of mean features
             
@@ -1833,7 +1875,7 @@ classdef Analysis < handle
                 truncated_y = a.list(k).plty(range(1)*a.list(k).fs:range(2)*a.list(k).fs);
                 figure('Position',[-36 437 length(truncated_y)/18 528]);
                 
-
+                
             else
                 figure('Position',[-36 437 length(a.list(k).plty)/18 528]);
                 draw.spec(a.list(k).plty,a.list(k).fs);
@@ -1865,27 +1907,27 @@ classdef Analysis < handle
             % find out the songs that are tested with the reversed version
             bids = cellfun(@(x) convert.bid(x),cellstr({a.list(reverseids).stimuliname}.'),'Uni',0);
             
-             IMG = {};
-             
-             
+            IMG = {};
+            
+            
             if isempty(bids)
-                 figure('Position',[552 -116 2410 1221],'Color','w');;
-                 %draw.three(a.list(sameFile_mirror_ids).plty,a.list(sameFile_mirror_ids).fs,a.list(sameFile_mirror_ids).pltsptimes); 
-                 frame = getframe(gcf);
-                 IMG{1,1} = frame.cdata;
-                 IMG{2,1} = frame.cdata;
-                 IMG{3,1} = frame.cdata;
-                 close(gcf);
+                figure('Position',[552 -116 2410 1221],'Color','w');;
+                %draw.three(a.list(sameFile_mirror_ids).plty,a.list(sameFile_mirror_ids).fs,a.list(sameFile_mirror_ids).pltsptimes);
+                frame = getframe(gcf);
+                IMG{1,1} = frame.cdata;
+                IMG{2,1} = frame.cdata;
+                IMG{3,1} = frame.cdata;
+                close(gcf);
             end
             
-          
+            
             
             for k = 1:length(bids)
                 
                 samebirdids = find(~cellfun(@isempty,regexp(cellstr({a.list.stimuliname}.'),bids{k})));
                 sb_reverse_ids = intersect(reverseids,samebirdids); % sab means same bird
                 if length(sb_reverse_ids) > 1
-                   sb_reverse_ids =   sb_reverse_ids(1); % 如果多项，暂时的对策是取第一项
+                    sb_reverse_ids =   sb_reverse_ids(1); % 如果多项，暂时的对策是取第一项
                 end
                 sb_mirror_ids = intersect(mirrorids,samebirdids);
                 sb_norm_ids = intersect(normids,samebirdids);
@@ -1895,32 +1937,32 @@ classdef Analysis < handle
                 sameFile_reverse_ids = intersect(samefileids,sb_reverse_ids);
                 sameFile_mirror_ids = intersect(samefileids,sb_mirror_ids);
                 
-                 fig1 = figure('Position',[552 -116 2410 1221],'Color','w');
-                 draw.three(a.list(sameFile_norm_ids).y,a.list(sameFile_norm_ids).fs,a.list(sameFile_norm_ids).sptimes); % plty
-                 frame = getframe(fig1);
-                 IMG{1,k} = frame.cdata;
-                 close(fig1)
-                 
-                 fig2 = figure('Position',[552 -116 2410 1221],'Color','w');
-                 draw.three(a.list(sameFile_reverse_ids).y,a.list(sameFile_reverse_ids).fs,a.list(sameFile_reverse_ids).sptimes); 
-                 frame = getframe(fig2);
-                 IMG{2,k} = frame.cdata;
-                 close(fig2)
-                 
-                 fig3 = figure('Position',[552 -116 2410 1221],'Color','w');
-                 draw.three(a.list(sameFile_mirror_ids).y,a.list(sameFile_mirror_ids).fs,a.list(sameFile_mirror_ids).sptimes); 
-                 frame = getframe(fig3);
-                 IMG{3,k} = frame.cdata;
-                 close(fig3);
-        
+                fig1 = figure('Position',[552 -116 2410 1221],'Color','w');
+                draw.three(a.list(sameFile_norm_ids).y,a.list(sameFile_norm_ids).fs,a.list(sameFile_norm_ids).sptimes); % plty
+                frame = getframe(fig1);
+                IMG{1,k} = frame.cdata;
+                close(fig1)
+                
+                fig2 = figure('Position',[552 -116 2410 1221],'Color','w');
+                draw.three(a.list(sameFile_reverse_ids).y,a.list(sameFile_reverse_ids).fs,a.list(sameFile_reverse_ids).sptimes);
+                frame = getframe(fig2);
+                IMG{2,k} = frame.cdata;
+                close(fig2)
+                
+                fig3 = figure('Position',[552 -116 2410 1221],'Color','w');
+                draw.three(a.list(sameFile_mirror_ids).y,a.list(sameFile_mirror_ids).fs,a.list(sameFile_mirror_ids).sptimes);
+                frame = getframe(fig3);
+                IMG{3,k} = frame.cdata;
+                close(fig3);
+                
             end
             
             img = cell2mat(IMG);
-          
+            
             img = convert.colorEdge(img,'r');
-              % I don't know why here the output could be unit8 or double
+            % I don't know why here the output could be unit8 or double
             % randomly
-            % Now the temporal solution is 
+            % Now the temporal solution is
             img = uint8(img);
             
         end
@@ -2194,7 +2236,7 @@ classdef Analysis < handle
             close(gcf);
             
         end
-    
+        
         function img = exportdrawInsongCumulativePitchDiff(a)
             fraglist = a.getInsongFragRespList;
             labeled_frags = fraglist([fraglist.label].' == 1);
@@ -2336,7 +2378,7 @@ classdef Analysis < handle
             img = horzcat(img1,img2,img3);
             imwrite(img,sprintf('汉Insong_lineChart_2D_Cumulative_%s.png',a.formated_imagename));
         end
-              
+        
         function BinaryThresholdDrawMeanFeaturesVsRespAsLineChart(a) % draw the distribution of mean features
             
             fraglist = a.judgeFragResponse;
@@ -2739,7 +2781,7 @@ classdef Analysis < handle
             saveas(gcf,sprintf('V1-WithinSongsLineChartMeanFeaturesVsResp-%s.png',a.formated_imagename));
             close(gcf);
         end
-         
+        
         function Iall = saveDrawAlignedConsFrag(a,songnames)
             % songnames 指定后则只会显示对应于songnames的fragments
             dbstop if error
@@ -2930,29 +2972,29 @@ classdef Analysis < handle
         function Iall = saveDrawAlignedConsDegs(a,songnames)
             dbstop if error
             
-            %只有一个模式： 只针对二次播放里包含的norm songs进行degs的对齐 
+            %只有一个模式： 只针对二次播放里包含的norm songs进行degs的对齐
             tic
             
             degids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'deg|Deg')));
             
             deglist = a.list(degids);
             deg_Fid = unique({deglist.Fid}.');
-             % normlist = Analysis(a.neurons{a.song_id}).normlist;
-             
+            % normlist = Analysis(a.neurons{a.song_id}).normlist;
             
-             
-             subfile_deg_ids = find(~cellfun(@isempty,regexp(cellstr({a.list.Fid}.'),strjoin(deg_Fid,'|'))));
-             fuckids = subfile_deg_ids;
-             if exist('songnames','var')
+            
+            
+            subfile_deg_ids = find(~cellfun(@isempty,regexp(cellstr({a.list.Fid}.'),strjoin(deg_Fid,'|'))));
+            fuckids = subfile_deg_ids;
+            if exist('songnames','var')
                 songnameids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),strjoin(songnames,'|'))));
                 fuckids = intersect(subfile_deg_ids,songnameids);
-             end
-             
-             fucklist = a.list(fuckids);
-             
+            end
+            
+            fucklist = a.list(fuckids);
+            
             normlist = fucklist(find(~cellfun(@isempty, regexp(cellstr({fucklist.stimuliname}.'),'norm'))));
-%             [~,postunique] = unique(cellfun(@convert.bid,cellstr({fucklist.stimuliname}.'),'Uni',0));
-%             normlist = normlist(postunique);
+            %             [~,postunique] = unique(cellfun(@convert.bid,cellstr({fucklist.stimuliname}.'),'Uni',0));
+            %             normlist = normlist(postunique);
             
             % About Deg
             degids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'Deg|deg') ));
@@ -3014,10 +3056,10 @@ classdef Analysis < handle
                 I_of_each_column{w} = vertcat(Icollect{:});
             end
             
-%             a.drawFirstWaveform;
-%             temp = getframe(gcf);
-%             w_img = temp.cdata;
-%             I_of_each_column{length(I_of_each_column)+ 1} = w_img;
+            %             a.drawFirstWaveform;
+            %             temp = getframe(gcf);
+            %             w_img = temp.cdata;
+            %             I_of_each_column{length(I_of_each_column)+ 1} = w_img;
             
             % padding each I based on the maximum size of local I
             size1 = [];
@@ -3049,25 +3091,25 @@ classdef Analysis < handle
             tic
             RONGYU = 0.5;
             
-             tic
+            tic
             
-             replaids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'repla|Repla')));
-             replalist = a.list(replaids);
-             repla_Fid = unique({replalist.Fid}.');
-             subfile_repla_ids = find(~cellfun(@isempty,regexp(cellstr({a.list.Fid}.'),strjoin(repla_Fid,'|'))));
-             fuckids = subfile_repla_ids;
-             if exist('songnames','var')
-                 songnameids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),strjoin(songnames,'|'))));
-                 fuckids = intersect(subfile_repla_ids,songnameids);
-             end
-             fucklist = a.list(fuckids);
+            replaids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'repla|Repla')));
+            replalist = a.list(replaids);
+            repla_Fid = unique({replalist.Fid}.');
+            subfile_repla_ids = find(~cellfun(@isempty,regexp(cellstr({a.list.Fid}.'),strjoin(repla_Fid,'|'))));
+            fuckids = subfile_repla_ids;
+            if exist('songnames','var')
+                songnameids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),strjoin(songnames,'|'))));
+                fuckids = intersect(subfile_repla_ids,songnameids);
+            end
+            fucklist = a.list(fuckids);
             normlist = fucklist(find(~cellfun(@isempty, regexp(cellstr({fucklist.stimuliname}.'),'(?!repla|Repla)norm|Norm'))));
             
             
             
             % This is the new version 04.06.2022
-%             normids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'(?!repla|Repla)norm|Norm') ));
-%             normlist = a.list(normids);
+            %             normids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'(?!repla|Repla)norm|Norm') ));
+            %             normlist = a.list(normids);
             
             for k = 1: length(normlist)
                 normlist(k).pady = [zeros(RONGYU*normlist(k).fs,1);normlist(k).plty];
@@ -3413,7 +3455,7 @@ classdef Analysis < handle
             
             % 首先，定义songlist
             songlist = a.list(find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'norm'))));
-           
+            
             %songlist = songlist(postunique);
             degids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'Deg|deg') ));
             if isempty(degids); return; end
@@ -3888,9 +3930,17 @@ classdef Analysis < handle
             
         end
         
-        function [SynIni,diff_value] = findConergentPointBetwenNormAndRepla(y, yrepla) % find the correspoding initial timestamps by aliging two time series
+        function [ConvergentIndexY,ConvergentIndexReplaY] = findConergentPointBetwenNormAndRepla(y, yrepla) % find the correspoding initial timestamps by aliging two time series
             % 此趋同点指的是趋同数据点在yrepla中的次序 （从前往后数）
-            %y = B521; yfrag = B521_7;
+            % 之后或可考虑更复杂的序列对比算法，这样的算法应更普适一些
+            % 但现如今应该做的是增加当y和yrepla后补了很多零的问题
+            % input的y可以是y或者plty,yrepla也可以是pltreplay或者yrepla
+            dbstop if error 
+            
+            y = y(1:find(y,1,'last')); % remove the padded zeros， 11111111000000000 to  11111111，% 有点危险
+            yrepla = yrepla(1:find(yrepla,1,'last'));
+           
+            freezey = y; freezeyrepla = yrepla;
             [maxlength,maxid] = max([length(y),length(yrepla)]);
             
             if maxid == 1 % ru-guo-y-bi-jiao-chang
@@ -3899,35 +3949,59 @@ classdef Analysis < handle
                 y =  [zeros(length(yrepla)-length(y),1);y];
             end
             
-            temp_convergentpoint = min(find(flip(y-yrepla))) % 找到第一个非零元素
+            temp_convergentpoint = find(flip(y-yrepla), 1 ); % 找到第一个非零元素
             convergentpoint = maxlength - temp_convergentpoint + 2;
-            %              counts = 0;
-            diff_info = struct;
-            parfor k = 1: length(y) - length(yrepla)
-                totest = y(k:k+ length(yrepla) -1);
-                
-                if sum(totest) ~= 0
-                    
-                    diff = sum(abs(totest - yrepla));
-                    
-                    diff_info(k).diff = diff;
-                    diff_info(k).kvalue = k;
-                    %                      end
-                else
-                    
-                    diff_info(k).diff = Inf;
-                    diff_info(k).kvalue = k;
-                end
-                
-                
+            
+            if maxid == 1 % y更长
+                ConvergentIndexY  = convergentpoint;
+                ConvergentIndexReplaY = convergentpoint-(length(freezey)-length(freezeyrepla));
+            elseif maxid ==2 % replay 更长
+                ConvergentIndexY  = convergentpoint-(length(freezeyrepla)-length(freezey));
+                ConvergentIndexReplaY = convergentpoint;
             end
             
-            [~,min_ids] = min([diff_info.diff].');
-            SynIni = diff_info(min_ids).kvalue;
-            diff_value = diff_info(min_ids).diff;
+            %             diff_info = struct;
+            %             parfor k = 1: length(y) - length(yrepla)
+            %                 totest = y(k:k+ length(yrepla) -1);
+            %
+            %                 if sum(totest) ~= 0
+            %
+            %                     diff = sum(abs(totest - yrepla));
+            %
+            %                     diff_info(k).diff = diff;
+            %                     diff_info(k).kvalue = k;
+            %                     %                      end
+            %                 else
+            %                     diff_info(k).diff = Inf;
+            %                     diff_info(k).kvalue = k;
+            %                 end
+            %             end
+            %
+            %             [~,min_ids] = min([diff_info.diff].');
+            %             SynIni = diff_info(min_ids).kvalue;
+            %             diff_value = diff_info(min_ids).diff;
             
         end
         
+        
+        function [answer,pvalue] = UseTtestToJudegeRespOrNot(y,sptimes,prey,presptimes,fs)
+            
+            presdf = cal.sdf(presptimes,prey,fs,0.001,0.02);
+            sdf = cal.sdf(sptimes,y,fs,0.001,0.02); % 0.001,0.004
+            [maxpresdf,~] = max(presdf);
+            [maxsdf,maxidx] = max(sdf);
+            
+            pre_frs = cal.eachTrialFiringRate(presptimes,length(prey)/fs);
+            sti_frs = cal.eachTrialFiringRate(sptimes,length(y)/fs);
+            [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05)
+            if h == 1
+                answer = 1;
+            elseif h == 0
+                answer = 0;
+            end
+            pvalue = p;
+            
+        end
     end
     
     methods % 弃用方法

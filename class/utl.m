@@ -77,7 +77,10 @@ classdef utl
             end
         end
             
-           
+        function filename = fileparts(absolute_path)
+            % to use the fileparts function in cellfun
+            [~,filename,~] = fileparts(absolute_path);    
+        end
         
     end
     
