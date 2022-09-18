@@ -480,6 +480,11 @@ classdef Analysis < handle
             
             for k = 1:length(bnames)
                 nid = findCorrespConID(bnames{k}); % 有可能得到多个nid
+                % 如果有多个nid
+                if length(nid) > 1
+                    nid = nid(1);
+                    disp('Dangerous Code: @Analysis.judgeReplaResp');
+                end
                 rids = findCorrespReplaID(bnames{k});
                 
                 for kk = 1:length(rids)
@@ -489,13 +494,13 @@ classdef Analysis < handle
                     a.list(rids(kk)).targety = a.list(rids(kk)).y(Ini_replay:Ini_replay + 0.1*32000); % 截取100ms
                     a.list(rids(kk)).targetsptimes = extract.sptimes_resetSP(a.list(rids(kk)).sptimes,Ini_replay,Ini_replay + 0.1*32000);
                     % corresponding pre (targety) data
-                    a.list(rids(kk)).pretargety = a.list(nid).prey(end - 0.1*32000:end); % 截取100ms
+                    a.list(rids(kk)).pretargety = zeros(length(a.list(rids(kk)).targety),1);%a.list(nid).prey(end - 0.1*32000:end); % 截取100ms
                     a.list(rids(kk)).pretargetsptimes = extract.sptimes_resetSP(...
-                        a.list(rids(kk)).presptimes,length(a.list(rids(kk)).prey)/32000 -0.1*32000,length(a.list(rids(kk)).prey)/32000 );
+                        a.list(rids(kk)).presptimes,length(a.list(rids(kk)).pretargety)/32000 -0.1*32000,length(a.list(rids(kk)).pretargety)/32000 );%length(a.list(rids(kk)).prey)/32000 -0.1*32000
                     %calculate and judege whether the neuron respond to the target area or not
                     [a.list(rids(kk)).replaresp,a.list(rids(kk)).replaPvalue] = Analysis.UseTtestToJudegeRespOrNot(...
                         a.list(rids(kk)).targety,a.list(rids(kk)).targetsptimes,...
-                        a.list(rids(kk)).pretargety ,a.list(rids(kk)).pretargetsptimes ,32000)
+                        a.list(rids(kk)).pretargety ,a.list(rids(kk)).pretargetsptimes ,32000);
                 end
                 a.list(nid).target = a.list(nid).y(Ini_y:Ini_y + 0.1*32000); % 截取100ms
                 a.list(nid).targetsptimes = extract.sptimes_resetSP(a.list(nid).sptimes,Ini_y,Ini_y + 0.1*32000);
@@ -3985,7 +3990,7 @@ classdef Analysis < handle
         
         
         function [answer,pvalue] = UseTtestToJudegeRespOrNot(y,sptimes,prey,presptimes,fs)
-            
+            dbstop if error
             presdf = cal.sdf(presptimes,prey,fs,0.001,0.02);
             sdf = cal.sdf(sptimes,y,fs,0.001,0.02); % 0.001,0.004
             [maxpresdf,~] = max(presdf);
@@ -3996,7 +4001,7 @@ classdef Analysis < handle
             [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05)
             if h == 1
                 answer = 1;
-            elseif h == 0
+            elseif h == 0||isnan(h)
                 answer = 0;
             end
             pvalue = p;

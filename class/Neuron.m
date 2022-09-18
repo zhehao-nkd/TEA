@@ -764,6 +764,7 @@
                 info(k).pltsptimes = n.e{k}.pltsptimes;
                 info(k).judgerespsptimes = n.e{k}.judgerespsptimes;
                 info(k).prejudgerespsptimes = n.e{k}.prejudgerespsptimes;
+                info(k).presptimes = n.e{k}.presptimes;
                 info(k).zpt = n.e{k}.zpt; % zero point time
                 info(k).leny = length(info(k).y);
                 info(k).pltext = n.e{k}.pltext;

@@ -597,8 +597,8 @@ classdef Archon
             save(A.formated_imagename,'A','-v7.3');
         end
         
-        function A = genAnalysis(birdname,ZPid,channelname,unit) % generate Analysis
-            arch = Archon('./');%Archon('D:/');
+        function A = genAnalysis(sourcedir,birdname,ZPid,channelname,unit) % generate Analysis
+            arch = Archon(sourcedir);%Archon('D:/');
             if ~isempty(find(~cellfun(@isempty, regexp(cellstr(extract.filesAllLevel('./','*.mat')),...
                     sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))))) % 如果当前folder已含有同名Analysis文件
                 disp('该Neuron的分析已经存在');

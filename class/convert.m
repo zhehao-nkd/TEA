@@ -22,9 +22,10 @@ classdef convert
         
         function newid = bid(rawid,which_to_keep) % used for normalize the bird id to B345-like str
             
-            captured = regexp(rawid,'(?<letter>[OGBYR][a-zA-Z]*)\s*(?<number>\d{3})?(?<spe>TUT|BOS|V2|Fcall|Mcall|WNS|Het)?','names');
+            captured = regexpi(rawid,...
+                '(?<birdid>(Red|Orange|Blue|Yellow|Green|[ROBYG])\s*\d{3})(?<spe>TUT|BOS|V2|Fcall|Mcall|WNS|Het)?','names');
             if isempty(captured) % 如果没有发现B521这种ID，那么继续找有没有特殊标签
-                captured = regexp(rawid,'(?<letter>[OGBYR][a-zA-Z]*)\s*(?<number>\d{3})?|(?<spe>TUT|BOS|V2|Fcall|Mcall|WNS|Het)?','names');
+                captured = regexp(rawid,'(?<birdid>Red|Orange|Blue|Yellow|Green|[ROBYG]\s*\d{3})|(?<spe>TUT|BOS|V2|Fcall|Mcall|WNS|Het)?','names');
             end
             % 之所以用上面letter的regexp方式是因为大小不同，枚举过难
             % 而 \s*是为了防止空格
@@ -36,8 +37,14 @@ classdef convert
                 captured = captured(which_to_keep);
             end
             
-            % Switch to 1
-            newid = upper(strcat(captured.letter(1),captured.number,captured.spe)); % 取首字母
+            % Uppercase the first letter and only keep the first letter of birdname
+            loc1 = @(x) x{1};
+            if ~isempty(captured.birdid)
+                formatted_bname = [upper(captured.birdid(1)),loc1(regexp(captured.birdid,'\d{3}','match'))];
+                newid = strcat(formatted_bname,captured.spe);
+            else
+                newid = strcat(captured.birdid,captured.spe); % 取首字母
+            end
             
         end
             
