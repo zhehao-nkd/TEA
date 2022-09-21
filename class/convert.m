@@ -23,9 +23,10 @@ classdef convert
         function newid = bid(rawid,which_to_keep) % used for normalize the bird id to B345-like str
             
             captured = regexpi(rawid,...
-                '(?<birdid>(Red|Orange|Blue|Yellow|Green|[ROBYG])\s*\d{3})(?<spe>TUT|BOS|V2|Fcall|Mcall|WNS|Het)?','names');
+                '(?<birdid>Red\s*\d{3}|Orange\s*\d{3}|Blue\s*\d{3}|Yellow\s*\d{3}|Green\s*\d{3}|[ROBYG]\s*\d{3})(?<spe>TUT|BOS|V2|Fcall|Mcall|WNS|Het)?','names');
             if isempty(captured) % 如果没有发现B521这种ID，那么继续找有没有特殊标签
-                captured = regexp(rawid,'(?<birdid>Red|Orange|Blue|Yellow|Green|[ROBYG]\s*\d{3})|(?<spe>TUT|BOS|V2|Fcall|Mcall|WNS|Het)?','names');
+                captured = regexp(rawid,...
+                '(?<birdid>Red\s*\d{3}|Orange\s*\d{3}|Blue\s*\d{3}|Yellow\s*\d{3}|Green\s*\d{3}|[ROBYG]\s*\d{3})|(?<spe>TUT|BOS|V2|Fcall|Mcall|WNS|Het)?','names');
             end
             % 之所以用上面letter的regexp方式是因为大小不同，枚举过难
             % 而 \s*是为了防止空格
@@ -34,13 +35,18 @@ classdef convert
             end
             
             if length(captured) > 1 % if More than 1, choose which to keep
-                captured = captured(which_to_keep);
+                if exist('which_to_keep','var')
+                    captured = captured(which_to_keep);
+                else % 如果把有多个song ID的情况作为异常，保持原样抛出
+                    newid = rawid; fprintf('Message@ convert.bid: No change, keep raw input--%s\n',rawid); return;
+                end
             end
             
             % Uppercase the first letter and only keep the first letter of birdname
             loc1 = @(x) x{1};
             if ~isempty(captured.birdid)
-                formatted_bname = [upper(captured.birdid(1)),loc1(regexp(captured.birdid,'\d{3}','match'))];
+                temp = convertStringsToChars(captured.birdid);
+                formatted_bname = [upper(temp(1)),loc1(regexp(captured.birdid,'\d{3}','match'))];
                 newid = strcat(formatted_bname,captured.spe);
             else
                 newid = strcat(captured.birdid,captured.spe); % 取首字母

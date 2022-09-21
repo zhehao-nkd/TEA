@@ -365,11 +365,9 @@ classdef getInf < handle
         function all_eleinf = Eleinf(subdirs,id_thres,matFolder)  % 遍历 all the subdirs
             
             % assemble into eleinf
-            
             % This function can be applied to both syldata or eledata
             all_collect = {};
             to_delete = [];
-            
             for w = 1:length(subdirs) % here should be parfor
                 birdid  = split(subdirs{w},'\');
                 birdid = regexp(birdid{end},'\d+','match');
@@ -387,7 +385,7 @@ classdef getInf < handle
                 end
             end
             
-            subdirs(to_delete) = []; % delete those does not match the id threshold
+            subdirs(to_delete) = []; %清理 subdirs delete those does not match the id threshold
             
            for r = 1:length(subdirs)  % par-for can be used here
                 

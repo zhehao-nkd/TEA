@@ -7,11 +7,11 @@ mkdir(TARGET_DIR);ConDirs = fromWavFindParentFolder(TARGET_my_stimuli_folder_TWO
 %  wav_dir = "E:\Stimuli_Source\allBirdsSong";
 %  subdirs = extract.folder(wav_dir);
 %  [Lia,locb] = ismember([ConDirs{:}].',[subdirs{:}].');
-% 
-% 
+
+
 % %(((^~^))) Convert segdata files into eleinf, and then convert eleinf into
 % %the format suitable for the python script
-% 
+
 % noncon_dir_whole_collection = subdirs(setdiff([1: length(subdirs)],locb(locb>0)).');
 % % as = autoseg("E:\Stimuli_Source\allBirdsSong");
 % % as.standard(5);

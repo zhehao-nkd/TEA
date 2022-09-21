@@ -17,19 +17,19 @@ classdef utl
                 backside = targetlen - length(y)-frontside;
             end
             
-           padded = [zeros(frontside,1);y;zeros(backside,1)];
-           
+            padded = [zeros(frontside,1);y;zeros(backside,1)];
+            
             
         end
         
         function merged = mergestruct(dir,rows) % put the need to merge mat files into the same folder
-           % rows specificy how many rows to merge
+            % rows specificy how many rows to merge
             files = extract.filename(dir,'*.mat');
             summer = {};
             for idx= 1: length(files)
                 eval(['load ',files{idx}]);
                 if exist('rows','var')
-                     summer{idx} = syllables(1:rows);
+                    summer{idx} = syllables(1:rows);
                 else
                     summer{idx} = syllables;
                 end
@@ -51,7 +51,7 @@ classdef utl
                 %thisn.ResponseBasedOrderedThreePlots;
             end
         end
-       
+        
         function s = deblankl(x)
             if ~isempty(x)
                 s = lower(x);
@@ -76,12 +76,25 @@ classdef utl
                 waitbar(p, H,sprintf('此为总共%u个神经元中的%u',TOTAL,COUNT));
             end
         end
-            
+        
         function filename = fileparts(absolute_path)
             % to use the fileparts function in cellfun
-            [~,filename,~] = fileparts(absolute_path);    
+            [~,filename,~] = fileparts(absolute_path);
         end
         
+        function renamed = load(path)
+            % load variable from path and rename
+            loaded = load(path);
+            renamed = loaded.(subsref(fieldnames(loaded),substruct('{}',{1})));
+        end
+        
+        function bucketDriveletter = bucketletter(~)
+            % get the drive letter of bucket server
+            driveletters = cellfun( @(x) char(regexp(x,'[A-Za-z]','match')), getdrives );
+            disknames = arrayfun(@DriveName,driveletters,'Uni',0);
+            bucketDriveletter = driveletters(find( ~cellfun(@isempty, regexp(disknames,'bucket'))));
+        end
+         
     end
     
     

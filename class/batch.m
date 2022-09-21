@@ -75,7 +75,6 @@ classdef Batch < handle
                 temp = Neuron(b.neu{idx},b.plx{idx},b.wavfolder{idx});
                 syllables = temp.avgn;
                 %syllables = syllables';
-                
                 %[~,rawid,~] = fileparts(b.plx{idx});
                 fullid = temp.neuronname; %%%%%%%%%%%%%%%%%%
                 
