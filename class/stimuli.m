@@ -217,7 +217,7 @@ classdef stimuli < handle
             
             if isempty(s.outdir)
                 
-                dir = sprintf('%s/degressive_%s',pa.TEAOutputFolder,nowtime);
+                dir = sprintf('%s/degressive_%s',PM.TEAOutputFolder,nowtime);
                 mkdir(dir);
                 
                 for nn = 1: length(deg)
@@ -236,7 +236,7 @@ classdef stimuli < handle
          
         function writereplace(s,radish,pit)
             nowtime = datestr(datetime('now'),'yyyy-mmm-dd-HH-MM-SS');
-            dir = sprintf('%s/replaced_%s',pa.TEAOutputFolder,nowtime);
+            dir = sprintf('%s/replaced_%s',PM.TEAOutputFolder,nowtime);
             
             mkdir(dir);
             replaced = s.replace(radish,pit);
@@ -276,7 +276,7 @@ classdef stimuli < handle
                 newinf = s.prepro;
                 
                 nowtime = datestr(datetime('now'),'yyyy-mmm-dd-HH-MM-SS');
-                dir = sprintf('%s/frags_%s',pa.TEAOutputFolder,nowtime);
+                dir = sprintf('%s/frags_%s',PM.TEAOutputFolder,nowtime);
                 mkdir(dir);
                 
                 for xx = 1: length(newinf)
@@ -316,7 +316,7 @@ classdef stimuli < handle
             if isempty(s.outdir)
                 
                 nowtime = datestr(datetime('now'),'yyyy-mmm-dd-HH-MM-SS');
-                dir = sprintf('%s/norm_%s',pa.TEAOutputFolder,nowtime);
+                dir = sprintf('%s/norm_%s',PM.TEAOutputFolder,nowtime);
                 mkdir(dir);
                 
                 source = stimuli.split(s.prepro);
@@ -470,7 +470,7 @@ classdef stimuli < handle
              labels = unique([fraginf(:).label].');
              
             nowtime = datestr(datetime('now'),'yyyy-mmm-dd-HH-MM-SS');
-            dir = sprintf('%s/catego_precede_%s_%u_%s',pa.TEAOutputFolder,targetsongname,targetfragid,nowtime);
+            dir = sprintf('%s/catego_precede_%s_%u_%s',PM.TEAOutputFolder,targetsongname,targetfragid,nowtime);
             mkdir(dir);
              
              if ~isempty(find(labels == -1))  % remove not element rows
@@ -526,7 +526,7 @@ classdef stimuli < handle
             
             
             nowtime = datestr(datetime('now'),'yyyy-mmm-dd-HH-MM-SS');
-            dir = sprintf('%s/transform_%s-%u_%s',pa.TEAOutputFolder,raw(1).songname,raw(1).fragid,nowtime);
+            dir = sprintf('%s/transform_%s-%u_%s',PM.TEAOutputFolder,raw(1).songname,raw(1).fragid,nowtime);
             mkdir(dir);
             
          

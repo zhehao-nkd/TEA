@@ -2804,13 +2804,13 @@ classdef Analysis < handle
             % normlist = Analysis(a.neurons{a.song_id}).normlist;
             
             subfile_frag_ids = find(~cellfun(@isempty,regexp(cellstr({a.list.Fid}.'),strjoin(frag_Fid,'|'))));
-            fuckids = subfile_frag_ids;
+            hard_to_name_ids = subfile_frag_ids;
             if exist('songnames','var')
                 songnameids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),strjoin(songnames,'|'))));
-                fuckids = intersect(subfile_frag_ids,songnameids);
+                hard_to_name_ids = intersect(subfile_frag_ids,songnameids);
             end
             
-            fucklist = a.list(fuckids);
+            fucklist = a.list(hard_to_name_ids);
             
             normlist = fucklist(find(~cellfun(@isempty, regexp(cellstr({fucklist.stimuliname}.'),'norm'))));
             
@@ -2994,13 +2994,13 @@ classdef Analysis < handle
             
             
             subfile_deg_ids = find(~cellfun(@isempty,regexp(cellstr({a.list.Fid}.'),strjoin(deg_Fid,'|'))));
-            fuckids = subfile_deg_ids;
+            hard_to_name_ids = subfile_deg_ids;
             if exist('songnames','var')
                 songnameids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),strjoin(songnames,'|'))));
-                fuckids = intersect(subfile_deg_ids,songnameids);
+                hard_to_name_ids = intersect(subfile_deg_ids,songnameids);
             end
             
-            fucklist = a.list(fuckids);
+            fucklist = a.list(hard_to_name_ids);
             
             normlist = fucklist(find(~cellfun(@isempty, regexp(cellstr({fucklist.stimuliname}.'),'norm'))));
             %             [~,postunique] = unique(cellfun(@convert.bid,cellstr({fucklist.stimuliname}.'),'Uni',0));
@@ -3107,12 +3107,12 @@ classdef Analysis < handle
             replalist = a.list(replaids);
             repla_Fid = unique({replalist.Fid}.');
             subfile_repla_ids = find(~cellfun(@isempty,regexp(cellstr({a.list.Fid}.'),strjoin(repla_Fid,'|'))));
-            fuckids = subfile_repla_ids;
+            hard_to_name_ids = subfile_repla_ids;
             if exist('songnames','var')
                 songnameids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),strjoin(songnames,'|'))));
-                fuckids = intersect(subfile_repla_ids,songnameids);
+                hard_to_name_ids = intersect(subfile_repla_ids,songnameids);
             end
-            fucklist = a.list(fuckids);
+            fucklist = a.list(hard_to_name_ids);
             normlist = fucklist(find(~cellfun(@isempty, regexp(cellstr({fucklist.stimuliname}.'),'(?!repla|Repla)norm|Norm'))));
             
             

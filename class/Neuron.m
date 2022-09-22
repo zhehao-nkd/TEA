@@ -477,10 +477,10 @@
             parfor idx = 1: length(syl)
                 len(idx) = length(syl(idx).y);
             end
-            syl(len> pa.SYLLEN) = []; % remove longer syllables
+            syl(len> P<.SYLLEN) = []; % remove longer syllables
             
             parfor id = 1: length(syl)
-                syl(id).y = utl.pad(syl(id).y,pa.SYLLEN); % pad to 12800
+                syl(id).y = utl.pad(syl(id).y,PM.SYLLEN); % pad to 12800
                 syl(id).image = cal.img(syl(id).y,syl(id).fs); % store the image matrix
                 temp = extract.feature(syl(id).y,syl(id).fs);
                 syl(id).goodness = temp.goodness;
@@ -513,10 +513,10 @@
             parfor idx = 1: length(syl)
                 len(idx) = length(syl(idx).y);
             end
-            syl(len> pa.SYLLEN) = []; % remove longer syllables
+            syl(len> PM.SYLLEN) = []; % remove longer syllables
             
             parfor id = 1: length(syl)
-                syl(id).y = utl.pad(syl(id).y,pa.SYLLEN); % pad to 12800
+                syl(id).y = utl.pad(syl(id).y,PM.SYLLEN); % pad to 12800
                 %syl(id).image = cal.img(syl(id).y,syl(id).fs); % store the image matrix
                 temp = extract.feature(syl(id).y,syl(id).fs);
                 drate = 3; % downsampling rate

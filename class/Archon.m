@@ -1086,12 +1086,12 @@ classdef Archon
                     datainfo(m).plxname = plxname{m};
                     datainfo(m).keyword = regexp(plxname{m},'Con|Deg|Detail|Frag|Repla|Mir|Rev','match');
                     datainfo(m).sectionname = regexp(plxname{m},'Z\d{2}|P\d{2}','match');
-                    fuck = regexp(cellstr(datainfo(m).sectionname),'\d{2}','match');
-                    datainfo(m).sectionid = str2num(fuck{1}{1});
+                    just_a_temp = regexp(cellstr(datainfo(m).sectionname),'\d{2}','match');
+                    datainfo(m).sectionid = str2num(just_a_temp{1}{1});
                     datainfo(m).subfilename = regexp(plxname{m},'F\d{1}','match');
                     if ~isempty(datainfo(m).subfilename) %如果文件名里存在F标识subfile的id
                         fuck2 = regexp(datainfo(m).subfilename,'\d','match');
-                        datainfo(m).subfileid = str2num(fuck{1}{1});
+                        datainfo(m).subfileid = str2num(just_a_temp{1}{1});
                     elseif ~isempty(regexp(datainfo(m).plxname,'Mrg|mrg'))% 如果不存在F标识却存在‘Mrg|mrg’标识
                         datainfo(m).subfilename = "Mrg";
                     else % 如果不存在任何标识
