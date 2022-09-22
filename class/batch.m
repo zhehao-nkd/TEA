@@ -76,7 +76,7 @@ classdef Batch < handle
                 syllables = temp.avgn;
                 %syllables = syllables';
                 %[~,rawid,~] = fileparts(b.plx{idx});
-                fullid = temp.neuronname; %%%%%%%%%%%%%%%%%%
+                fullid = temp.neuronname; %%%%%%%%%%%%%
                 
                 save(sprintf('%s\\%s.mat',outdir,fullid),'syllables');
                 
