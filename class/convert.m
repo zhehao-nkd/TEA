@@ -23,7 +23,7 @@ classdef convert
         function newid = bid(rawid,which_to_keep) % used for normalize the bird id to B345-like str
             
             captured = regexpi(rawid,...
-                '(?<birdid>Red\s*\d{3}|Orange\s*\d{3}|Blue\s*\d{3}|Yellow\s*\d{3}|Green\s*\d{3}|[ROBYG]\s*\d{3})(?<spe>TUT|BOS|V2|Fcall|Mcall|WNS|Het)?','names');
+                '(?<birdid>Red\s*\d{3}|Orange\s*\d{3}|Blue\s*\d{3}|Yellow\s*\d{3}|Green\s*\d{3}|[ROBYG]\s*\d{3})?(?<spe>TUT|BOS|V2|Fcall|Mcall|WNS|Het)?','names');
             if isempty(captured) % 如果没有发现B521这种ID，那么继续找有没有特殊标签
                 captured = regexp(rawid,...
                 '(?<birdid>Red\s*\d{3}|Orange\s*\d{3}|Blue\s*\d{3}|Yellow\s*\d{3}|Green\s*\d{3}|[ROBYG]\s*\d{3})|(?<spe>TUT|BOS|V2|Fcall|Mcall|WNS|Het)?','names');
@@ -44,7 +44,7 @@ classdef convert
             
             % Uppercase the first letter and only keep the first letter of birdname
             loc1 = @(x) x{1};
-            if ~isempty(captured.birdid)
+            if ~isempty(captured.birdid)&& ~strcmp(captured.birdid,"") % ""非空， 所以写非空加不等于""
                 temp = convertStringsToChars(captured.birdid);
                 formatted_bname = [upper(temp(1)),loc1(regexp(captured.birdid,'\d{3}','match'))];
                 newid = strcat(formatted_bname,captured.spe);

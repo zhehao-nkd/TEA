@@ -465,6 +465,7 @@ classdef Analysis < handle
         end
         
         function  a = judgeReplaResp(a)
+            dbstop if error
             
             % evaluate the responsiveness of song replacements
             replaids = find( ~cellfun(@isempty, regexp([a.list.stimuliname].','Repla') ));
@@ -3969,26 +3970,6 @@ classdef Analysis < handle
                 ConvergentIndexReplaY = convergentpoint;
             end
             
-            %             diff_info = struct;
-            %             parfor k = 1: length(y) - length(yrepla)
-            %                 totest = y(k:k+ length(yrepla) -1);
-            %
-            %                 if sum(totest) ~= 0
-            %
-            %                     diff = sum(abs(totest - yrepla));
-            %
-            %                     diff_info(k).diff = diff;
-            %                     diff_info(k).kvalue = k;
-            %                     %                      end
-            %                 else
-            %                     diff_info(k).diff = Inf;
-            %                     diff_info(k).kvalue = k;
-            %                 end
-            %             end
-            %
-            %             [~,min_ids] = min([diff_info.diff].');
-            %             SynIni = diff_info(min_ids).kvalue;
-            %             diff_value = diff_info(min_ids).diff;
             
         end
         

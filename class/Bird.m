@@ -419,36 +419,27 @@ classdef Bird < handle
             %remove those do not have recording folders
             fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
             folders = cellstr(extract.folder(fdir).');
-            tokens = regexp(folders,'(?<color>[OBRGY][A-Za-z]+)(?<number>\d{3})','tokens');
+            %tokens = regexp(folders,'(?<color>[OBRGY][A-Za-z]+)(?<number>\d{3})','tokens');
             
             for b = 1: length(shortlist)
-
                 letter = regexp(shortlist(b).id,'[OBRGY]','match');
                 letter = letter{1};
                 number = regexp(shortlist(b).id,'\d+','match');
                 number = number{1};
                 format = sprintf('%s[A-Za-z]+%s',letter, number);
                 loc = find(~cellfun(@isempty, regexp(folders,format,'match')));
-                if length(loc) == 1
-                    shortlist(b).recordingState = 'Recorded';
-                elseif isempty(loc)
-                    shortlist(b).recordingState = 'Not yet';
-                else
-                    shortlist(b).recordingState = '[ERROR]';
+                adultexist = Bird.adultsongexist(shortlist(b).id);
+                if adultexist == 1
+                    shortlist(b).recordingState = 'Adult Yes';
+                elseif adultexist == 0
+                    shortlist(b).recordingState = 'No adult';
                 end
-                fprintf('Candidate%u----%s-----Age:%u dph-----------Cage%u--------%s----——-备注：%s\n',...
-                    b,shortlist(b).id,shortlist(b).age,shortlist(b).cage,shortlist(b).recordingState,shortlist(b).annotation);
             end
             
-            
-%             %%% show which bird are not recorded yet
-%             notidx =  strcmp({shortlist(:).recordingState}.','Not recorded yet');
-%             notyet = shortlist(notidx);
-%             
-%             for no = 1: length(notyet)
-%                 fprintf('Candidate%u----%s-----Age:%u dph-----------Cage%u--------%s----——-备注：%s\n',...
-%                     b,shortlist(b).id,shortlist(b).age,shortlist(b).cage,shortlist(b).recordingState,shortlist(b).annotation);
-%             end
+            for b = 1:length(shortlist)
+                fprintf('Candidate%u----%s-----%u dph----Father: %s-------Cage%u--------%s---——-备注：%s\n',...
+                    b,shortlist(b).id,shortlist(b).age,Bird.findFather(shortlist(b).id),shortlist(b).cage,shortlist(b).recordingState,shortlist(b).annotation);
+            end
 
         end
         
@@ -487,6 +478,10 @@ classdef Bird < handle
             if isempty(fathername)
                 fathername = string(missing);
             end
+            if length(fathername)==2
+                fathername = fathername{1};
+            end
+            
             
         end
         
@@ -551,6 +546,9 @@ classdef Bird < handle
             filedates = cellfun (@(x) datestring2Date(getDateString(char(x))),trick,'Uni',0);
             filedates =  sortrows( cell2table(filedates(~cellfun(@isempty,filedates))) ,'Var1','ascend');
             
+            if length(thehatchdate) > 1
+                thehatchdate = thehatchdate(1);
+            end
             % Step-3 :Answer the question 
             if  days(filedates.Var1(1) - thehatchdate) <90
                 disp('Warning@Bird.adultsongexist: Juvenile song exist !')
