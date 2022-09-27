@@ -1,4 +1,4 @@
-classdef convert
+classdef Convert
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -31,14 +31,14 @@ classdef convert
             % 之所以用上面letter的regexp方式是因为大小不同，枚举过难
             % 而 \s*是为了防止空格
             if isempty(captured)% If nothing is detected ruturn the warning message
-                newid = rawid; fprintf('Message@ convert.bid: No change, keep raw input--%s\n',rawid); return;
+                newid = rawid; fprintf('Message@ Convert.bid: No change, keep raw input--%s\n',rawid); return;
             end
             
             if length(captured) > 1 % if More than 1, choose which to keep
                 if exist('which_to_keep','var')
                     captured = captured(which_to_keep);
                 else % 如果把有多个song ID的情况作为异常，保持原样抛出
-                    newid = rawid; fprintf('Message@ convert.bid: No change, keep raw input--%s\n',rawid); return;
+                    newid = rawid; fprintf('Message@ Convert.bid: No change, keep raw input--%s\n',rawid); return;
                 end
             end
             
@@ -54,13 +54,13 @@ classdef convert
             
         end
             
-        function two2one(dir) % convert 2 channel to 1 channel wav
+        function two2one(dir) % Convert 2 channel to 1 channel wav
             [parentdir,rawdir,~] = fileparts(dir);
             rawoutdir = sprintf('SingleChannel_%s',rawdir);
             outdir = fullfile(parentdir,rawoutdir);
             mkdir(outdir);
             
-            files = extract.filename(dir,'*.wav');
+            files = Extract.filename(dir,'*.wav');
             for idx = 1: length(files)
                 [y,fs] = audioread(files{idx});
                 ys = y(:,2);
@@ -70,7 +70,7 @@ classdef convert
             end
         end
         
-        function two2oneAllLevel(dir) % convert 2 channel to 1 channel wav, no matter how many levels of folders there are
+        function two2oneAllLevel(dir) % Convert 2 channel to 1 channel wav, no matter how many levels of folders there are
             dbstop if error
             f = waitbar(0,'Please wait...');
             
@@ -79,7 +79,7 @@ classdef convert
             new = sprintf('SingleChannel_%s',old);
             
             %  create the folders
-            allfolders = extract.foldersAllLevel(dir);
+            allfolders = Extract.foldersAllLevel(dir);
             for k = 1: length(allfolders)
                 New_allfolders{k} = replace(allfolders{k},old,new);
                 mkdir(New_allfolders{k});
@@ -89,7 +89,7 @@ classdef convert
             % re write the files
             waitbar(0,f,'Rewriting files...');
             
-            allfiles = extract.filesAllLevel(dir,'*.wav');
+            allfiles = Extract.filesAllLevel(dir,'*.wav');
             
             for k = 1: length(allfiles)
                 New_allfiles{k} = replace(allfiles{k},old,new);
@@ -104,7 +104,7 @@ classdef convert
         end
           
         function new_sptimes = sptimesOnset2Zero(sptimes, onset_time)
-            % convert the onset of sptimes to zeros
+            % Convert the onset of sptimes to zeros
             for k = 1: length(sptimes)
                 new_sptimes{k} = sptimes{k} - onset_time;
             end
@@ -148,7 +148,7 @@ classdef convert
             outdir = sprintf('cutwav_%s',rawdir);
             mkdir(outdir);
   
-            files = extract.filename(dir,'*.wav');
+            files = Extract.filename(dir,'*.wav');
             
             for idx = 1: length(files)
                 [yraw,fs] = audioread(files{idx});
@@ -170,7 +170,7 @@ classdef convert
             parts(length(parts)) = strcat('Merged_',parts(length(parts)));
             destineydir = fullfile(parts{:});
             mkdir(destineydir);
-            files = extract.filesAllLevel(complexfolder,ext);
+            files = Extract.filesAllLevel(complexfolder,ext);
             for k = 1: length(files)
                 
               [~,name,ext] = fileparts(files{k});
@@ -189,7 +189,7 @@ classdef convert
         
         function renameAllLevel(targetdir,ext,old,new)
             dbstop if error
-            files = extract.filesAllLevel(targetdir, ext);
+            files = Extract.filesAllLevel(targetdir, ext);
             
             wb = waitbar(0,'Processing...');
             
@@ -217,7 +217,7 @@ classdef convert
                 case 'win' % 非常简陋，不一定是对的
                     newpath = strrep(oldpath,'/','\');
                 case 'unix'
-                    %convert to a unix version:
+                    %Convert to a unix version:
                     newpath = strrep(oldpath,'\','/');
             end
         end
@@ -327,7 +327,7 @@ classdef convert
             rawT = readtable(txtfile);% sorted plus unsorted
             fid = fopen(txtfile);
             frewind(fid);
-            first_line = utl.deblankl(fgetl(fid)); % deblankl for removal of blanks, as VariableNames can't include blanks
+            first_line = Utl.deblankl(fgetl(fid)); % deblankl for removal of blanks, as VariableNames can't include blanks
             titlecell = split(first_line,',');
             lentitle = length(titlecell);
             rawT.Properties.VariableNames(1:lentitle) = titlecell;

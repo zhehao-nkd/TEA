@@ -2,12 +2,12 @@
 
 
 dirpath = "E:\Stimuli_Source\R690_twoMotif\SegData"; %"E:\Stimuli_Source\senatusTwoMotif\SegData";
-segfiles = extract.filename(dirpath,'*.mat');
+segfiles = Extract.filename(dirpath,'*.mat');
 
 
 
 % dirpath = "E:\Stimuli_Source\allBirdsSong";
-% segfiles = extract.filesAllLevel(dirpath,'*.mat');
+% segfiles = Extract.filesAllLevel(dirpath,'*.mat');
 
 
 

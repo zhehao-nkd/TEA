@@ -1,7 +1,7 @@
 dbstop if error
 
 wav_dir = "E:\WavsCollection";
-subdirs = extract.folder(wav_dir);
+subdirs = Extract.folder(wav_dir);
 tic
 for r = 1:length(subdirs)
     
@@ -21,7 +21,7 @@ for r = 1:length(subdirs)
         
     end
     
-%    if ~isempty(extract.filename(sprintf('%s\\SegData',subdirs{r}),'*.mat'))
+%    if ~isempty(Extract.filename(sprintf('%s\\SegData',subdirs{r}),'*.mat'))
 %        continue
 %    end
   
@@ -33,7 +33,7 @@ send_mail_message('379380788@qq.com','First section finished','Oops')
 tic
 parfor r = 1:length(subdirs)
     
-    %    if ~isempty(extract.filename(sprintf('%s\\SegDataIndi',subdirs{r}),'*.mat'))
+    %    if ~isempty(Extract.filename(sprintf('%s\\SegDataIndi',subdirs{r}),'*.mat'))
     %        continue
     %    end
      birdid  = split(subdirs{r},'\');

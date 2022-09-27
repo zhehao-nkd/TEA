@@ -1,6 +1,6 @@
 % remove segdata or syldata or eledata
 
-subdirs = extract.folder("E:\Stimuli_Source\allBirdsSong")
+subdirs = Extract.folder("E:\Stimuli_Source\allBirdsSong")
 for k = 1:length(subdirs)
     segdir = sprintf('%s\\SegData',subdirs{k});
     syldir = sprintf('%s\\SylData',subdirs{k});

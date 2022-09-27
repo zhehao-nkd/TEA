@@ -19,7 +19,7 @@ from_which = 1;
     
 
 dirpath = uigetdir();
-files = extract.filename(dirpath, '*.wav');
+files = Extract.filename(dirpath, '*.wav');
 files = flip(files,1);
 outdir = 'AAAAAA'
 mkdir (outdir);

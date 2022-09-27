@@ -1,11 +1,11 @@
 wav_dir = "E:\WavsCollection";
-subdirs = extract.folder(wav_dir);
+subdirs = Extract.folder(wav_dir);
 fs = 32000;
 tic
 
 for r = 1:length(subdirs)
     
-    mat_path = extract.filename(sprintf('%s\\SegData',subdirs{r}),'*.mat');
+    mat_path = Extract.filename(sprintf('%s\\SegData',subdirs{r}),'*.mat');
     
     if isempty(mat_path)
         continue
@@ -20,7 +20,7 @@ for r = 1:length(subdirs)
         initials = alledges(1:2:end);
         terminals = alledges(2:2:end);
         fiy = bandpass(segdata.rawy,[900 6000],fs); %% It is very important that here the y should be fiy !!!!! filtered y instead of the raw y
-        I = cal.spec(fiy,fs);
+        I = Cal.spec(fiy,fs);
        
         song_eleinf = struct;
         

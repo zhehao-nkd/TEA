@@ -27,7 +27,7 @@ classdef Element
             % plot the mean and sd
             dbstop if error
             
-            names = extract.filename(dirpath,'*.wav')
+            names = Extract.filename(dirpath,'*.wav')
             outdirname = 'SegData';
             outdir = sprintf('%s\\%s',dirpath,outdirname);
             mkdir(outdir);
@@ -60,7 +60,7 @@ classdef Element
             envy = rescale(smooth(abs(y),150)); % amplitide envelope of y
             powery = downsample(y.^2/length(y),fs/1000);
             downy = downsample(abs(y),fs/1000);
-            I = cal.spec(y,fs); % I is the image of the whole song
+            I = Cal.spec(y,fs); % I is the image of the whole song
             
             % @#%$%*() This is very dangerous step to rescale the I
             

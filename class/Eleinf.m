@@ -12,7 +12,7 @@ classdef Eleinf % functions to draw plots based on eleinf
            end
 
             dir_details = "E:\Shared_Stimuli_Pool\Detail-CON-B346-03";
-            wavnames = extract.filename(dir_details,'*.wav');
+            wavnames = Extract.filename(dir_details,'*.wav');
             fragnames = [wavnames{[find(~cellfun(@isempty,regexp([wavnames{:}].','Frag|frag')))]}].';
             shortnames = {};
             for n = 1:length(fragnames)

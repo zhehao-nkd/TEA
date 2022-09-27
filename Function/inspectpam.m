@@ -41,7 +41,7 @@ set(h,'Color','cyan','Enable','on','ActionPostCallback',{@brushedDataCallback,sy
         for i=1:size(h)
             idxraw=logical(get(h(i),'BrushData'));
             sidx = find(idxraw);
-            % convert to logical
+            % Convert to logical
             % x=get(h(i),'XData');
             %sx=x(find(idx));
             
@@ -56,7 +56,7 @@ set(h,'Color','cyan','Enable','on','ActionPostCallback',{@brushedDataCallback,sy
        
         for kk = 1: length(sidx)
             figure('Position',[30 178 352 869],'Color','w');
-            draw.spec256(sylinf(sidx(kk)).y,32000);
+            Draw.spec256(sylinf(sidx(kk)).y,32000);
             sound(sylinf(sidx(kk)).y,32000);
             title(sprintf('%s-%u',sylinf(sidx(kk)).sound,sylinf(sidx(kk)).number));
            % colormap('gray')

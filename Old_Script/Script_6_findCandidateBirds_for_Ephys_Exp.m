@@ -49,7 +49,7 @@ end
 %remove those do not have recording folders
 fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
 
-folders = cellstr(extract.folder(fdir).');
+folders = cellstr(Extract.folder(fdir).');
 
 tokens = regexp(folders,'(?<color>[OBRGY][A-Za-z]+)(?<number>\d{3})','tokens');
 

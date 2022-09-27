@@ -3,10 +3,10 @@ classdef VocClassifier
     methods(Static)
         
         function  extractSongs(sourceDir, destiDir,NumToExtract)
-            % To extract several song files from a target folder
+            % To Extract several song files from a target folder
             % singleFolder is the path of a single folder in bucket server
             
-            rawfiles = extract.filename(sourceDir,'*.wav');
+            rawfiles = Extract.filename(sourceDir,'*.wav');
             %rawfiles = rawfiles(randperm(length(rawfiles))); % shuffling the order of the sound files
             
             n2e = NumToExtract; % 6 files to copy for each folder
@@ -57,7 +57,7 @@ classdef VocClassifier
                     
                     fiy = highpass(abs(y),500,fs); %  to remove the noise generataed by low-ftrquency noise
                     ampenv = envelope(fiy,320*9,'rms'); % amplitude envelope
-                    %figure; plot(ampenv); figure; draw.spec(y,fs);% 1ms-32
+                    %figure; plot(ampenv); figure; Draw.spec(y,fs);% 1ms-32
                     
                     sigs = find(ampenv>ampthres); % sigs means significant signal points
                     sigy = fiy(sigs);
@@ -106,7 +106,7 @@ classdef VocClassifier
                 
                 ids = find(filejudge);
                 fprintf('  Now you''ve got _%u_Songs \n',length(ids));
-                % extract n2e files from each folder
+                % Extract n2e files from each folder
                 if length(ids) > n2e
                     ids = ids(1: n2e );
                 end

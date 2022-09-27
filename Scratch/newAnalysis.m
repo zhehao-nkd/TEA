@@ -63,9 +63,9 @@ d.showcatego('Y606')
 % 
 % Display(listall).showsyl('G548')
 % % figure;
-% draw.spec( listall(5).y,32000)
+% Draw.spec( listall(5).y,32000)
 % 
 % figure;
 % 
-% draw.spec( listall(92).y,32000)
+% Draw.spec( listall(92).y,32000)
 

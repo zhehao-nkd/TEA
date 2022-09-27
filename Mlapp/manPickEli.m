@@ -58,7 +58,7 @@ function  [responsiveinfo,neweleinf] = manPickEli(neuron,mergedeleinf,mergedsyli
         subplot(2,1,1);
         %%%%% there are something wrong with the eleinf's terminal calculation
 
-        draw.spec6(summed,fs);
+        Draw.spec6(summed,fs);
         justatemp = unique(cellstr({thiss.songname}.'));
         xlabel(justatemp{1});
         hold on
@@ -79,7 +79,7 @@ function  [responsiveinfo,neweleinf] = manPickEli(neuron,mergedeleinf,mergedsyli
         color = 'k';
         title = ' ';
         e = neuron.e{k};
-        draw.raster(e.sptimes,e.y,e.fs);  % this draw the raster based on Neuron based data
+        Draw.raster(e.sptimes,e.y,e.fs);  % this draw the raster based on Neuron based data
         justanothertemp = e.sound.name;
         xlabel(justanothertemp);
 
@@ -146,7 +146,7 @@ function  [responsiveinfo,neweleinf] = manPickEli(neuron,mergedeleinf,mergedsyli
 
     for v = 1: length(responsiveinfo)
         subplot(1,length(responsiveinfo),v);
-        draw.spec(responsiveinfo(v).y,responsiveinfo(v).fs);
+        Draw.spec(responsiveinfo(v).y,responsiveinfo(v).fs);
         titletext =  sprintf('%s-%u',responsiveinfo(v).songname,responsiveinfo(v).fragid) ;
         xlabel(titletext);
         ylabel('')

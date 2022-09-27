@@ -124,14 +124,14 @@ classdef Ephys < handle
             minpeakprominence = 5;
             minpeakdistance = 30;
             range = 0.05;
-            presdf = cal.sdf(e.presptimes,e.y,e.fs,resolution,gausswidth);
-            thres = cal.thres(presdf,range);
+            presdf = Cal.sdf(e.presptimes,e.y,e.fs,resolution,gausswidth);
+            thres = Cal.thres(presdf,range);
             thres = max(thres, FORCEDHEIGHT);
-            sdf = cal.sdf(e.rawsptimes,e.rawy,e.fs,resolution,gausswidth);
-            %sdf = cal.sdf(e.sptimes,e.y,e.fs,resolution,gausswidth);
+            sdf = Cal.sdf(e.rawsptimes,e.rawy,e.fs,resolution,gausswidth);
+            %sdf = Cal.sdf(e.sptimes,e.y,e.fs,resolution,gausswidth);
             % for debugging
             %             figure;
-            %             draw.raster(e.sptimes,e.y,e.fs);
+            %             Draw.raster(e.sptimes,e.y,e.fs);
             %             figure
             %             findpeaks(sdf,"MinPeakHeight",thres,...
             %                 'MinPeakProminence',minpeakprominence,'MinPeakDistance',minpeakdistance);
@@ -156,7 +156,7 @@ classdef Ephys < handle
             %             w = w(ids);
             %             p = p(ids);
             
-            times_from_onset = times_from_onset*0.001-e.zpt;% convert miliseconds to seconds
+            times_from_onset = times_from_onset*0.001-e.zpt;% Convert miliseconds to seconds
             
             times_from_onset  = times_from_onset( times_from_onset > 0); % 筛除那些在stimuli onset之前的时间点
             
@@ -274,8 +274,8 @@ classdef Ephys < handle
                 syl(n).channel = e.spike.channel;
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.fragment(n).y;
-                %syl(n).image = cal.img(syl(n).y,e.fs); % store the image matrix
-                temp = extract.feature(syl(n).y,e.fs);
+                %syl(n).image = Cal.img(syl(n).y,e.fs); % store the image matrix
+                temp = Extract.feature(syl(n).y,e.fs);
                 syl(n).goodness = temp.goodness;
                 syl(n).meanf = temp.mean_frequency;
                 syl(n).fm = temp.fm;
@@ -319,8 +319,8 @@ classdef Ephys < handle
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.sapfragment(n).y;
                 
-                %syl(n).image = cal.img(syl(n).y,e.fs); % store the image matrix
-                %temp = extract.feature(syl(n).y,e.fs);
+                %syl(n).image = Cal.img(syl(n).y,e.fs); % store the image matrix
+                %temp = Extract.feature(syl(n).y,e.fs);
                 syl(n).goodness = thissap(n).mean_goodness;
                 syl(n).meanf = thissap(n).mean_freq;
                 syl(n).fm = thissap(n).mean_FM;
@@ -335,7 +335,7 @@ classdef Ephys < handle
                 syl(n).yplt = [e.sound.sapfragment(n).y;zeros(e.latency*e.fs,1)];
                 e.latency = 0.1;
                 e.pltext = 0.5
-                syl(n).sptimesplt = extract.cutspt(e.rawsptimes,syl(n).initial/e.fs, syl(n).dur + e.latency);
+                syl(n).sptimesplt = Extract.cutspt(e.rawsptimes,syl(n).initial/e.fs, syl(n).dur + e.latency);
                 
                 %syl(n).sptimes = e.sptimes(syl(n).initial<e.sptimes< syl(n).terminal); % !~!!!!!!!!!!!
                 if n ~= 1
@@ -394,7 +394,7 @@ classdef Ephys < handle
             number = e.sig;
             syl = struct;
             for n = 1:length(e.sound.initial)
-                syl(n).birdid = convert.bid(convertStringsToChars(e.sound.name));
+                syl(n).birdid = Convert.bid(convertStringsToChars(e.sound.name));
                 syl(n).filename = convertStringsToChars(e.sound.name);
                 syl(n).number = n;
                 syl(n).plx = convertStringsToChars(e.trigger.plxname);
@@ -402,7 +402,7 @@ classdef Ephys < handle
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.fragment(n).y;
                 syl(n).hpy = highpass(syl(n).y,450,e.fs); % high passed y, threshold is 400
-                syl(n).image = cal.img(syl(n).hpy,e.fs); % store the image matrix
+                syl(n).image = Cal.img(syl(n).hpy,e.fs); % store the image matrix
                 
                 if ismember(n,number)
                     syl(n).label = 1; % significant
@@ -440,7 +440,7 @@ classdef Ephys < handle
                 for n = 1: length(locs)
                     pre(n).y = Sound.intercept(e.y,e.fs,locs(n)-dur,locs(n));
                     pre(n).fs = e.fs;
-                    temp = extract.feature(pre(n).y,e.fs);
+                    temp = Extract.feature(pre(n).y,e.fs);
                     pre(n).goodness = temp.goodness;
                     pre(n).meanf = temp.mean_frequency;
                     pre(n).fm = temp.fm;
@@ -468,10 +468,10 @@ classdef Ephys < handle
             figure('color','w');
             name ={'pitch', 'amplitude', 'FM', 'AM', 'goodness', 'entropy', 'mfreq'};
             subplot(length(name)+2,1,1);
-            draw.spec(e.y,e.fs);
+            Draw.spec(e.y,e.fs);
             ylabel('Hz');
             subplot(length(name)+2,1,2);
-            draw.raster(e.sptimes,e.y,e.fs,'k');
+            Draw.raster(e.sptimes,e.y,e.fs,'k');
             ylabel('trails');
             for idx = 1: length(name)
                 subplot(length(name)+2,1,idx+ 2);
@@ -485,7 +485,7 @@ classdef Ephys < handle
         function drawThreePlots_enterprepostlength(e,pltlen)
             [pltsptimes,plty ] = allocate_variablePrePostLength(e, pltlen);
             figure('color','w')
-            draw.three(plty,e.fs,pltsptimes);
+            Draw.three(plty,e.fs,pltsptimes);
             xlabel(e.sound.name);
             subplot(3,1,1);
 %             locs = e.getIndexOfSigSyllable;
@@ -500,7 +500,7 @@ classdef Ephys < handle
          function img = drawsaveSpec(e,ext)
              fg = figure('Visible','off','color','w','Position',PM.size1plot);
              [pltsptimes,plty ] = allocate_variablePrePostLength(e, ext);
-             draw.spec(plty,e.fs);
+             Draw.spec(plty,e.fs);
              fr = getframe(fg);
              [img,~] = frame2im(fr);
              close(fg);
@@ -509,7 +509,7 @@ classdef Ephys < handle
          function img = drawsaveRaster(e,ext)
              fg = figure('Visible','off','color','w','Position',PM.size1plot);
              [pltsptimes,plty ] = allocate_variablePrePostLength(e, ext);
-             draw.raster(pltsptimes,plty,e.fs);
+             Draw.raster(pltsptimes,plty,e.fs);
              fr = getframe(gcf);
              [img,~] = frame2im(fr);
              close(fg);
@@ -524,7 +524,7 @@ classdef Ephys < handle
             %subplot(3,1,1);
             t = tiledlayout(3,1);
             ax1 = axes(t);
-            draw.spec(e.plty,e.fs);
+            Draw.spec(e.plty,e.fs);
             ylims = get(gca,'YLim');
             
             if ~isempty(e.pltfeatures)
@@ -551,10 +551,10 @@ classdef Ephys < handle
             end
             
             nexttile
-            draw.raster(e.pltsptimes,e.plty,e.fs);
+            Draw.raster(e.pltsptimes,e.plty,e.fs);
             
             nexttile
-            draw.sdf(e.plty,e.fs,e.pltsptimes);
+            Draw.sdf(e.plty,e.fs,e.pltsptimes);
             xlabel(e.sound.name);
             
             
@@ -564,7 +564,7 @@ classdef Ephys < handle
             %         e.updateplt;
             figure('color','w')
             %figure('Visible','off','color','w')
-            draw.three(e.y,e.fs,e.sptimes);
+            Draw.three(e.y,e.fs,e.sptimes);
             
             xlabel(e.sound.name);
         end
@@ -573,7 +573,7 @@ classdef Ephys < handle
             %         e.updateplt;
             figure('Position',[-41 147 2974 966],'color','w')
             %figure('Visible','off','color','w')
-            draw.two(e.y,e.fs,e.sptimes);
+            Draw.two(e.y,e.fs,e.sptimes);
             
             xlabel(e.sound.name);
         end
@@ -581,7 +581,7 @@ classdef Ephys < handle
         function e = slendertwo(e) % slender version of two plots
             e.updateplt;
             figure('Visible','off','color','w','Position',[2104 35 468 1013])
-            draw.two(e.plty,e.fs,e.pltsptimes);
+            Draw.two(e.plty,e.fs,e.pltsptimes);
             xlabel(e.sound.name);
         end
         
@@ -599,7 +599,7 @@ classdef Ephys < handle
                 figure('Position',e.fsize,'color','w'); %'default'
             end
             
-            draw.three(e.plty,e.fs,e.pltsptimes);
+            Draw.three(e.plty,e.fs,e.pltsptimes);
             xlabel(e.sound.name);
 %             subplot(3,1,1);
 %             locs = e.getIndexOfSigSyllable;
@@ -613,7 +613,7 @@ classdef Ephys < handle
         function e = three_with_sig_resp(e)% draw three plots with marks on the significant response
             %e.setExtAndAllocate;
             figure('color','w')
-            draw.three(e.plty,e.fs,e.pltsptimes);
+            Draw.three(e.plty,e.fs,e.pltsptimes);
             xlabel(e.sound.name);
             subplot(3,1,2);
             [pks,locs] = e.getSigRespnse;
@@ -632,7 +632,7 @@ classdef Ephys < handle
         
         function e = rawthree(e)% draw three plots
             figure('Position',[2157 670 560 420],'Color','w')
-            draw.three(e.rawy,e.fs,e.rawsptimes);
+            Draw.three(e.rawy,e.fs,e.rawsptimes);
             xlabel(e.sound.name);
            % subplot(3,1,1);
             %[~,locs] = e.getSigRespnse;
@@ -680,15 +680,15 @@ classdef Ephys < handle
                 respinfo(k).songname = e.sound.name;
                 respinfo(k).fragnum = k;
                 respinfo(k).fs = e.fs;
-                respinfo(k).lagging_sptimes = convert.sptimesOnset2Zero(extract.sptimes(e.rawsptimes,this_initial + latency,this_terminal + latency), this_initial + latency);
+                respinfo(k).lagging_sptimes = Convert.sptimesOnset2Zero(Extract.sptimes(e.rawsptimes,this_initial + latency,this_terminal + latency), this_initial + latency);
                 disp(respinfo(k).lagging_sptimes);
                 respinfo(k).ypluslatency = [respinfo(k).y;zeros(fix(latency*e.fs),1)];
                 
                 
-                temp_of_sum = cal.psth_frag(respinfo(k).y,respinfo(k).fs,respinfo(k).lagging_sptimes);
+                temp_of_sum = Cal.psth_frag(respinfo(k).y,respinfo(k).fs,respinfo(k).lagging_sptimes);
                 halfsum = sum(temp_of_sum(end/2:end));
                 fullsum = sum(temp_of_sum);
-                maxvalue = max(cal.psth_frag(respinfo(k).y,respinfo(k).fs,respinfo(k).lagging_sptimes));
+                maxvalue = max(Cal.psth_frag(respinfo(k).y,respinfo(k).fs,respinfo(k).lagging_sptimes));
                 respinfo(k).maxvalue = maxvalue;
                 respinfo(k).halfsum = halfsum;
                 respinfo(k).fullsum = fullsum;

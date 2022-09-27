@@ -21,33 +21,33 @@ classdef Spike < handle
             
             s.T = T; % T is the imcoming table
             
-            s.time = s.T.timestamp; % convert the timestamps into a matrix
+            s.time = s.T.timestamp; % Convert the timestamps into a matrix
             %data.waveform = T{:,4:end}; % number of columns may change
             
             vname = s.T.Properties.VariableNames;% name of vareiables
-            % extract waveforms
+            % Extract waveforms
             idxwaveform = find (~cellfun(@isempty, regexp(vname, '^Var\d+$')));
             tabel_contain_Var = s.T(:,idxwaveform);
             tabel_contain_Var(:,all(ismissing(tabel_contain_Var)))=[];
             s.waveform = table2array(tabel_contain_Var);
             
-            % extract PC values
+            % Extract PC values
             idxpc = find (~cellfun(@isempty, regexp(vname, '^pc\d+$'))); % idx of PCs
             s.pc = table2array(s.T(:,idxpc));
             
-            % extract peak
+            % Extract peak
             idxpeak = find (~cellfun(@isempty, regexp(vname, 'peak'))); % idx of peaks
             s.peak = table2array(s.T(:,idxpeak));
             
-             % extract valley
+             % Extract valley
             idxvalley = find (~cellfun(@isempty, regexp(vname, 'valley'))); % idx of valleys
             s.valley = table2array(s.T(:,idxvalley));
             
-            % extract channelname
+            % Extract channelname
             idxchannel = ~cellfun(@isempty, regexp(vname, 'channelname'));
             s.channel = unique(table2array(s.T(:,idxchannel)));
             
-            % extract unit name
+            % Extract unit name
             idxunit = ~cellfun(@isempty, regexp(vname, 'unit'));
             s.unit = unique(table2array(s.T(:,idxunit)));
             
@@ -148,7 +148,7 @@ classdef Spike < handle
             
             fid = fopen(path_txt);
             frewind(fid);
-            first_line = utl.deblankl(fgetl(fid)); % deblankl for removal of blanks, as VariableNames can't include blanks
+            first_line = Utl.deblankl(fgetl(fid)); % deblankl for removal of blanks, as VariableNames can't include blanks
             titlecell = split(first_line,',');
             lentitle = length(titlecell);
             rawT.Properties.VariableNames(1:lentitle) = titlecell;
@@ -188,7 +188,7 @@ classdef Spike < handle
                 
             end
               
-            separatedT = Spike.rm0(separatedT);  % to get the unsorted spikes,what I need is to extract 0 
+            separatedT = Spike.rm0(separatedT);  % to get the unsorted spikes,what I need is to Extract 0 
             
         end
         
@@ -200,12 +200,12 @@ classdef Spike < handle
             % These codes are for uniforming the column name of the rawT
             fid = fopen(path_txt);
             frewind(fid);
-            first_line = utl.deblankl(fgetl(fid)); % deblankl for removal of blanks, as VariableNames can't include blanks
+            first_line = Utl.deblankl(fgetl(fid)); % deblankl for removal of blanks, as VariableNames can't include blanks
             titlecell = split(first_line,',');
             lentitle = length(titlecell);
             rawT.Properties.VariableNames(1:lentitle) = titlecell;
             
-            % extract specific channel's rawT information as singleChannelT
+            % Extract specific channel's rawT information as singleChannelT
             singleChannelT = rawT(startsWith(rawT.channelname,channel_name),:);
             
            
@@ -228,7 +228,7 @@ classdef Spike < handle
         end
         
         
-        function zeroOnlyT = extract0(separatedT) % extract unit 0, which are unsorted
+        function zeroOnlyT = extract0(separatedT) % Extract unit 0, which are unsorted
             
             is0 = [];
             k = 0;

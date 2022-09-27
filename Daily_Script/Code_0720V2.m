@@ -15,7 +15,7 @@ sumsptimes = vertcat(sptimescollect{:});
 figure;
 k = 2;
 subplot(211)
-draw.spec(A.list(k).y,32000);
+Draw.spec(A.list(k).y,32000);
 subplot(212)
 plot(A.list(k).features.entropy);
 xlim([0,length(A.list(k).features.entropy)])
@@ -30,7 +30,7 @@ tsp = sumsptimes;
 
 figure;
 subplot(2,1,1)
-draw.spec(sumy,32000)
+Draw.spec(sumy,32000)
 subplot(2,1,2)
 plot(sumsti)
 

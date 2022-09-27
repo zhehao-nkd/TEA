@@ -38,7 +38,7 @@ classdef simultaneousNeurons < Sultan
             
             wb = waitbar(0,'Start processing');
             num_files = length(simu_neuron_larger_than1_ids );
-            utl.UpdateParforWaitbar(num_files, wb);
+            Utl.UpdateParforWaitbar(num_files, wb);
             D = parallel.pool.DataQueue;
             afterEach(D, @ult.UpdateParforWaitbar);   
             
@@ -48,7 +48,7 @@ classdef simultaneousNeurons < Sultan
                 send(D, 1);
             end
             
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             
         end
         
@@ -58,7 +58,7 @@ classdef simultaneousNeurons < Sultan
         
          function conallneurons = How_Do_simu_Neurons_respond_to_Songs(ana_pathes)
             
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             dbstop if error
             
             conkeywords = {'B346','B512','B521','B554','B606','G429','G506','G518','G548','G573',...
@@ -69,10 +69,10 @@ classdef simultaneousNeurons < Sultan
             wb = waitbar(0,'Start processing');
             num_files = length(ana_pathes);
             % Dummy call to nUpdateWaitbar to initialise
-            utl.UpdateParforWaitbar(num_files, wb);
+            Utl.UpdateParforWaitbar(num_files, wb);
             % Go back to simply calling nUpdateWaitbar with the data
             D = parallel.pool.DataQueue;
-            afterEach(D, @ utl.UpdateParforWaitbar);
+            afterEach(D, @ Utl.UpdateParforWaitbar);
             
             conallneurons = struct;
             parfor k = 1: length(ana_pathes) % should be par-for
@@ -203,9 +203,9 @@ classdef simultaneousNeurons < Sultan
                 for kk = 1: length(conallneurons(k).figcon)
                     Icollect{k,kk} = conallneurons(k).figcon{kk};
                     if new_con_respmap(k,kk) ==1
-                        Icollect{k,kk} = convert.colorEdge(Icollect{k,kk},'r'); %NS neurons-red
+                        Icollect{k,kk} = Convert.colorEdge(Icollect{k,kk},'r'); %NS neurons-red
                     elseif new_con_respmap(k,kk) ==2
-                        Icollect{k,kk} = convert.colorEdge(Icollect{k,kk},'b');
+                        Icollect{k,kk} = Convert.colorEdge(Icollect{k,kk},'b');
                     end
                 end
             end
@@ -215,9 +215,9 @@ classdef simultaneousNeurons < Sultan
                 for kk = 1: length(conallneurons(k).figspe)
                     specollect{k,kk} = conallneurons(k).figspe{kk};
                     if new_spe_respmap(k,kk) ==1
-                        specollect{k,kk} = convert.colorEdge(specollect{k,kk},'r'); %NS neurons-red
+                        specollect{k,kk} = Convert.colorEdge(specollect{k,kk},'r'); %NS neurons-red
                     elseif new_spe_respmap(k,kk) ==2
-                        specollect{k,kk} = convert.colorEdge(specollect{k,kk},'b');
+                        specollect{k,kk} = Convert.colorEdge(specollect{k,kk},'b');
                     end
                 end
             end

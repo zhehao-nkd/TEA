@@ -30,7 +30,7 @@ tutbos_eleinf  = categoFrags(tutbos_eleinf).eachsong;
 % % generate stimuli details
 % 
 % 
-% save(sprintf('tutbos_dir\%s.mat', convert.bid(tutbos_dir)),tutbos_dir);
+% save(sprintf('tutbos_dir\%s.mat', Convert.bid(tutbos_dir)),tutbos_dir);
 % 
 % % write fromat for coordinate analysis
 % 

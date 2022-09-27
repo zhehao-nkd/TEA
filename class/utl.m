@@ -1,4 +1,4 @@
-classdef utl
+classdef Utl
     % store some utilis functions that I have not yet decided where to put
     
   
@@ -24,7 +24,7 @@ classdef utl
         
         function merged = mergestruct(dir,rows) % put the need to merge mat files into the same folder
             % rows specificy how many rows to merge
-            files = extract.filename(dir,'*.mat');
+            files = Extract.filename(dir,'*.mat');
             summer = {};
             for idx= 1: length(files)
                 eval(['load ',files{idx}]);

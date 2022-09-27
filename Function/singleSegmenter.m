@@ -5,7 +5,7 @@ tic;
 % plot the mean and sd
 dbstop if error
 
-names = extract.filename(dirpath,'*.wav')
+names = Extract.filename(dirpath,'*.wav')
 outdirname = 'SegData';
 outdir = sprintf('%s\\%s',dirpath,outdirname);
 mkdir(outdir);
@@ -47,7 +47,7 @@ fiy = bandpass(fiy,[900 6000],fs); % preiously 5000
 envy = rescale(smooth(abs(fiy),150)); % amplitide envelope of y
 powery = downsample(fiy.^2/length(fiy),fs/1000);
 downy = downsample(abs(fiy),fs/1000);
-I = cal.spec(fiy,fs); % I is the image of the whole song
+I = Cal.spec(fiy,fs); % I is the image of the whole song
 
 % @#%$%*() This is very dangerous step to rescale the I
 

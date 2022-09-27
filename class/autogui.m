@@ -1,4 +1,4 @@
-classdef autogui < handle
+classdef AutoGui < handle
     % automatic gui robot
     % 自动点击器
     
@@ -10,7 +10,7 @@ classdef autogui < handle
     end
     
     methods
-        function a = autogui
+        function a = AutoGui
             import java.awt.*;
             import java.awt.event.*;
             a.rob = Robot;

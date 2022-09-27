@@ -13,7 +13,7 @@ for k = 1: length(uni_nf_roster) % k was 227
     
     pause(0.3)
     !C:/Program Files (x86)/SAP2011/SAP2011.exe&
-    au = autogui;
+    au = AutoGui;
     pause(0.8);
     au.click(304,426,0.2);
     au.click(188,108,0.1);
@@ -38,17 +38,17 @@ for k = 1: length(uni_nf_roster) % k was 227
     scY = 160;
     gap = 16;
     
-    [b_order,zp_order,sc_order] = autoSap.getDirOrder(uni_nf_roster(k).birdname,uni_nf_roster(k).neuronid);
+    [b_order,zp_order,sc_order] = AutoSap.getDirOrder(uni_nf_roster(k).birdname,uni_nf_roster(k).neuronid);
     
-    dynamic_by = autoSap.getcoory(b_order,  bY, gap);
+    dynamic_by = AutoSap.getcoory(b_order,  bY, gap);
     au.move(sharedX,dynamic_by);
     au.doubleclick(sharedX,dynamic_by,0.1); % double-click 鸟文件夹
     
-    dynamic_zpy = autoSap.getcoory(zp_order,  zpY, gap);
+    dynamic_zpy = AutoSap.getcoory(zp_order,  zpY, gap);
     au.move(sharedX,dynamic_zpy);
     au.doubleclick(sharedX,dynamic_zpy,0.1); % double-click ZP文件夹
     
-    dynamic_scy = autoSap.getcoory(sc_order,  scY, gap);
+    dynamic_scy = AutoSap.getcoory(sc_order,  scY, gap);
     au.move(sharedX,dynamic_scy);
     au.doubleclick(sharedX,dynamic_scy,0.1); % double-click ZP文件夹
     

@@ -1,6 +1,6 @@
-classdef autoSap
+classdef AutoSap
     % 自动运行SAP2011 Automatically run sap2011
-    % based on autogui
+    % based on AutoGui
     
     properties
         Property1
@@ -24,13 +24,13 @@ classdef autoSap
             
             % zplevel
             hitbird_dir = birddirs{birdorder};
-            zpdirs = sortrows(cellstr(extract.folder(hitbird_dir).'));
+            zpdirs = sortrows(cellstr(Extract.folder(hitbird_dir).'));
             zpmax =length(zpdirs);
             zporder = find(~cellfun(@isempty,regexp(zpdirs,ZPid)));
             
             %
             hitzp_dir = zpdirs{zporder};
-            withindirs = cellstr(extract.folder(hitzp_dir).');
+            withindirs = cellstr(Extract.folder(hitzp_dir).');
             [~,idxwithindirs] = sortrows(lower(withindirs)); % 不区分大小写的排序
             withindirs = withindirs(idxwithindirs);
             sinmax= length(withindirs);
@@ -54,7 +54,7 @@ classdef autoSap
                 
                 pause(0.2)
                 !C:/Program Files (x86)/SAP2011/SAP2011.exe&
-                au = autogui;
+                au = AutoGui;
                 pause(0.9);
                 if k == 1
                     pause(2);
@@ -82,8 +82,8 @@ classdef autoSap
                 scY = 160;
                 gap = 16;
                 
-                [b_order,zp_order,sc_order,bmax,zpmax,sinmax]= autoSap.getDirOrder(uni_roster(k).birdname,uni_roster(k).neuronid);
-                dynamic_by = autoSap.getcoory(b_order,  bY, gap);
+                [b_order,zp_order,sc_order,bmax,zpmax,sinmax]= AutoSap.getDirOrder(uni_roster(k).birdname,uni_roster(k).neuronid);
+                dynamic_by = AutoSap.getcoory(b_order,  bY, gap);
                 au.move(sharedX,dynamic_by);
                 au.doubleclick(sharedX,dynamic_by,0.1); % double-click 鸟文件夹
                 
@@ -104,12 +104,12 @@ classdef autoSap
                 au.drag(dragfirst,[dragfirst(1),dragfirst(2)+draglength],0.1); % 拖动到目标位置
                 au.doubleclick(coorfirst(1),clicky,0.1) % 拖动后点击
 
-%                 dynamic_zpy = autoSap.getcoory(zp_order,  zpY, gap);
+%                 dynamic_zpy = AutoSap.getcoory(zp_order,  zpY, gap);
 %                 au.move(sharedX,dynamic_zpy);
 %                 au.doubleclick(sharedX,dynamic_zpy,0.1); % double-click ZP文件夹
                 disp([uni_roster(k).birdname,uni_roster(k).neuronid]);
                 pause(0.2);
-                dynamic_scy = autoSap.getcoory(sc_order,  scY, gap);
+                dynamic_scy = AutoSap.getcoory(sc_order,  scY, gap);
                 au.move(sharedX,dynamic_scy);
                 au.doubleclick(sharedX,dynamic_scy,0.1); % double-click sc文件夹
                 
@@ -177,7 +177,7 @@ classdef autoSap
                 featuredir = fullfile(zpdir,'Feature');
                 mkdir(featuredir); % 建立Feature文件夹
                 infofilename = sprintf('%s-%s-Info.txt',bid,zp);
-                outpath = convert.path(fullfile(featuredir,infofilename),'unix');
+                outpath = Convert.path(fullfile(featuredir,infofilename),'unix');
                 sqlquery = sprintf(['(SELECT ''bird_ID'',''file_index'',''file_name'',''file_age'',''bird_age'')\n',...
                     'UNION\n',...
                     '(SELECT bird_ID,file_index,file_name,file_age,bird_age\n',...
@@ -233,7 +233,7 @@ classdef autoSap
                 mkdir(featuredir); % 建立Feature文件夹
                 
                 infofilename = sprintf('%s-%s-Data.txt',bid,zp);
-                outpath = convert.path(fullfile(featuredir,infofilename),'unix');
+                outpath = Convert.path(fullfile(featuredir,infofilename),'unix');
                 sqlquery = sprintf(...
                     ['(SELECT ''time'',''file_index'',''amplitude'',''mean_frequency_amp'',''pitch'',''mean_frequency'',',...
                     '''FM'',''am'',''goodness'',''entropy'',''peak_frequency'',''DAS'',''continuity_t'',''continuity_f'')\n',...
@@ -267,7 +267,7 @@ classdef autoSap
         
         function write_sapscreenshot(unilist)
             
-            %unilist = autoSap.script_autorun_scp(neuroster);
+            %unilist = AutoSap.script_autorun_scp(neuroster);
             
             wb = waitbar(0,'Starting');
             for k = 1: length(unilist)

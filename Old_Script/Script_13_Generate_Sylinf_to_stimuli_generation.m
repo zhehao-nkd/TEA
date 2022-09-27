@@ -2,11 +2,11 @@
 
 ConDirs = fromWavFindParentFolder("Z:\Zhehao\Stimuli_Source\senatusTwoMotif","Z:\Zhehao\Stimuli_Source\allBirdsSong");
  wav_dir = "Z:\Zhehao\Stimuli_Source\allBirdsSong";
- subdirs = extract.folder(wav_dir);
+ subdirs = Extract.folder(wav_dir);
  [Lia,locb] = ismember([ConDirs{:}].',[subdirs{:}].');
 
 
-%(((^~^))) Convert segdata files into eleinf, and then convert eleinf into
+%(((^~^))) Convert segdata files into eleinf, and then Convert eleinf into
 %the format suitable for the python script
 
 noncon_dir_whole_collection = subdirs(setdiff([1: length(subdirs)],locb(locb>0)).');

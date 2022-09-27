@@ -262,10 +262,10 @@ classdef Fenxi < handle
            syllist = f.list(ids);
            
            for n = 1: length(syllist)
-            tempsum = cal.psth_syl(syllist(n).rawy,syllist(n).fs,syllist(n).rawsptimes);
+            tempsum = Cal.psth_syl(syllist(n).rawy,syllist(n).fs,syllist(n).rawsptimes);
             halfsum = sum(tempsum(end/2:end));
             fullsum = sum(tempsum);
-            maxvalue = max(cal.psth_syl(syllist(n).rawy,syllist(n).fs,syllist(n).rawsptimes))
+            maxvalue = max(Cal.psth_syl(syllist(n).rawy,syllist(n).fs,syllist(n).rawsptimes))
             syllist(n).maxvalue = maxvalue;
             syllist(n).halfsum = halfsum;
             syllist(n).fullsum = fullsum;
@@ -284,12 +284,12 @@ classdef Fenxi < handle
            syllist = f.list(ids);
            
            for n = 1: length(syllist)
-            tempsum = cal.psth_syl(syllist(n).rawy,syllist(n).fs,syllist(n).rawsptimes);
+            tempsum = Cal.psth_syl(syllist(n).rawy,syllist(n).fs,syllist(n).rawsptimes);
             range = 1 % the very fisrt 1 second
             beginmax = max(tempsum(1: ceil(length(tempsum)*range/(length(syllist(n).rawy)/syllist(n).fs)) ));% the maximum value of the begining 0.5 second
             halfsum = sum(tempsum(end/2:end));
             fullsum = sum(tempsum);
-            maxvalue = max(cal.psth_syl(syllist(n).rawy,syllist(n).fs,syllist(n).rawsptimes));
+            maxvalue = max(Cal.psth_syl(syllist(n).rawy,syllist(n).fs,syllist(n).rawsptimes));
             syllist(n).maxvalue = maxvalue;
             syllist(n).halfsum = halfsum;
             syllist(n).fullsum = fullsum;

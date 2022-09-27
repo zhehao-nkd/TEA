@@ -14,7 +14,7 @@ classdef Archon
         function a = Archon(dirpath)
             
             dbstop if error
-            a.bird_folders = [extract.folder(dirpath)].'; %#ok<NBRAK>
+            a.bird_folders = [Extract.folder(dirpath)].'; %#ok<NBRAK>
             
             pure_folname = {}; % 初始化
             for k = 1: length(a.bird_folders)
@@ -31,26 +31,26 @@ classdef Archon
             
             infocollect = {};
             for k = 1:length(a.bird_folders)
-                plxfiles = extract.filename(a.bird_folders{k},'*.plx');
-                txtfiles = extract.filename(a.bird_folders{k},'*.txt');
+                plxfiles = Extract.filename(a.bird_folders{k},'*.plx');
+                txtfiles = Extract.filename(a.bird_folders{k},'*.txt');
                 
                 if exist(sprintf('%s\\Stimuli',a.bird_folders{k}), 'dir')
-                    stidirs = extract.folder(sprintf('%s\\Stimuli',a.bird_folders{k})).';
+                    stidirs = Extract.folder(sprintf('%s\\Stimuli',a.bird_folders{k})).';
                 else % 如果未把所有stimuli放进stimuli folder里面
-                    stidirs = extract.folder(sprintf('%s',a.bird_folders{k})).'
+                    stidirs = Extract.folder(sprintf('%s',a.bird_folders{k})).'
                 end
                 
-                plxname = {}; % extract .plx filenames
+                plxname = {}; % Extract .plx filenames
                 for m = 1: length(plxfiles)
                     [~,plxname{m},~] = fileparts(plxfiles{m});
                 end
                 
-                txtname = {};% extract .txt filenames
+                txtname = {};% Extract .txt filenames
                 for m = 1: length(txtfiles)
                     [~,txtname{m},~] = fileparts(txtfiles{m});
                 end
                 
-                stiname = {}; % extract stimuli folder names
+                stiname = {}; % Extract stimuli folder names
                 for m = 1: length( stidirs)
                     temps = split( stidirs{m},'\');
                     stiname{m} = temps{end};
@@ -112,7 +112,7 @@ classdef Archon
     methods(Static) % 底层方法, methods which are themselves not frequently used but are the basis of more superior methods
         function reorderFilename(targetdir, ext)
             
-            files = extract.filesAllLevel(targetdir, ext);
+            files = Extract.filesAllLevel(targetdir, ext);
             
             wb = waitbar(0,'Start renaming files...');
             
@@ -160,7 +160,7 @@ classdef Archon
         % reorder filename, let bird id be the first
         function reorderDirname(targetdir)
             % reorder dirname, let bird id be the first
-            dirs = extract.foldersAllLevel(targetdir);
+            dirs = Extract.foldersAllLevel(targetdir);
             strlen = [];
             for m = 1: length(dirs)
                 strlen(m) = length(dirs{m});
@@ -217,13 +217,13 @@ classdef Archon
         end
         
         function reorderNames(targetdir)
-            convert.bid_first_AllLevel(targetdir, '*.plx');
-            convert.bid_first_AllLevel(targetdir, '*.txt');
-            convert.bid_first_AllLevel_dirVer(targetdir);
+            Convert.bid_first_AllLevel(targetdir, '*.plx');
+            Convert.bid_first_AllLevel(targetdir, '*.txt');
+            Convert.bid_first_AllLevel_dirVer(targetdir);
         end
         
         function padFilename(targetdir, ext) % format data into G573_P01F2_Degs kind of format
-            files = extract.filesAllLevel(targetdir, ext);
+            files = Extract.filesAllLevel(targetdir, ext);
             
             wb = waitbar(0,'Start renaming files...');
             
@@ -322,8 +322,8 @@ classdef Archon
             D = parallel.pool.DataQueue;
             h = waitbar(0, '开始生成 Analysis objects');
             num_files = length(input_roster);% Dummy call to nUpdateWaitbar to initialise
-            utl.UpdateParforWaitbar(num_files, h);% Go back to simply calling nUpdateWaitbar with the data
-            afterEach(D, @utl.UpdateParforWaitbar);
+            Utl.UpdateParforWaitbar(num_files, h);% Go back to simply calling nUpdateWaitbar with the data
+            afterEach(D, @Utl.UpdateParforWaitbar);
             
             neurondir =  unique({input_roster.neurondir}.');
             
@@ -331,7 +331,7 @@ classdef Archon
                 
                 subroster = find(strcmp(cellstr({input_roster.neurondir}.'),neurondir{mm}));
                 hit_subdir = neurondir{mm};
-                plxfiles = extract.filename(hit_subdir,'*.plx');
+                plxfiles = Extract.filename(hit_subdir,'*.plx');
                 plxdata = {};
                 for k = 1: length(plxfiles)
                     plxdata{k} = Trigger(plxfiles{k});
@@ -356,11 +356,11 @@ classdef Archon
                     %                    hitZorP = find(~cellfun(@isempty,regexp(cellstr(subdirs.'),ZPid)));
                     hit_subdir = neurondir{mm};
                     
-                    %                    plxfiles = extract.filename(hit_subdir,'*.plx');
+                    %                    plxfiles = Extract.filename(hit_subdir,'*.plx');
                     %                    zpids = find(~cellfun(@isempty, regexp(cellstr(plxfiles),'[ZP]\d+F\d+')));
                     %                    plxfiles = plxfiles(zpids);
                     featuredir = append(hit_subdir,'\Feature');
-                    txtfiles = extract.filename(hit_subdir,'*.txt');
+                    txtfiles = Extract.filename(hit_subdir,'*.txt');
                     zpids = find(~cellfun(@isempty, regexp(cellstr(txtfiles),'[ZP]\d+F\d+'))); % same record
                     SPKCid = find(~cellfun(@isempty, regexp(cellstr(txtfiles),channelname))); % same channel
                     Uid = find(~cellfun(@isempty, regexp(cellstr(txtfiles),sprintf('U%d',unit)))); % same unit
@@ -372,7 +372,7 @@ classdef Archon
                     
                     
                     stimuli_collect_dir = append(hit_subdir,'\Stimuli');
-                    stimulidirs = extract.folder(stimuli_collect_dir ).';
+                    stimulidirs = Extract.folder(stimuli_collect_dir ).';
                     
                     Archon.genAnalysisDifferentInput(plxdata,txtfiles,stimulidirs,featuredir,channelname,unit);
                     % Note we send only an "increment" for the waitbar.
@@ -391,7 +391,7 @@ classdef Archon
             % 分析所包含的所有Z P folder,生成Analysis对象，并且对于那些不可分析的（某些信息不够），生成记录文件以便补充这些信息
             %datadir = 'D:';
             
-            allfolders = extract.foldersAllLevel(datadir).';
+            allfolders = Extract.foldersAllLevel(datadir).';
             index = find(~cellfun(@isempty, regexp(allfolders,'[ZP]\d+$')));
             neurondir = {allfolders{index}}.';
             neuroster = struct; % Neuron 花名册
@@ -410,16 +410,16 @@ classdef Archon
                 
                 
                 %判断 txt 文件是否完备
-                plxfiles = extract.filename(neurondir{kk},'*.plx');
+                plxfiles = Extract.filename(neurondir{kk},'*.plx');
                 zpids = find(~cellfun(@isempty, regexp(cellstr(plxfiles),'[ZP]\d+F\d+'))); % 剔除 merge 的 plx文件
                 plxfiles = plxfiles(zpids);
                 
-                txtfile = extract.filename(neurondir{kk},'*.txt');
+                txtfile = Extract.filename(neurondir{kk},'*.txt');
                 zpids = find(~cellfun(@isempty, regexp(cellstr(txtfile),'[ZP]\d+F\d+'))); %剔除额外的 plx文件
                 txtfile = txtfile(zpids);
                 
                 stimuliparentdir = fullfile(neurondir{kk},'Stimuli');
-                stimulidir = extract.folder(stimuliparentdir);
+                stimulidir = Extract.folder(stimuliparentdir);
                 if isempty(stimulidir)
                     malcount = malcount + 1;
                     malfunctions(malcount).birdname = regexp(neurondir{kk},'[BRGYOX]\d{3}','match');
@@ -471,7 +471,7 @@ classdef Archon
                     neuroster(count).fullid = [neuroster(count).birdname,neuroster(count).neuronid,neuroster(count).channelname,neuroster(count).unit];
                     stimulidir = fullfile(neurondir{kk},'Stimuli');
                     
-                    stimuli_filenames = extract.filesAllLevel(stimulidir,'*.wav');
+                    stimuli_filenames = Extract.filesAllLevel(stimulidir,'*.wav');
                     
                     neuroster(count).frag = 0;  % 判断是否有frag
                     if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Frag')), 1))
@@ -504,7 +504,7 @@ classdef Archon
                     neuroster(count).featureexist = 0;  % 是否存在 feature files
                     feature_dir = fullfile(neurondir{kk},'Feature');
                     if exist(feature_dir,'dir')
-                        feature_files = extract.filename(feature_dir,'*.txt');
+                        feature_files = Extract.filename(feature_dir,'*.txt');
                         
                         if ~isempty(find(~cellfun(@isempty, regexp(cellstr(feature_files),'Info')))) &&...
                                 ~isempty(find(~cellfun(@isempty, regexp(cellstr(feature_files),'Data'))))
@@ -513,7 +513,7 @@ classdef Archon
                     end
                     
                     neuroster(count).SCDexist = 0; % 是否存在SingleChannel_Merged_Stimuli文件夹
-                    subdirs = extract.folder(neurondir{kk});
+                    subdirs = Extract.folder(neurondir{kk});
                     if ~isempty(find(~cellfun(@isempty, regexp(cellstr(subdirs).','SingleChannel_Merged_Stimuli'))))
                         neuroster(count).SCDexist = 1;
                     end
@@ -573,7 +573,7 @@ classdef Archon
                 % allocate sap-based feature information to each neuron
                 
                 
-                feature_files = extract.filename(featuredir,'*.txt');
+                feature_files = Extract.filename(featuredir,'*.txt');
                 
                 datafile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Data')));
                 infofile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Info')));
@@ -599,7 +599,7 @@ classdef Archon
         
         function A = genAnalysis(sourcedir,birdname,ZPid,channelname,unit) % generate Analysis
             arch = Archon(sourcedir);%Archon('D:/');
-            if ~isempty(find(~cellfun(@isempty, regexp(cellstr(extract.filesAllLevel('./','*.mat')),...
+            if ~isempty(find(~cellfun(@isempty, regexp(cellstr(Extract.filesAllLevel('./','*.mat')),...
                     sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))))) % 如果当前folder已含有同名Analysis文件
                 disp('该Neuron的分析已经存在');
                 A = [];
@@ -610,14 +610,14 @@ classdef Archon
             
             
             % 处理hit folder 内部的 subfolders
-            subdirs = extract.folder(hitbird_folder);
+            subdirs = Extract.folder(hitbird_folder);
             hitZorP = find(~cellfun(@isempty,regexp(cellstr(subdirs.'),ZPid)));
             hit_subdir = subdirs {hitZorP};
             
-            plxfiles = extract.filename(hit_subdir,'*.plx');
+            plxfiles = Extract.filename(hit_subdir,'*.plx');
             zpids = find(~cellfun(@isempty, regexp(cellstr(plxfiles),'[ZP]\d+F\d+')));
             plxfiles = plxfiles(zpids);
-            txtfiles = extract.filename(hit_subdir,'*.txt');
+            txtfiles = Extract.filename(hit_subdir,'*.txt');
             zpids = find(~cellfun(@isempty, regexp(cellstr(txtfiles),'[ZP]\d+F\d+'))); % same record
             SPKCid = find(~cellfun(@isempty, regexp(cellstr(txtfiles),channelname))); % same channel
             Uid = find(~cellfun(@isempty, regexp(cellstr(txtfiles),sprintf('U%d',unit)))); % same unit
@@ -629,7 +629,7 @@ classdef Archon
             
             
             stimuli_collect_dir = append(hit_subdir,'\Stimuli');
-            stimuli_dirs = extract.folder(stimuli_collect_dir ).';
+            stimuli_dirs = Extract.folder(stimuli_collect_dir ).';
             
             Ns = {};
             
@@ -670,7 +670,7 @@ classdef Archon
                 % allocate sap-based feature information to each neuron
                 feature_dir = append(hit_subdir,'\Feature');
                 
-                feature_files = extract.filename(feature_dir,'*.txt');
+                feature_files = Extract.filename(feature_dir,'*.txt');
                 
                 datafile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Data')));
                 infofile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Info')));
@@ -752,13 +752,13 @@ classdef Archon
             
             
             % 处理hit folder 内部的 subfolders
-            subdirs = extract.folder(hitbird_folder);
+            subdirs = Extract.folder(hitbird_folder);
             hitZorP = find(~cellfun(@isempty,regexp(cellstr(subdirs.'),ZPid)));
             hit_subdir = subdirs {hitZorP};
             
-            destineydir = convert.mergeSubfolders(fullfile(hit_subdir,'Stimuli'),'*.wav'); % 合并所有声文件
+            destineydir = Convert.mergeSubfolders(fullfile(hit_subdir,'Stimuli'),'*.wav'); % 合并所有声文件
             
-            convert.two2one(destineydir); % 生成单通道声文件
+            Convert.two2one(destineydir); % 生成单通道声文件
             
             
         end
@@ -820,7 +820,7 @@ classdef Archon
         function shared = findConsistentNeurons(dir_txt)  % 找到在每一个文件里都有的神经元
             
             %dir_txt = "D:\Ephys-O709-W\P07"
-            txtfile = extract.filename(dir_txt,'*.txt');
+            txtfile = Extract.filename(dir_txt,'*.txt');
             
             for k = 1: length(txtfile)
                 info = Archon.findSortedNeurons(txtfile{k});
@@ -845,7 +845,7 @@ classdef Archon
         function conexist = findConExistNeurons(dir_txt)% 找到有Cons的神经元,这里使用F1来寻找Cons文件，后期有可能有问题
             % check which Fid is the Con session
             %dir_txt = "D:\Ephys-O709-W\P07"
-            txtfile = extract.filename(dir_txt,'*.txt');
+            txtfile = Extract.filename(dir_txt,'*.txt');
             f1txtid = find(~cellfun(@isempty,regexp(cellstr(txtfile),'F1')));
             subsetid = find(~cellfun(@isempty,regexp(cellstr(txtfile),'SPKC')));
             if ~isempty(subsetid)
@@ -870,7 +870,7 @@ classdef Archon
             birddir = birddirs{~cellfun(@isempty,regexp(birddirs,birdname))};
             
             % zplevel
-            zpdirs = cellstr(extract.folder(birddir).');
+            zpdirs = cellstr(Extract.folder(birddir).');
             zpdir = zpdirs{~cellfun(@isempty,regexp(zpdirs,ZPid))};
             
         end
@@ -880,9 +880,9 @@ classdef Archon
         function moveCorrespondingFiles()%basis, sourcedir, destineydir) %根据basis里的文件，移动有相同神经元编码的文件到指定文件夹
             dbstop if error
             sourcedir = "D:\CDRF_AnalysisObject";
-            basis = extract.filename("C:\Users\Zhehao\Desktop\Selected_ResptoIndividual",'*.png');
+            basis = Extract.filename("C:\Users\Zhehao\Desktop\Selected_ResptoIndividual",'*.png');
             destineydir = "C:\Users\Zhehao\Desktop\Destiney";
-            all_sourcefiles =cellstr( extract.filename(sourcedir,'*.*'));
+            all_sourcefiles =cellstr( Extract.filename(sourcedir,'*.*'));
             
             for k = 1: length(basis)
                 
@@ -1029,7 +1029,7 @@ classdef Archon
             % 202204211 11:44 pm paused here!
             
             dbstop if error
-            bird_folders = [extract.folder(dirpath)].'; %#ok<NBRAK>
+            bird_folders = [Extract.folder(dirpath)].'; %#ok<NBRAK>
             
             pure_folname = {}; % 初始化
             for k = 1: length(bird_folders)
@@ -1046,26 +1046,26 @@ classdef Archon
             
             infocollect = {};
             for k = 1:length(bird_folders)
-                plxfiles = extract.filename(bird_folders{k},'*.plx');
-                txtfiles = extract.filename(bird_folders{k},'*.txt');
+                plxfiles = Extract.filename(bird_folders{k},'*.plx');
+                txtfiles = Extract.filename(bird_folders{k},'*.txt');
                 
                 if exist(sprintf('%s\\Stimuli',bird_folders{k}), 'dir')
-                    stidirs = extract.folder(sprintf('%s\\Stimuli',bird_folders{k})).';
+                    stidirs = Extract.folder(sprintf('%s\\Stimuli',bird_folders{k})).';
                 else % 如果未把所有stimuli放进stimuli folder里面
-                    stidirs = extract.folder(sprintf('%s',bird_folders{k})).'
+                    stidirs = Extract.folder(sprintf('%s',bird_folders{k})).'
                 end
                 
-                plxname = {}; % extract .plx filenames
+                plxname = {}; % Extract .plx filenames
                 for m = 1: length(plxfiles)
                     [~,plxname{m},~] = fileparts(plxfiles{m});
                 end
                 
-                txtname = {};% extract .txt filenames
+                txtname = {};% Extract .txt filenames
                 for m = 1: length(txtfiles)
                     [~,txtname{m},~] = fileparts(txtfiles{m});
                 end
                 
-                stiname = {}; % extract stimuli folder names
+                stiname = {}; % Extract stimuli folder names
                 for m = 1: length( stidirs)
                     temps = split( stidirs{m},'\');
                     stiname{m} = temps{end};

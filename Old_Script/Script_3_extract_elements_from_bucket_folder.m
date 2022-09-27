@@ -31,11 +31,11 @@ toc
 %(((^~^))) This section is for segmenting copied songs into elements. 
 wav_dir = "E:\WavsCollection";
 %wav_dir = "E:\Fake_Try";
-subdirs = extract.folder(wav_dir);
+subdirs = Extract.folder(wav_dir);
 tic
 for r = 1:length(subdirs)
     
-   if ~isempty(extract.filename(sprintf('%s\\SegData',subdirs{r}),'*.mat'))
+   if ~isempty(Extract.filename(sprintf('%s\\SegData',subdirs{r}),'*.mat'))
        continue
    end
     autosegmenter_restrict_bout(subdirs{r},5);
@@ -50,7 +50,7 @@ send_mail_message('379380788@qq.com','First section finished','Oops')
 
 for r = 1:length(subdirs)
     
-   if ~isempty(extract.filename(sprintf('%s\\SegDataIndi',subdirs{r}),'*.mat'))
+   if ~isempty(Extract.filename(sprintf('%s\\SegDataIndi',subdirs{r}),'*.mat'))
        continue
    end
     autosegmenter(subdirs{r});
@@ -61,7 +61,7 @@ toc
 
 
 
-%(((^~^))) Convert segdata files into eleinf, and then convert eleinf into
+%(((^~^))) Convert segdata files into eleinf, and then Convert eleinf into
 %the format suitable for the python script
 ote_sylinf = assemble_as_eleinf(subdirs,300,'SegData'); % 300 means remove folderes with bird id smaller than 300
 ote_sylinf = addcategoinfo(ote_sylinf); % add catego info into the eleinf
@@ -245,9 +245,9 @@ figure
 set(gca,'Color','k')
 hold on
 for w = 1: 100
-    img = cal.spec(all_eleinf(w).y,all_eleinf(w).fs);
+    img = Cal.spec(all_eleinf(w).y,all_eleinf(w).fs);
 %     figure
-%     draw.spec(all_eleinf(w).y,all_eleinf(w).fs);
+%     Draw.spec(all_eleinf(w).y,all_eleinf(w).fs);
     try
         if length(all_eleinf(w).y)  > 600
             subimage(all_eleinf(w).xfake,all_eleinf(w).yfake,img);

@@ -7,7 +7,7 @@ addpath(genpath("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA"))
 % auto-run_sap
 dbstop if error
 % 
-%unilist = autoSap.script_autorun_scp(neuroster);
+%unilist = AutoSap.script_autorun_scp(neuroster);
 % % 
 % wb = waitbar(0,'Starting');
 % for k = 1: length(unilist)
@@ -18,8 +18,8 @@ dbstop if error
 % 
 % % info/data files
 % 
-% autoSap.export_infofiles(0);
- %autoSap.export_datafiles(0);
+% AutoSap.export_infofiles(0);
+ %AutoSap.export_datafiles(0);
 
 
 % run Analysis for all neuroster
@@ -35,9 +35,9 @@ Sultan.applySameFunctionForAll("C:\Users\Zhehao\Downloads\OtherNeurons");
 
 
 
-% new model of autogui
+% new model of AutoGui
 
-% au = autogui;
+% au = AutoGui;
 % 
 % draggap = (210 -125)/(26-18);
 % 

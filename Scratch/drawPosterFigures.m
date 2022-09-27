@@ -53,7 +53,7 @@ grid on
 
 [y,fs] = audioread(...
 "C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\SourceSongSet1@06232021\Y515A.wav");
-figure; draw.spec(y,fs);
+figure; Draw.spec(y,fs);
 set(gca,'FontSize',20);
 % determine position of the axes
 axp = get(gca,'Position');

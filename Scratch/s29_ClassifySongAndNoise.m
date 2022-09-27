@@ -7,7 +7,7 @@ goodfolders = b.folders;
 
 for f = 1: length(goodfolders)
     
-    rawfiles = extract.filename(goodfolders{f},'*.wav');
+    rawfiles = Extract.filename(goodfolders{f},'*.wav');
     rawfiles = rawfiles(randperm(length(rawfiles))); % shuffling the order of the sound files
     if length(rawfiles) > 400
         files = rawfiles(1:400); % restrict the number of files
@@ -63,8 +63,8 @@ for f = 1: length(goodfolders)
         
         
         % calculate spec and rawspec
-        spec{n}  = cal.spec(fiy(sigs),fs);
-        rawspec{n}  = cal.spec(fiy,fs);
+        spec{n}  = Cal.spec(fiy(sigs),fs);
+        rawspec{n}  = Cal.spec(fiy,fs);
         
         %     % Others
         %     crest{n} = spectralCrest(fiy(sigs),fs);
@@ -137,7 +137,7 @@ for f = 1: length(goodfolders)
     end 
    
     
-% % % % % %     % extract 10 files from each folder
+% % % % % %     % Extract 10 files from each folder
 % % % % % %     if length(ids) > 10
 % % % % % %         restricted_ids = ids(1: 10);
 % % % % % %     else

@@ -24,7 +24,7 @@ classdef Display
             for k = 1: len
                 %subplot(2*len,1, 2*(k-1)+ 1);
                 axes(ax(2*(k-1)+ 1));
-                draw.spec(selected(k).f0plty,selected(k).fs);
+                Draw.spec(selected(k).f0plty,selected(k).fs);
                 xlabel('')
                 ylabel('')
                 set(gca,'TickLength',[0 .01])
@@ -35,7 +35,7 @@ classdef Display
                 axis off
                 %subplot(2*len,1, 2*k);
                 axes(ax(2*k));
-                draw.raster(selected(k).f0pltsptimes,selected(k).f0plty,selected(k).fs,4.2);
+                Draw.raster(selected(k).f0pltsptimes,selected(k).f0plty,selected(k).fs,4.2);
                 %xlim([0,length(selected(k).f0plty)/selected(k).fs]);
                 xlim([rangeratio(1)*signallen,rangeratio(2)*signallen]);
                 ylabel('')
@@ -69,7 +69,7 @@ classdef Display
             for k = 1: len
                % subplot(2*len,1, 2*(k-1)+ 1);
                 axes(ax(2*(k-1)+ 1));
-                draw.spec(repla(k).f0plty,repla(k).fs);
+                Draw.spec(repla(k).f0plty,repla(k).fs);
                 xlabel('')
                 ylabel('')
                 
@@ -79,7 +79,7 @@ classdef Display
                 
                % subplot(2*len,1, 2*k);
                 axes(ax(2*k));
-                draw.raster(repla(k).f0pltsptimes,repla(k).f0plty,repla(k).fs);
+                Draw.raster(repla(k).f0pltsptimes,repla(k).f0plty,repla(k).fs);
                 ylabel('')
                 set(gca,'TickLength',[0 .01])
                 if k~= len
@@ -110,7 +110,7 @@ classdef Display
             for k = 1: len
                 %subplot(2*len,1, 2*(k-1)+ 1);
                 axes(ax(2*(k-1)+ 1));
-                draw.spec(deg(k).f0plty,deg(k).fs);
+                Draw.spec(deg(k).f0plty,deg(k).fs);
                 xlabel('')
                 ylabel('')
                 set(gca,'TickLength',[0 .01])
@@ -119,7 +119,7 @@ classdef Display
               
                 %subplot(2*len,1, 2*k);
                 axes(ax(2*k));
-                draw.raster(deg(k).f0pltsptimes,deg(k).f0plty,deg(k).fs);
+                Draw.raster(deg(k).f0pltsptimes,deg(k).f0plty,deg(k).fs);
                 xlim([0,length(deg(k).f0plty)/deg(k).fs]);
                 ylabel('')
                 set(gca,'TickLength',[0 .01])
@@ -154,7 +154,7 @@ classdef Display
             for k = 1: len
                 %subplot(2*len,1, 2*(k-1)+ 1);
                 axes(ax(2*(k-1)+ 1));
-                draw.spec(incre(k).f0y,incre(k).fs);
+                Draw.spec(incre(k).f0y,incre(k).fs);
                 xlabel('')
                 ylabel('')
                 set(gca,'TickLength',[0 .01])
@@ -163,7 +163,7 @@ classdef Display
                 
                 %subplot(2*len,1, 2*k);
                 axes(ax(2*k));
-                draw.raster(incre(k).f0sptimes,incre(k).f0y,incre(k).fs);
+                Draw.raster(incre(k).f0sptimes,incre(k).f0y,incre(k).fs);
                 ylabel('')
                 set(gca,'TickLength',[0 .01])
                 if k~= len
@@ -195,7 +195,7 @@ classdef Display
             for k = 1: len
                % subplot(2*len,1, 2*(k-1)+ 1);
                 axes(ax(2*(k-1)+ 1));
-                draw.spec(catego(k).f0plty,catego(k).fs);
+                Draw.spec(catego(k).f0plty,catego(k).fs);
                 xlabel('')
                 ylabel('')
                 
@@ -205,7 +205,7 @@ classdef Display
                 
                % subplot(2*len,1, 2*k);
                 axes(ax(2*k));
-                draw.raster(catego(k).f0pltsptimes,catego(k).f0plty,catego(k).fs);
+                Draw.raster(catego(k).f0pltsptimes,catego(k).f0plty,catego(k).fs);
                 ylabel('')
                 set(gca,'TickLength',[0 .01])
                 if k~= len
@@ -306,7 +306,7 @@ classdef Display
             for k = 1: len
                 % subplot(2*len,1, 2*(k-1)+ 1);
                 axes(ax(2*(k-1)+ 1));
-                draw.spec(trans(k).f0plty,trans(k).fs);
+                Draw.spec(trans(k).f0plty,trans(k).fs);
                 xlabel('')
                 ylabel('')
                 
@@ -316,7 +316,7 @@ classdef Display
                 
                 % subplot(2*len,1, 2*k);
                 axes(ax(2*k));
-                draw.raster(trans(k).f0pltsptimes,trans(k).f0plty,trans(k).fs);
+                Draw.raster(trans(k).f0pltsptimes,trans(k).f0plty,trans(k).fs);
                 ylabel('')
                 set(gca,'TickLength',[0 .01])
                 if k~= len
@@ -351,7 +351,7 @@ classdef Display
             for k = 1: len
                 %subplot(2*len,1, 2*(k-1)+ 1);
                 axes(ax(2*(k-1)+ 1));
-                draw.spec(norm(k).f0plty,norm(k).fs);
+                Draw.spec(norm(k).f0plty,norm(k).fs);
                 set(gca,'XTickLabel',[]);
                 set(gca,'YTickLabel',[]);
                 xlabel('')
@@ -359,7 +359,7 @@ classdef Display
                 axis off
                 %subplot(2*len,1, 2*k);
                 axes(ax(2*k));
-                draw.raster(norm(k).f0pltsptimes,norm(k).f0plty,norm(k).fs);
+                Draw.raster(norm(k).f0pltsptimes,norm(k).f0plty,norm(k).fs);
                 if k~= len
                     set(gca,'Yticklabel',[])
                     set(gca,'Xticklabel',[])
@@ -381,7 +381,7 @@ classdef Display
             for k = 1: len
                 %subplot(2*len,1, 2*(k-1)+ 1);
                 axes(ax(2*(k-1)+ 1));
-                draw.spec(frag(k).f0plty,frag(k).fs);
+                Draw.spec(frag(k).f0plty,frag(k).fs);
                 set(gca,'TickLength',[0 .01])
                 set(gca,'XTickLabel',[]);
                 set(gca,'YTickLabel',[]);
@@ -396,7 +396,7 @@ classdef Display
                 
                 %subplot(2*len,1, 2*k);
                 axes(ax(2*k));
-                draw.raster(frag(k).f0pltsptimes,frag(k).f0plty,frag(k).fs,4.2);
+                Draw.raster(frag(k).f0pltsptimes,frag(k).f0plty,frag(k).fs,4.2);
                 
                 if k~= len
                     set(gca,'TickLength',[0 .01])
@@ -427,7 +427,7 @@ classdef Display
             for k = 1: len
                 %subplot(2*len,1, 2*(k-1)+ 1);
                 axes(ax(2*(k-1)+ 1));
-                draw.spec(syl(k).f0plty,syl(k).fs);
+                Draw.spec(syl(k).f0plty,syl(k).fs);
                 set(gca,'TickLength',[0 .01])
                 set(gca,'XTickLabel',[]);
                 set(gca,'YTickLabel',[]);
@@ -442,7 +442,7 @@ classdef Display
                 
                 %subplot(2*len,1, 2*k);
                 axes(ax(2*k));
-                draw.raster(syl(k).f0pltsptimes,syl(k).f0plty,syl(k).fs,4.2);
+                Draw.raster(syl(k).f0pltsptimes,syl(k).f0plty,syl(k).fs,4.2);
                 
                 if k~= len
                     set(gca,'TickLength',[0 .01])
@@ -576,7 +576,7 @@ classdef Display
                 
                 axes(ax(1));
                 axis off
-                draw.spec(syl(k).plty,syl(k).fs);
+                Draw.spec(syl(k).plty,syl(k).fs);
                 set(gca,'TickLength',[0 .01])
                 set(gca,'XTickLabel',[]);
                 set(gca,'YTickLabel',[]);
@@ -589,7 +589,7 @@ classdef Display
                 % tight_subplot(2*len,1, 2*k);
                 axes(ax(2));
                 
-                draw.rasterBeta(syl(k).pltsptimes,syl(k).plty,syl(k).fs,4.5);  %%% tick label !!!!!!!! need adding
+                Draw.rasterBeta(syl(k).pltsptimes,syl(k).plty,syl(k).fs,4.5);  %%% tick label !!!!!!!! need adding
                 
                 ylabel('')
                 set(gca,'TickLength',[0 .01])

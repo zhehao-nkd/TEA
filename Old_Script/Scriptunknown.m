@@ -16,7 +16,7 @@ dbstop if error
 % % TARGET_DIR = "E:\G656_ELE";
 % % mkdir(TARGET_DIR);ConDirs = fromWavFindParentFolder(CONSPE_dir,"E:\Stimuli_Source\allBirdsSong");
 % %  wav_dir = "E:\Stimuli_Source\allBirdsSong";
-% %  subdirs = extract.folder(wav_dir);
+% %  subdirs = Extract.folder(wav_dir);
 % %  [~,locb] = ismember([ConDirs{:}].',[subdirs{:}].');
 % % noncon_dir_whole_collection = subdirs(setdiff([1: length(subdirs)],locb(locb>0)).').';
 % 

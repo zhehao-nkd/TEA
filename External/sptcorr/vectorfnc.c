@@ -214,7 +214,7 @@ vector mxArray2Vector(mxArray* a)
  * Convert a vector to an mxArray.
  *
  * @param v
- *      The vector to convert to an mxArray.
+ *      The vector to Convert to an mxArray.
  * @return An mxArray object which represent a MATLAB numeric rowvector with the
  *      same dimension and values as the given vector. The data of the vector is
  *      copied.

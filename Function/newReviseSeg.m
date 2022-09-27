@@ -40,7 +40,7 @@ if exist(path)== 2 % when it is a file
     hLineToDelete = [];
 
 elseif exist(path)== 7 % when it is a folder
-    filenames = extract.filename(path,'*.mat')
+    filenames = Extract.filename(path,'*.mat')
     
     for m = 1: length(filenames)
         load(filenames{m},'segdata');

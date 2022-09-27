@@ -35,7 +35,7 @@ set(h,'Color','cyan','Enable','on','ActionPostCallback',{@brushedDataCallback,sy
         for i=1:size(h)
             idxraw=logical(get(h(i),'BrushData'));
             sidx = find(idxraw);
-            % convert to logical
+            % Convert to logical
             % x=get(h(i),'XData');
             %sx=x(find(idx));
             

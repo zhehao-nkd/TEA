@@ -83,7 +83,7 @@
             
             e_collector = {};
             for fd = 1: length(folder_wav)
-                songpath = Sound.extract(folder_wav(fd));
+                songpath = Sound.Extract(folder_wav(fd));
                 difftype = [];
                 folder_coding_method = 1; % 否则编码是十进制
                 
@@ -139,7 +139,7 @@
             %                 temp2 = [temp.e];
             %             end
             
-            songs = Sound.extract(folder_wav);
+            songs = Sound.Extract(folder_wav);
             
             if exist('mergeIdx','var')
                 n.mergeIdx = mergeIdx;
@@ -328,6 +328,10 @@
         
     end
     
+    methods(Access = private) % 
+        
+    end
+    
     methods % 有外部输出的计算方法
         
         function sigsyllables = getIndexOfSigSyllable(n)
@@ -417,21 +421,8 @@
             newline;
         end
         
-        function siginf = mansiginf(n)
-            spikeinf = manspike(n);
-            
-            for kk = 1: length(spikeinf)
-            end
-            
-        end
-        
-        function sigfrag = manpicksig(n) % mannually pick up response eliciting syllable/element
-            
-            for kk = 1: length(n.e)
-                n.e{kk}.three;
-                roi = drawline;
-            end
-        end
+     
+    
         
         function spikeinf = manspike(n) % manually screen significant spike events
             num = 0;
@@ -480,9 +471,9 @@
             syl(len> P<.SYLLEN) = []; % remove longer syllables
             
             parfor id = 1: length(syl)
-                syl(id).y = utl.pad(syl(id).y,PM.SYLLEN); % pad to 12800
-                syl(id).image = cal.img(syl(id).y,syl(id).fs); % store the image matrix
-                temp = extract.feature(syl(id).y,syl(id).fs);
+                syl(id).y = Utl.pad(syl(id).y,PM.SYLLEN); % pad to 12800
+                syl(id).image = Cal.img(syl(id).y,syl(id).fs); % store the image matrix
+                temp = Extract.feature(syl(id).y,syl(id).fs);
                 syl(id).goodness = temp.goodness;
                 syl(id).meanf = temp.mean_frequency;
                 syl(id).fm = temp.fm;
@@ -516,9 +507,9 @@
             syl(len> PM.SYLLEN) = []; % remove longer syllables
             
             parfor id = 1: length(syl)
-                syl(id).y = utl.pad(syl(id).y,PM.SYLLEN); % pad to 12800
-                %syl(id).image = cal.img(syl(id).y,syl(id).fs); % store the image matrix
-                temp = extract.feature(syl(id).y,syl(id).fs);
+                syl(id).y = Utl.pad(syl(id).y,PM.SYLLEN); % pad to 12800
+                %syl(id).image = Cal.img(syl(id).y,syl(id).fs); % store the image matrix
+                temp = Extract.feature(syl(id).y,syl(id).fs);
                 drate = 3; % downsampling rate
                 syl(id).goodness = downsample(temp.goodness,drate);
                 syl(id).meanf = downsample(temp.mean_frequency,drate);
@@ -560,7 +551,7 @@
                 concatenated = [concatenated;siginf(idx).y;gap];
             end
             figure('Color','w');
-            draw.spec(concatenated,32000);
+            Draw.spec(concatenated,32000);
         end
         
         function response = resp(n) % mimic old response
@@ -604,8 +595,8 @@
                 edges = [edges,thisedge];
             end
             figure;
-            sumy(isnan(sumy))=0; % convert nan to 0
-            draw.spec(sumy,pre(1).fs);
+            sumy(isnan(sumy))=0; % Convert nan to 0
+            Draw.spec(sumy,pre(1).fs);
             
             for idx = 1: length(edges)
                 xpair = repmat(edges(idx),2,1);
@@ -617,7 +608,7 @@
             %             figure;
             %             for idx = 1: length(pre)
             %                 subplot(length(pre),1,idx);
-            %                 draw.spec(pre(idx).y,pre(idx).fs);
+            %                 Draw.spec(pre(idx).y,pre(idx).fs);
             %                 xlabel('');
             %                 ylabel('');
             %                 set(gca,'xtick',[],'ytick',[])
@@ -635,7 +626,7 @@
             parfor idx = 1: length(n.e)
                 %collect{idx} = n.e{idx}.y;
                 figure('Visible','off')
-                draw.spec(n.e{idx}.y,n.e{idx}.fs);
+                Draw.spec(n.e{idx}.y,n.e{idx}.fs);
                 temp = getframe(gcf);
                 I = temp.cdata;
                 collect{idx} = rgb2gray(I);
@@ -650,7 +641,7 @@
             tic;
             disp(sprintf('Current neuron is %s',n.neuronname)); %#ok<DSPS>
             parfor idx = 1: length(n.e)
-                collect{idx} = cal.sdf(n.e{idx}.sptimes,n.e{idx}.y,n.e{idx}.fs);
+                collect{idx} = Cal.sdf(n.e{idx}.sptimes,n.e{idx}.y,n.e{idx}.fs);
             end
             
             newline;
@@ -813,7 +804,7 @@
                     frags(kk).plxname = E.trigger.plxname;
                     frags(kk).channelname = n.channelname;
                     frags(kk).unitname = E.spike.unit;
-                    frags(kk).sptimes = extract.sptimes(E.rawsptimes,frags(kk).initial/frags(kk).fs,frags(kk).terminal/frags(kk).fs);
+                    frags(kk).sptimes = Extract.sptimes(E.rawsptimes,frags(kk).initial/frags(kk).fs,frags(kk).terminal/frags(kk).fs);
                     % amplitude
                     lenf = length(features.amplitude); % length of feature values
                     frags(kk).features.amplitude = features.amplitude(round(frags(kk).initial*frags(kk).fs/leny*lenf):round(frags(kk).terminal/leny*lenf));
@@ -951,7 +942,7 @@
         
         function fix_segmentation(n) % to fix the segmentation of songs into elements
             
-            %folders = extract.folder("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli");
+            %folders = Extract.folder("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli");
             
             %temp = regexp(n.plxname,'[BRYOG]\d{3}','match');
             % birdid = temp{1};
@@ -1034,7 +1025,7 @@
             dbstop if error
             % case 1: when wav file does not contain the segmenation info
             
-            folders = extract.folder("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli");
+            folders = Extract.folder("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli");
             temp = regexp(n.plxname,'[BRYOG]\d{3}','match');
             birdid = temp{1};
             
@@ -1047,7 +1038,7 @@
             % remove non-CON elements including BOS and also TUT
             ids_to_delete =  find( ~cellfun(@isempty,regexp([mergedeleinf(:).songname].','Fcall|Het|Mcall|WNS|BOS|TUT')) );
             
-            % load and convert coordinate 1 and 2
+            % load and Convert coordinate 1 and 2
             mergedeleinf(ids_to_delete)= [];
             %              [~,encodezpath] = uigetfile;
             %               load(encodezpath);
@@ -1069,7 +1060,7 @@
                 
                 this_ids = find(~cellfun(@isempty, regexp([mergedeleinf(:).songname].',temp)));
                 
-                specimg = cal.spec(n.e{k}.rawy,n.e{k}.fs);
+                specimg = Cal.spec(n.e{k}.rawy,n.e{k}.fs);
                 x      = 0;   % Screen position
                 y      = 0;   % Screen position
                 width  = size(specimg,2); % Width of figure
@@ -1080,7 +1071,7 @@
                 %figure
                 box off
                 set(gca, 'Visible', 'off')
-                draw.raster(n.e{k}.rawsptimes,n.e{k}.rawy,n.e{k}.fs);
+                Draw.raster(n.e{k}.rawsptimes,n.e{k}.rawy,n.e{k}.fs);
                 F = getframe(rasterfig);
                 [rasterimg, ~] = frame2im(F);
                 rasterimg = imbinarize(rasterimg);
@@ -1138,7 +1129,7 @@
                 
                 this_ids = find(~cellfun(@isempty, regexp([mergedeleinf(:).songname].',temp)));
                 
-                specimg = cal.spec(n.e{k}.rawy,n.e{k}.fs);
+                specimg = Cal.spec(n.e{k}.rawy,n.e{k}.fs);
                 x      = 0;   % Screen position
                 y      = 0;   % Screen position
                 width  = size(specimg,2); % Width of figure
@@ -1149,7 +1140,7 @@
                 %figure
                 box off
                 set(gca, 'Visible', 'off')
-                draw.raster(n.e{k}.rawsptimes,n.e{k}.rawy,n.e{k}.fs);
+                Draw.raster(n.e{k}.rawsptimes,n.e{k}.rawy,n.e{k}.fs);
                 F = getframe(rasterfig);
                 [rasterimg, ~] = frame2im(F);
                 rasterimg = imbinarize(rasterimg);
@@ -1200,7 +1191,7 @@
             
         end
         
-        function eleciting_info = extract_eleciting_info(n) % extract information of response-eleciting element from Ephys objects
+        function eleciting_info = extract_eleciting_info(n) % Extract information of response-eleciting element from Ephys objects
             
             eleciting_info = struct;
             
@@ -1253,7 +1244,7 @@
             axis([min([eleinf.coor_1]) max([eleinf.coor_1]) min([eleinf.coor_2]) max([eleinf.coor_2])])
             
             for w = 1: 100
-                %               tempimg = cal.spec(eleinf(w).y,eleinf (w).fs);
+                %               tempimg = Cal.spec(eleinf(w).y,eleinf (w).fs);
                 %               tempimg = tempimg(80:250,:);
                 tempspecimg = eleinf(w).rawspec;
                 tempspecimg= tempspecimg(5:220,:);
@@ -1275,7 +1266,7 @@
                 alpha = img;
                 
                 %     figure
-                %     draw.spec(all_eleinf(w).y,all_eleinf(w).fs);
+                %     Draw.spec(all_eleinf(w).y,all_eleinf(w).fs);
                 try
                     if length(eleinf(w).y)  > 50
                         
@@ -1399,15 +1390,15 @@
         
         function STA = calSTA(n)
             
-            % extract spike information
+            % Extract spike information
             sptimes = n.wavetimes;
             ylen = max(sptimes)*n.e{1}.fs;
-            psth = cal.psth_SingleTrial(sptimes,ylen,n.e{1}.fs);
+            psth = Cal.psth_SingleTrial(sptimes,ylen,n.e{1}.fs);
             ids = find(psth ~= 0); % find those time bins which spike is not zero
             
             max_sptimes = max(sptimes);
             
-            % extract time information
+            % Extract time information
             stimuli_info = struct;
             for w = 1: length(n.e)
                 stimuli_info(w).signal = n.e{w}.rawy;
@@ -1464,7 +1455,7 @@
             
             vectors = {};
             for w = 1: size(pre_signal,1)
-                vectors{w} = cal.spec(pre_signal(w,:),n.e{1}.fs)*psth(ids(w)) ;
+                vectors{w} = Cal.spec(pre_signal(w,:),n.e{1}.fs)*psth(ids(w)) ;
             end
             
             sta = flip(sum(cat(3,vectors{:}),3)/sum(psth));
@@ -1505,7 +1496,7 @@
         end
         
         function resp_info = extractInfoOfResponseToWithinSongFrags(n)
-            % judge and extract neural response to songs
+            % judge and Extract neural response to songs
             songE = extractEphysObjectOfIntactSongs(n);
             
             if isempty(songE)
@@ -1643,7 +1634,7 @@
                 concatenated = [concatenated;siginf(idx).y;gap];
             end
             figure('Color','w');
-            draw.spec(concatenated,32000);
+            Draw.spec(concatenated,32000);
             
         end
         
@@ -1772,7 +1763,7 @@
                 frame = getframe(gcf);
                 Icollect{length( Icollect) + 1} = {frame.cdata};
                 close(gcf);
-                Iall = convert.mergeImage(Icollect);
+                Iall = Convert.mergeImage(Icollect);
                 imwrite(Iall,sprintf('Three_%s.png',n.neuronname));
                 return
             end
@@ -2274,13 +2265,13 @@
             [~,~,infoext] = fileparts(path_info_json_or_txt);
             
             if strcmp(dataext, ".json")
-                data = extract.json(path_data_json_or_txt); %如果文件是json file的话
+                data = Extract.json(path_data_json_or_txt); %如果文件是json file的话
             elseif strcmp(dataext, ".txt")
                 data = table2struct(readtable(path_data_json_or_txt));
             end
             
             if strcmp(infoext, ".json")
-                info = extract.json(path_info_json_or_txt); %如果文件是json file的话
+                info = Extract.json(path_info_json_or_txt); %如果文件是json file的话
             elseif strcmp(infoext, ".txt")
                 info = table2struct(readtable(path_info_json_or_txt));
             end

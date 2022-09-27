@@ -9,6 +9,7 @@ classdef Analysis < handle
         
         source    % read xlxs into struct
         list
+        replalist
         
         fragnames % a cell of unique frag names
         degnames
@@ -278,13 +279,13 @@ classdef Analysis < handle
             for n = 1: length(ids)
                 thisi = ids(n);
                 
-                presdf = cal.sdf(a.list(thisi).prejudgerespsptimes,zeros(length(a.list(thisi).judgerespy),1),a.list(thisi).fs,0.001,0.02);
-                sdf = cal.sdf(a.list(thisi).judgerespsptimes,a.list(thisi).judgerespy,a.list(thisi).fs,0.001,0.02); % 0.001,0.004
+                presdf = Cal.sdf(a.list(thisi).prejudgerespsptimes,zeros(length(a.list(thisi).judgerespy),1),a.list(thisi).fs,0.001,0.02);
+                sdf = Cal.sdf(a.list(thisi).judgerespsptimes,a.list(thisi).judgerespy,a.list(thisi).fs,0.001,0.02); % 0.001,0.004
                 [maxpresdf,~] = max(presdf);
                 [maxsdf,maxidx] = max(sdf);
                 
-                pre_frs = cal.eachTrialFiringRate(a.list(thisi).prejudgerespsptimes,length(a.list(thisi).judgerespy)/a.list(thisi).fs);
-                sti_frs = cal.eachTrialFiringRate(a.list(thisi).judgerespsptimes,length(a.list(thisi).judgerespy)/a.list(thisi).fs);
+                pre_frs = Cal.eachTrialFiringRate(a.list(thisi).prejudgerespsptimes,length(a.list(thisi).judgerespy)/a.list(thisi).fs);
+                sti_frs = Cal.eachTrialFiringRate(a.list(thisi).judgerespsptimes,length(a.list(thisi).judgerespy)/a.list(thisi).fs);
                 [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
                 a.list(thisi).pvalue = p;
                 a.list(thisi).label = 0; % 初始化
@@ -336,16 +337,16 @@ classdef Analysis < handle
             
             for n = 1: length(ids)
                 thisi = ids(n);
-                post_sptimes = extract.sptimes(a.list(thisi).rawsptimes, a.list( thisi).zpt, a.list( thisi).zpt + DUR);
-                pre_sptimes = extract.sptimes(a.list(thisi).rawsptimes, a.list(thisi).zpt-DUR, a.list(thisi).zpt );
+                post_sptimes = Extract.sptimes(a.list(thisi).rawsptimes, a.list( thisi).zpt, a.list( thisi).zpt + DUR);
+                pre_sptimes = Extract.sptimes(a.list(thisi).rawsptimes, a.list(thisi).zpt-DUR, a.list(thisi).zpt );
                 post_mfr = length(vertcat(post_sptimes{:}))/DUR;
                 pre_mfr = length(vertcat(pre_sptimes{:}))/DUR; % mfr: mean firing rate
                 a.list(thisi).rs = post_mfr - pre_mfr; % response strength
                 
-                tempsum = cal.psth_frag(a.list(thisi).plty,a.list(thisi).fs,a.list(thisi).pltsptimes);
+                tempsum = Cal.psth_frag(a.list(thisi).plty,a.list(thisi).fs,a.list(thisi).pltsptimes);
                 halfsum = sum(tempsum(end/2:end));
                 fullsum = sum(tempsum);
-                maxvalue = max(cal.psth_frag(a.list(thisi).plty,a.list(thisi).fs,a.list(thisi).pltsptimes));
+                maxvalue = max(Cal.psth_frag(a.list(thisi).plty,a.list(thisi).fs,a.list(thisi).pltsptimes));
                 a.list(thisi).maxvalue = maxvalue;
                 a.list(thisi).halfsum = halfsum;
                 a.list(thisi).fullsum = fullsum;
@@ -382,17 +383,17 @@ classdef Analysis < handle
             for n = 1: length(ids)
                 thisi = ids(n);
                 
-%                 presdf = cal.sdf(a.list(thisi).prejudgerespsptimes,zeros(length(a.list(thisi).judgerespy),1),a.list(thisi).fs,0.001,0.02);
-%                 sdf = cal.sdf(a.list(thisi).judgerespsptimes,a.list(thisi).judgerespy,a.list(thisi).fs,0.001,0.02); % 0.001,0.004
+%                 presdf = Cal.sdf(a.list(thisi).prejudgerespsptimes,zeros(length(a.list(thisi).judgerespy),1),a.list(thisi).fs,0.001,0.02);
+%                 sdf = Cal.sdf(a.list(thisi).judgerespsptimes,a.list(thisi).judgerespy,a.list(thisi).fs,0.001,0.02); % 0.001,0.004
 %                 
-                presdf = cal.sdf(a.list(thisi).prejudgerespsptimes,zeros(length(a.list(thisi).judgerespy),1),a.list(thisi).fs,0.001,0.02);
-                sdf = cal.sdf(a.list(thisi).judgerespsptimes,a.list(thisi).judgerespy,a.list(thisi).fs,0.001,0.02); % 0.001,0.004
+                presdf = Cal.sdf(a.list(thisi).prejudgerespsptimes,zeros(length(a.list(thisi).judgerespy),1),a.list(thisi).fs,0.001,0.02);
+                sdf = Cal.sdf(a.list(thisi).judgerespsptimes,a.list(thisi).judgerespy,a.list(thisi).fs,0.001,0.02); % 0.001,0.004
                 [maxpresdf,~] = max(presdf);
                 [maxsdf,maxidx] = max(sdf);
                 
                 
-                pre_frs = cal.eachTrialFiringRate(a.list(thisi).prejudgerespsptimes,length(a.list(thisi).judgerespy)/a.list(thisi).fs);
-                sti_frs = cal.eachTrialFiringRate(a.list(thisi).judgerespsptimes,length(a.list(thisi).judgerespy)/a.list(thisi).fs);
+                pre_frs = Cal.eachTrialFiringRate(a.list(thisi).prejudgerespsptimes,length(a.list(thisi).judgerespy)/a.list(thisi).fs);
+                sti_frs = Cal.eachTrialFiringRate(a.list(thisi).judgerespsptimes,length(a.list(thisi).judgerespy)/a.list(thisi).fs);
                 [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05)
                 a.list(thisi).pvalue = p;
                 a.list(thisi).label = 0; % 初始化
@@ -422,18 +423,18 @@ classdef Analysis < handle
             for n = 1: length(ids)
                 thisi = ids(n);
                 
-                presdf = cal.sdf(a.list(thisi).prejudgerespsptimes,zeros(length(a.list(thisi).judgerespy),1),a.list(thisi).fs,0.001,0.02);
-                sdf = cal.sdf(a.list(thisi).judgerespsptimes,a.list(thisi).judgerespy,a.list(thisi).fs,0.001,0.02); % 0.001,0.004
+                presdf = Cal.sdf(a.list(thisi).prejudgerespsptimes,zeros(length(a.list(thisi).judgerespy),1),a.list(thisi).fs,0.001,0.02);
+                sdf = Cal.sdf(a.list(thisi).judgerespsptimes,a.list(thisi).judgerespy,a.list(thisi).fs,0.001,0.02); % 0.001,0.004
                 %figure; plot(sdf);
-                % figure; draw.three(a.list(thisi).judgerespy,a.list(thisi).fs,a.list(thisi).judgerespsptimes);
-                % figure; draw.three(a.list(thisi).plty,a.list(thisi).fs,a.list(thisi).pltsptimes);
+                % figure; Draw.three(a.list(thisi).judgerespy,a.list(thisi).fs,a.list(thisi).judgerespsptimes);
+                % figure; Draw.three(a.list(thisi).plty,a.list(thisi).fs,a.list(thisi).pltsptimes);
                 [maxpresdf,~] = max(presdf);
                 [maxsdf,maxidx] = max(sdf);
                 percentage_max = maxidx/length(sdf);
                 time_max = length(a.list(thisi).judgerespy)/a.list(thisi).fs*percentage_max;
                 % check whether the surroding are has spikes in most of the
                 % trials
-                extracted_sptimes = extract.sptimes(a.list(thisi).judgerespsptimes,time_max - 0.15, time_max + 0.15); % 前后 100ms
+                extracted_sptimes = Extract.sptimes(a.list(thisi).judgerespsptimes,time_max - 0.15, time_max + 0.15); % 前后 100ms
                 num_of_not_empty_trials = length(find(~cellfun(@isempty, extracted_sptimes)));
                 
                 % mean_maxsdf = maxsdf/length(a.list(thisi).judgerespsptimes);
@@ -456,7 +457,7 @@ classdef Analysis < handle
                 
                 %                 figure;
                 %
-                %                 draw.three(a.list(thisi).plty,a.list(thisi).fs,a.list(thisi).pltsptimes);
+                %                 Draw.three(a.list(thisi).plty,a.list(thisi).fs,a.list(thisi).pltsptimes);
                 %                 title(sprintf('Label is %u',a.list(thisi).label) );
                 %                 close(gcf)
                 
@@ -471,7 +472,7 @@ classdef Analysis < handle
             replaids = find( ~cellfun(@isempty, regexp([a.list.stimuliname].','Repla') ));
             
             % Find out that the repla stimuliname correspond to how many natrual songs
-            bnames = unique(cellfun(@(x)convert.bid(x,2),[a.list(replaids).stimuliname].','Uni',0));
+            bnames = unique(cellfun(@(x)Convert.bid(x,2),[a.list(replaids).stimuliname].','Uni',0));
             
             findCorrespConID = @(x) intersect(find( ~cellfun(@isempty, regexp([a.list.stimuliname].','norm') )),...
                 find( ~cellfun(@isempty, regexp([a.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
@@ -492,24 +493,32 @@ classdef Analysis < handle
                     [Ini_y,Ini_replay] = Analysis.findConergentPointBetwenNormAndRepla(...
                         a.list(nid).y,...
                         a.list(rids(kk)).y );
-                    num_of_zeros = find(a.list(nid).y(Ini_y:end),1); % 在分歧点后多长一段是0
+                    num_of_zeros = find(a.list(nid).y(Ini_y:end),1)-1; % 在分歧点后多长一段是0
                     Ini_y = Ini_y + num_of_zeros;
                     Ini_replay = Ini_replay + num_of_zeros;
-  
-                    a.list(rids(kk)).targety = a.list(rids(kk)).y(Ini_replay:Ini_replay + 0.2*32000); % 截取100ms
-                    a.list(rids(kk)).targetsptimes = extract.sptimes_resetSP(a.list(rids(kk)).sptimes,Ini_replay/32000,(Ini_replay + 0.2*32000)/32000);
+                    try
+                    a.list(rids(kk)).targety = a.list(rids(kk)).y(Ini_replay:Ini_replay + 0.2*32000); % 截取200ms
+                    a.list(rids(kk)).replaceparty = a.list(rids(kk)).y(1:Ini_replay ); % 被替换的那一部分的y值
+                    catch % if the second index overceed
+                       a.list(rids(kk)).targety = a.list(rids(kk)).y(Ini_replay:end); % 截取200ms  
+                       disp(' MEssage@Analysis.judgeReplaResp :Overceed');
+                    end
+                    a.list(rids(kk)).targetsptimes = Extract.sptimes_resetSP(a.list(rids(kk)).sptimes,Ini_replay/32000,(Ini_replay + 0.2*32000)/32000);
+                     a.list(rids(kk)).replacepartsptimes = Extract.sptimes_resetSP(... % replacepart, sptimes
+                         a.list(rids(kk)).sptimes,1,Ini_replay/32000);
                     % corresponding pre (targety) data
                     a.list(rids(kk)).pretargety = zeros(length(a.list(rids(kk)).targety),1);%a.list(nid).prey(end - 0.1*32000:end); % 截取100ms
-                    a.list(rids(kk)).pretargetsptimes = extract.sptimes_resetSP(...
+                    a.list(rids(kk)).pretargetsptimes = Extract.sptimes_resetSP(...
                         a.list(rids(kk)).presptimes,length(a.list(rids(kk)).pretargety)/32000 -0.2*32000,length(a.list(rids(kk)).pretargety)/32000 );%length(a.list(rids(kk)).prey)/32000 -0.1*32000
                     %calculate and judege whether the neuron respond to the target area or not
                     [a.list(rids(kk)).replaresp,a.list(rids(kk)).replaPvalue] = Analysis.UseTtestToJudegeRespOrNot(...
                         a.list(rids(kk)).targety,a.list(rids(kk)).targetsptimes,...
                         a.list(rids(kk)).pretargety ,a.list(rids(kk)).pretargetsptimes ,32000);
+                    a.list(rids(kk)).targetfr = length(vertcat(a.list(rids(kk)).targetsptimes{:}))/200; % per milisecond
                 end
-                a.list(nid).target = a.list(nid).y(Ini_y:Ini_y + 0.2*32000); % 截取200ms
-                a.list(nid).targetsptimes = extract.sptimes_resetSP(a.list(nid).sptimes,Ini_y,Ini_y + 0.2*32000);
-               
+               % a.list(nid).target = a.list(nid).y(Ini_y:Ini_y + 0.2*32000); % 截取200ms
+               % a.list(nid).targetsptimes = Extract.sptimes_resetSP(a.list(nid).sptimes,Ini_y,Ini_y + 0.2*32000);
+               %a.list(nid).targetfr = length(vertcat(a.list(nid).targetsptimes{:}))/0.2;
                 
                 
             end
@@ -522,6 +531,32 @@ classdef Analysis < handle
             
             % based on the name of replaced song, find out the corresponding % norm song
         end
+        
+        function a = getReplalistFromA(a)
+            % 从 Analysis 文件中提取neuron对replas的反应，已经具体的replas的名称
+            a.judgeReplaResp;
+            replalist = a.list(find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'Repla'))));
+            
+            Replst_fnames = [replalist.stimuliname].';
+            locY = @(x,y) x{y}; % get element in location y
+            for k = 1:length(replalist)
+                splited = split(Replst_fnames{k},{'-before-','-gapis-'});
+                replalist(k).bname1 = Convert.bid(splited{1});
+                replalist(k).fid1 = str2num(locY(split(splited{1},'-'),4));
+                replalist(k).bname2 = Convert.bid(splited{2});
+                replalist(k).fid2 = str2num(locY(split(splited{2},'-'),3));
+                replalist(k).concat1 = sprintf('%s-%02u',replalist(k).bname1,replalist(k).fid1);
+                replalist(k).concat2 = sprintf('%s-%02u',replalist(k).bname2,replalist(k).fid2);
+                replalist(k).fullrepla = sprintf('%s-%02u-%s-%02u',replalist(k).bname1,replalist(k).fid1,replalist(k).bname2,replalist(k).fid2);
+            end
+            unique({replalist.concat1}.') % how many unique pre syllable
+            unique({replalist.concat2}.') % how many unique post syllable
+            unique(vertcat({replalist.concat1}.',{replalist.concat2}.'))  % how many syllable to be classified in total
+            unique({replalist.fullrepla}.') % how many unique transition in neurons intotal?
+            
+            a.replalist = replalist;
+        end
+        
     end
     
     methods % 外部计算方法
@@ -547,10 +582,10 @@ classdef Analysis < handle
             if ~isempty( fragids)
                 fraglist = a.list(fragids);
                 for n = 1: length(fraglist)
-                    tempsum = cal.psth_frag(fraglist(n).rawy,fraglist(n).fs,fraglist(n).rawsptimes);
+                    tempsum = Cal.psth_frag(fraglist(n).rawy,fraglist(n).fs,fraglist(n).rawsptimes);
                     halfsum = sum(tempsum(end/2:end));
                     fullsum = sum(tempsum);
-                    maxvalue = max(cal.psth_frag(fraglist(n).rawy,fraglist(n).fs,fraglist(n).rawsptimes));
+                    maxvalue = max(Cal.psth_frag(fraglist(n).rawy,fraglist(n).fs,fraglist(n).rawsptimes));
                     fraglist(n).maxvalue = maxvalue;
                     fraglist(n).halfsum = halfsum;
                     fraglist(n).fullsum = fullsum;
@@ -570,10 +605,10 @@ classdef Analysis < handle
             if ~isempty( replaids)
                 replalist = a.list(replaids);
                 for n = 1: length(replalist)
-                    tempsum = cal.psth_frag(replalist(n).rawy,replalist(n).fs,replalist(n).rawsptimes);
+                    tempsum = Cal.psth_frag(replalist(n).rawy,replalist(n).fs,replalist(n).rawsptimes);
                     halfsum = sum(tempsum(end/2:end));
                     fullsum = sum(tempsum);
-                    maxvalue = max(cal.psth_frag(replalist(n).rawy,replalist(n).fs,replalist(n).rawsptimes));
+                    maxvalue = max(Cal.psth_frag(replalist(n).rawy,replalist(n).fs,replalist(n).rawsptimes));
                     replalist(n).maxvalue = maxvalue;
                     replalist(n).halfsum = halfsum;
                     replalist(n).fullsum = fullsum;
@@ -593,10 +628,10 @@ classdef Analysis < handle
             if ~isempty( normids )
                 normlist = a.list( normids);
                 for n = 1: length( normlist)
-                    tempsum = cal.psth_frag( normlist(n).rawy, normlist(n).fs, normlist(n).rawsptimes);
+                    tempsum = Cal.psth_frag( normlist(n).rawy, normlist(n).fs, normlist(n).rawsptimes);
                     halfsum = sum(tempsum(end/2:end));
                     fullsum = sum(tempsum);
-                    maxvalue = max(cal.psth_frag( normlist(n).rawy, normlist(n).fs, normlist(n).rawsptimes));
+                    maxvalue = max(Cal.psth_frag( normlist(n).rawy, normlist(n).fs, normlist(n).rawsptimes));
                     normlist(n).maxvalue = maxvalue;
                     normlist(n).halfsum = halfsum;
                     normlist(n).fullsum = fullsum;
@@ -619,10 +654,10 @@ classdef Analysis < handle
             if ~isempty(otherids)
                 otherlist = a.list(otherids);
                 for n = 1: length(otherlist)
-                    tempsum = cal.psth_frag( otherlist(n).rawy,otherlist(n).fs,otherlist(n).rawsptimes);
+                    tempsum = Cal.psth_frag( otherlist(n).rawy,otherlist(n).fs,otherlist(n).rawsptimes);
                     halfsum = sum(tempsum(end/2:end));
                     fullsum = sum(tempsum);
-                    maxvalue = max(cal.psth_frag(otherlist(n).rawy,otherlist(n).fs,otherlist(n).rawsptimes));
+                    maxvalue = max(Cal.psth_frag(otherlist(n).rawy,otherlist(n).fs,otherlist(n).rawsptimes));
                     otherlist(n).maxvalue = maxvalue;
                     otherlist(n).halfsum = halfsum;
                     otherlist(n).fullsum = fullsum;
@@ -785,12 +820,12 @@ classdef Analysis < handle
             fraglist = a.list(ids);
             
             for n = 1: length(fraglist)
-                tempsum = cal.psth_frag(fraglist(n).rawy,fraglist(n).fs,fraglist(n).rawsptimes);
+                tempsum = Cal.psth_frag(fraglist(n).rawy,fraglist(n).fs,fraglist(n).rawsptimes);
                 range = 1 % the very fisrt 1 second
                 beginmax = max(tempsum(1: ceil(length(tempsum)*range/(length(fraglist(n).rawy)/fraglist(n).fs)) ));% the maximum value of the begining 0.5 second
                 halfsum = sum(tempsum(end/2:end));
                 fullsum = sum(tempsum);
-                maxvalue = max(cal.psth_frag(fraglist(n).rawy,fraglist(n).fs,fraglist(n).rawsptimes));
+                maxvalue = max(Cal.psth_frag(fraglist(n).rawy,fraglist(n).fs,fraglist(n).rawsptimes));
                 fraglist(n).maxvalue = maxvalue;
                 fraglist(n).halfsum = halfsum;
                 fraglist(n).fullsum = fullsum;
@@ -847,7 +882,7 @@ classdef Analysis < handle
                     split_fraginf(counts).initial = local_eleinf(m).yini/local_eleinf(m).fs;
                     split_fraginf(counts).terminal = local_eleinf(m).yter/local_eleinf(m).fs;
                     
-                    split_fraginf(counts).padded_sptimes = extract.sptimes(a.normlist(k).rawsptimes, split_fraginf(counts).initial...
+                    split_fraginf(counts).padded_sptimes = Extract.sptimes(a.normlist(k).rawsptimes, split_fraginf(counts).initial...
                         ,split_fraginf(counts).terminal + latency);
                     
                     front_percentage = local_eleinf(m).yini/length(a.normlist(k).rawy);
@@ -874,14 +909,14 @@ classdef Analysis < handle
             end
             
             for n = 1: length(split_fraginf)
-                tempsum = cal.psth_frag(split_fraginf(n).padded_y,split_fraginf(n).fs,split_fraginf(n).padded_sptimes);
+                tempsum = Cal.psth_frag(split_fraginf(n).padded_y,split_fraginf(n).fs,split_fraginf(n).padded_sptimes);
                 if isempty(tempsum)
                     halfsum = 0;
                 else
                     halfsum = sum(tempsum(end/2:end));
                 end
                 fullsum = sum(tempsum);
-                maxvalue = max(cal.psth_frag(split_fraginf(n).padded_y,split_fraginf(n).fs,split_fraginf(n).padded_sptimes));
+                maxvalue = max(Cal.psth_frag(split_fraginf(n).padded_y,split_fraginf(n).fs,split_fraginf(n).padded_sptimes));
                 split_fraginf(n).maxvalue = maxvalue;
                 split_fraginf(n).halfsum = halfsum;
                 split_fraginf(n).fullsum = fullsum;
@@ -950,10 +985,10 @@ classdef Analysis < handle
                 
                 jrsptimes = normlist(m).judgerespsptimes;
                 all_spikes = vertcat(jrsptimes{:});
-                all_Ns = length(find(abs(cal.allPairDiff(all_spikes))<thres));
+                all_Ns = length(find(abs(Cal.allPairDiff(all_spikes))<thres));
                 same_trail_Ns = [];
                 for k = 1: length(jrsptimes)
-                    same_trail_Ns(k) = length(find(abs(cal.allPairDiff(jrsptimes{k}))<thres));
+                    same_trail_Ns(k) = length(find(abs(Cal.allPairDiff(jrsptimes{k}))<thres));
                 end
                 Ns = all_Ns - sum(same_trail_Ns);
                 sumNs(m) = Ns;
@@ -965,7 +1000,7 @@ classdef Analysis < handle
                 normlist(m).CI = Ns/normalization_factor;
                 ainf.eachCI(m) = Ns/normalization_factor;
                 
-                sdf = cal.sdf(jrsptimes,normlist(m).judgerespy,normlist(m).fs,0.001,0.004);
+                sdf = Cal.sdf(jrsptimes,normlist(m).judgerespy,normlist(m).fs,0.001,0.004);
                 sdf_collect{m} = sdf;
                 minsdf =min(sdf);
                 maxsdf = max(sdf);
@@ -997,8 +1032,8 @@ classdef Analysis < handle
                 
                 % judge whether significant repsonse or not
                 
-                presdf = cal.sdf(normlist(m).prejudgerespsptimes,zeros(length(normlist(m).judgerespy),1),normlist(m).fs,0.001,0.02);
-                sdf = cal.sdf(normlist(m).judgerespsptimes,normlist(m).judgerespy,normlist(m).fs,0.001,0.02); % 0.001,0.004
+                presdf = Cal.sdf(normlist(m).prejudgerespsptimes,zeros(length(normlist(m).judgerespy),1),normlist(m).fs,0.001,0.02);
+                sdf = Cal.sdf(normlist(m).judgerespsptimes,normlist(m).judgerespy,normlist(m).fs,0.001,0.02); % 0.001,0.004
                 [maxpresdf,~] = max(presdf);
                 [maxsdf,~] = max(sdf);
                 [minsdf,~] = min(sdf);
@@ -1018,8 +1053,8 @@ classdef Analysis < handle
                 
                 
                 
-                pre_frs = cal.eachTrialFiringRate(normlist(m).prejudgerespsptimes,length(normlist(m).judgerespy)/normlist(m).fs);
-                sti_frs = cal.eachTrialFiringRate(normlist(m).judgerespsptimes,length(normlist(m).judgerespy)/normlist(m).fs);
+                pre_frs = Cal.eachTrialFiringRate(normlist(m).prejudgerespsptimes,length(normlist(m).judgerespy)/normlist(m).fs);
+                sti_frs = Cal.eachTrialFiringRate(normlist(m).judgerespsptimes,length(normlist(m).judgerespy)/normlist(m).fs);
                 [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05)
                 normlist(m).pvalue = p;
                 normlist(m).label = 0; % 初始化
@@ -1076,7 +1111,7 @@ classdef Analysis < handle
             
             
             % calculate sum sdf
-            %             sumsdf = cal.sdf(concat_judgerespsptimes,zeros(sum_judgeresplen*normlist(m).fs,1),normlist(m).fs,0.001,0.004);
+            %             sumsdf = Cal.sdf(concat_judgerespsptimes,zeros(sum_judgeresplen*normlist(m).fs,1),normlist(m).fs,0.001,0.004);
             %             [sumsdf,~] = histcounts(ainf.concat_judgeresp_sptimes ,round(sumD/0.001));
             %
             sumsdf = allsdf;
@@ -1238,6 +1273,7 @@ classdef Analysis < handle
     methods % 作图方法
         
         % 只作图不保存
+     
         
         function drawAllFigures(a)
             
@@ -1463,7 +1499,7 @@ classdef Analysis < handle
                 envy = rescale(smooth(abs(fiy),150)); % amplitude envelope of y
                 %powery = downsample(fiy.^2/length(fiy),fs/1000);
                 %downy = downsample(abs(fiy),fs/1000);
-                I = cal.spec(fiy,sorted_fraglist(k).fs); % I is the image of the whole song
+                I = Cal.spec(fiy,sorted_fraglist(k).fs); % I is the image of the whole song
                 sorted_fraglist(k).normalized_img = imresize(I,[257,50]);
             end
             
@@ -1694,7 +1730,7 @@ classdef Analysis < handle
             songids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'norm|spe') ));
             songids = intersect(songids,selectedids);
             songlist = a.list(songids);
-            %             [~,postunique] = unique(cellstr(cellfun(@convert.bid,{songlist.stimuliname}.','Uni',0)))
+            %             [~,postunique] = unique(cellstr(cellfun(@Convert.bid,{songlist.stimuliname}.','Uni',0)))
             %             songlist = songlist(postunique);
             RONGYU = 0.5;
             range = range + RONGYU;
@@ -1709,7 +1745,7 @@ classdef Analysis < handle
             if ~isempty(fragids)
                 fraglist = a.list(fragids);
                 for m = 1: length(fraglist)
-                    birdid = convert.bid(fraglist(m).stimuliname);
+                    birdid = Convert.bid(fraglist(m).stimuliname);
                     ids_norm = find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),birdid) ) );
                     if ~isempty(ids_norm)& length(ids_norm) == 1
                         fraglist(m).sylIni = Analysis.findIni(songlist(ids_norm).pady,fraglist(m).y);
@@ -1726,7 +1762,7 @@ classdef Analysis < handle
             if ~isempty(degids)
                 deglist = a.list(degids);
                 for m = 1: length(deglist)
-                    birdid = convert.bid(deglist(m).stimuliname);
+                    birdid = Convert.bid(deglist(m).stimuliname);
                     ids_norm = find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),birdid) ) );
                     if ~isempty(ids_norm)& length(ids_norm) == 1
                         [deglist(m).sylIni,trump_diffvalue] = Analysis.findIni(songlist(ids_norm).pady,deglist(m).y);
@@ -1748,7 +1784,7 @@ classdef Analysis < handle
                     
                     afterBefore = regexp(replalist(m).stimuliname,'(?<=before-)\S*','match');
                     afterBefore = afterBefore{1};
-                    birdid = convert.bid(afterBefore);
+                    birdid = Convert.bid(afterBefore);
                     ids_norm = find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),birdid) ) );
                     
                     if ~isempty(ids_norm)%& length(ids_norm) == 1
@@ -1766,7 +1802,7 @@ classdef Analysis < handle
             for w = 1: length(songlist)
                 
                 if ~isempty(degids)
-                    birdid = convert.bid(songlist(w).stimuliname);
+                    birdid = Convert.bid(songlist(w).stimuliname);
                     ids_indeg = find(~cellfun(@isempty, regexp(cellstr({deglist.stimuliname}.'),birdid) ) );
                     selected_deglist = deglist(ids_indeg);
                     [~,temp_index] = sortrows([selected_deglist.sylIni].');
@@ -1776,7 +1812,7 @@ classdef Analysis < handle
                 end
                 
                 if ~isempty(fragids)
-                    birdid = convert.bid(songlist(w).stimuliname);
+                    birdid = Convert.bid(songlist(w).stimuliname);
                     ids_infrag = find(~cellfun(@isempty, regexp(cellstr({fraglist.stimuliname}.'),birdid) ) );
                     selected_fraglist = fraglist(ids_infrag);
                     [~,temp_index] = sortrows([selected_fraglist.sylIni].');
@@ -1786,7 +1822,7 @@ classdef Analysis < handle
                 end
                 
                 if ~isempty(replaids)
-                    birdid = convert.bid(songlist(w).stimuliname);
+                    birdid = Convert.bid(songlist(w).stimuliname);
                     ids_inrepla = find(~cellfun(@isempty, regexp(cellstr({replalist.stimuliname}.'),birdid) ) );
                     selected_replalist = replalist(ids_inrepla);
                 else
@@ -1808,13 +1844,13 @@ classdef Analysis < handle
                 ax = tight_subplot(2*len, 1, 0.002, 0.02, 0);
                 for k = 1: len
                     
-                    axes(ax(2*(k-1)+ 1)); % draw.two(,,);
+                    axes(ax(2*(k-1)+ 1)); % Draw.two(,,);
                     %ax(2*(k-1)+ 1).Position(4) =  ax(2*(k-1)+ 1).Position(4);
                     if exist('range','var')
                         truncated_y = alllist(k).pady(range(1)*alllist(k).fs:range(2)*alllist(k).fs);
-                        draw.spec(truncated_y,alllist(k).fs);
+                        Draw.spec(truncated_y,alllist(k).fs);
                     else
-                        draw.spec(alllist(k).pady,alllist(k).fs);
+                        Draw.spec(alllist(k).pady,alllist(k).fs);
                     end
                     xlabel('')
                     ylabel('')
@@ -1826,13 +1862,13 @@ classdef Analysis < handle
                     axes(ax(2*k));
                     
                     if exist('range','var')
-                        truncated_sptimes = extract.sptimes_resetSP(alllist(k).padsptimes, range(1), range(2));
+                        truncated_sptimes = Extract.sptimes_resetSP(alllist(k).padsptimes, range(1), range(2));
                         truncated_y = alllist(k).pady(range(1)*alllist(k).fs:range(2)*alllist(k).fs);
-                        %draw.raster(truncated_sptimes,truncated_y,alllist(k).fs);
-                        draw.rasterBeta(truncated_sptimes,truncated_y,alllist(k).fs,2.8,'k');
+                        %Draw.raster(truncated_sptimes,truncated_y,alllist(k).fs);
+                        Draw.rasterBeta(truncated_sptimes,truncated_y,alllist(k).fs,2.8,'k');
                     else
-                        %draw.raster(alllist(k).padsptimes,alllist(k).pady,alllist(k).fs);
-                        draw.rasterBeta(alllist(k).padsptimes,alllist(k).pady,alllist(k).fs,2.8,'k');
+                        %Draw.raster(alllist(k).padsptimes,alllist(k).pady,alllist(k).fs);
+                        Draw.rasterBeta(alllist(k).padsptimes,alllist(k).pady,alllist(k).fs,2.8,'k');
                     end
                     
                     ylabel('')
@@ -1888,7 +1924,7 @@ classdef Analysis < handle
                 
             else
                 figure('Position',[-36 437 length(a.list(k).plty)/18 528]);
-                draw.spec(a.list(k).plty,a.list(k).fs);
+                Draw.spec(a.list(k).plty,a.list(k).fs);
             end
             xlabel('')
             ylabel('')
@@ -1915,14 +1951,14 @@ classdef Analysis < handle
             mirrorids = find(~cellfun(@isempty,regexp(cellstr({a.list.stimuliname}.'),'mirror')));
             
             % find out the songs that are tested with the reversed version
-            bids = cellfun(@(x) convert.bid(x),cellstr({a.list(reverseids).stimuliname}.'),'Uni',0);
+            bids = cellfun(@(x) Convert.bid(x),cellstr({a.list(reverseids).stimuliname}.'),'Uni',0);
             
             IMG = {};
             
             
             if isempty(bids)
                 figure('Position',[552 -116 2410 1221],'Color','w');;
-                %draw.three(a.list(sameFile_mirror_ids).plty,a.list(sameFile_mirror_ids).fs,a.list(sameFile_mirror_ids).pltsptimes);
+                %Draw.three(a.list(sameFile_mirror_ids).plty,a.list(sameFile_mirror_ids).fs,a.list(sameFile_mirror_ids).pltsptimes);
                 frame = getframe(gcf);
                 IMG{1,1} = frame.cdata;
                 IMG{2,1} = frame.cdata;
@@ -1948,19 +1984,19 @@ classdef Analysis < handle
                 sameFile_mirror_ids = intersect(samefileids,sb_mirror_ids);
                 
                 fig1 = figure('Position',[552 -116 2410 1221],'Color','w');
-                draw.three(a.list(sameFile_norm_ids).y,a.list(sameFile_norm_ids).fs,a.list(sameFile_norm_ids).sptimes); % plty
+                Draw.three(a.list(sameFile_norm_ids).y,a.list(sameFile_norm_ids).fs,a.list(sameFile_norm_ids).sptimes); % plty
                 frame = getframe(fig1);
                 IMG{1,k} = frame.cdata;
                 close(fig1)
                 
                 fig2 = figure('Position',[552 -116 2410 1221],'Color','w');
-                draw.three(a.list(sameFile_reverse_ids).y,a.list(sameFile_reverse_ids).fs,a.list(sameFile_reverse_ids).sptimes);
+                Draw.three(a.list(sameFile_reverse_ids).y,a.list(sameFile_reverse_ids).fs,a.list(sameFile_reverse_ids).sptimes);
                 frame = getframe(fig2);
                 IMG{2,k} = frame.cdata;
                 close(fig2)
                 
                 fig3 = figure('Position',[552 -116 2410 1221],'Color','w');
-                draw.three(a.list(sameFile_mirror_ids).y,a.list(sameFile_mirror_ids).fs,a.list(sameFile_mirror_ids).sptimes);
+                Draw.three(a.list(sameFile_mirror_ids).y,a.list(sameFile_mirror_ids).fs,a.list(sameFile_mirror_ids).sptimes);
                 frame = getframe(fig3);
                 IMG{3,k} = frame.cdata;
                 close(fig3);
@@ -1969,7 +2005,7 @@ classdef Analysis < handle
             
             img = cell2mat(IMG);
             
-            img = convert.colorEdge(img,'r');
+            img = Convert.colorEdge(img,'r');
             % I don't know why here the output could be unit8 or double
             % randomly
             % Now the temporal solution is
@@ -2313,7 +2349,7 @@ classdef Analysis < handle
                 end
                 
                 %h.WindowState = 'maximized';
-                draw.two(sorted_fraglist(k).plty,sorted_fraglist(k).fs,sorted_fraglist(k).pltsptimes);
+                Draw.two(sorted_fraglist(k).plty,sorted_fraglist(k).fs,sorted_fraglist(k).pltsptimes);
                 xlabel(sprintf('%s-RS: %f',sorted_fraglist(k).stimuliname,sorted_fraglist(k).rs));
                 temp = getframe(gcf);
                 I{k} = temp.cdata;
@@ -2816,7 +2852,7 @@ classdef Analysis < handle
             
             % about Norms % Redudant code
             %             normlist = Analysis(a.neurons{a.song_id}).normlist;
-            %             [~,postunique] = unique(cellfun(@convert.bid,cellstr({normlist.stimuliname}.'),'Uni',0))
+            %             [~,postunique] = unique(cellfun(@Convert.bid,cellstr({normlist.stimuliname}.'),'Uni',0))
             %             normlist = normlist(postunique);
             
             
@@ -2828,7 +2864,7 @@ classdef Analysis < handle
                 
                 for m = 1: length(fraglist)
                     
-                    birdid = convert.bid(fraglist(m).stimuliname);
+                    birdid = Convert.bid(fraglist(m).stimuliname);
                     ids_norm = find(~cellfun(@isempty, regexp(cellstr({normlist.stimuliname}.'),birdid) ) );
                     
                     if ~isempty(ids_norm)& length(ids_norm) == 1
@@ -2846,7 +2882,7 @@ classdef Analysis < handle
             %
             %                 deglist = a.list(fragids);
             %                 for m = 1: length(deglist)
-            %                     birdid = convert.bid(deglist(m).stimuliname);
+            %                     birdid = Convert.bid(deglist(m).stimuliname);
             %                     ids_norm = find(~cellfun(@isempty, regexp(cellstr({normlist.stimuliname}.'),birdid) ) );
             %                     if ~isempty(ids_norm)& length(ids_norm) == 1
             %                         [deglist(m).sylIni,trump_diffvalue] = Analysis.findIni(normlist(ids_norm).plty,deglist(m).y);
@@ -2863,7 +2899,7 @@ classdef Analysis < handle
             for w = 1: length(normlist)
                 
                 %                 if ~isempty(fragids)
-                %                     birdid = convert.bid(normlist(w).stimuliname);
+                %                     birdid = Convert.bid(normlist(w).stimuliname);
                 %                     ids_indeg = find(~cellfun(@isempty, regexp(cellstr({deglist.stimuliname}.'),birdid) ) );
                 %                     selected_deglist = deglist(ids_indeg);
                 %                     [~,temp_index] = sortrows([selected_deglist.sylIni].');
@@ -2871,7 +2907,7 @@ classdef Analysis < handle
                 %                 end
                 
                 if ~isempty(fragids)
-                    birdid = convert.bid(normlist(w).stimuliname);
+                    birdid = Convert.bid(normlist(w).stimuliname);
                     ids_infrag = find(~cellfun(@isempty, regexp(cellstr({fraglist.stimuliname}.'),birdid) ) );
                     selected_fraglist = fraglist(ids_infrag);
                     [~,temp_index] = sortrows([selected_fraglist.sylIni].');
@@ -2883,7 +2919,7 @@ classdef Analysis < handle
                 Icollect = {};
                 figure('Color','w');
                 
-                draw.two(normlist(w).plty,normlist(w).fs,a.normlist(w).pltsptimes);
+                Draw.two(normlist(w).plty,normlist(w).fs,a.normlist(w).pltsptimes);
                 xlabel(normlist(w).stimuliname);
                 frame = getframe(gcf);
                 Icollect{1} = frame.cdata;
@@ -2893,7 +2929,7 @@ classdef Analysis < handle
                     for hh = 1: length(selected_deglist)
                         
                         figure('Color','w');
-                        draw.two(selected_deglist(hh).pady,selected_deglist(hh).fs,selected_deglist(hh).padsptimes);
+                        Draw.two(selected_deglist(hh).pady,selected_deglist(hh).fs,selected_deglist(hh).padsptimes);
                         xlabel(selected_deglist(hh).stimuliname);
                         frame = getframe(gcf);
                         Icollect{1 + hh} = frame.cdata;
@@ -2908,7 +2944,7 @@ classdef Analysis < handle
                     for bb = 1: length(selected_fraglist)
                         
                         figure('Color','w');
-                        draw.two(selected_fraglist(bb).pady,selected_fraglist(bb).fs,selected_fraglist(bb).padsptimes);
+                        Draw.two(selected_fraglist(bb).pady,selected_fraglist(bb).fs,selected_fraglist(bb).padsptimes);
                         xlabel(selected_fraglist(bb).stimuliname);
                         frame = getframe(gcf);
                         Icollect{frozen_Icollect_len + bb} = frame.cdata;
@@ -2933,9 +2969,9 @@ classdef Analysis < handle
                             if 4*k - kk <length(otelist)
                                 subplot(2,4,4-kk);
                                 
-                                draw.spec(otelist(4*k - kk).plty,otelist(4*k - kk).fs);
+                                Draw.spec(otelist(4*k - kk).plty,otelist(4*k - kk).fs);
                                 subplot(2,4,4-kk + 4 );
-                                draw.raster(otelist(4*k - kk).pltsptimes,otelist(4*k - kk).plty,otelist(4*k - kk).fs);
+                                Draw.raster(otelist(4*k - kk).pltsptimes,otelist(4*k - kk).plty,otelist(4*k - kk).fs);
                                 ylabel('')
                             end
                         end
@@ -3003,7 +3039,7 @@ classdef Analysis < handle
             fucklist = a.list(hard_to_name_ids);
             
             normlist = fucklist(find(~cellfun(@isempty, regexp(cellstr({fucklist.stimuliname}.'),'norm'))));
-            %             [~,postunique] = unique(cellfun(@convert.bid,cellstr({fucklist.stimuliname}.'),'Uni',0));
+            %             [~,postunique] = unique(cellfun(@Convert.bid,cellstr({fucklist.stimuliname}.'),'Uni',0));
             %             normlist = normlist(postunique);
             
             % About Deg
@@ -3012,7 +3048,7 @@ classdef Analysis < handle
                 
                 deglist = a.list(degids);
                 for m = 1: length(deglist)
-                    birdid = convert.bid(deglist(m).stimuliname);
+                    birdid = Convert.bid(deglist(m).stimuliname);
                     ids_norm = find(~cellfun(@isempty, regexp(cellstr({normlist.stimuliname}.'),birdid) ) );
                     if ~isempty(ids_norm)& length(ids_norm) == 1
                         [deglist(m).sylIni,trump_diffvalue] = Analysis.findIni(normlist(ids_norm).plty,deglist(m).y);
@@ -3029,7 +3065,7 @@ classdef Analysis < handle
             for w = 1: length(normlist)
                 
                 if ~isempty(degids)
-                    birdid = convert.bid(normlist(w).stimuliname);
+                    birdid = Convert.bid(normlist(w).stimuliname);
                     ids_indeg = find(~cellfun(@isempty, regexp(cellstr({deglist.stimuliname}.'),birdid) ) );
                     selected_deglist = deglist(ids_indeg);
                     [~,temp_index] = sortrows([selected_deglist.sylIni].');
@@ -3041,7 +3077,7 @@ classdef Analysis < handle
                 Icollect = {};
                 figure('Color','w','Position',PM.size_wide);
                 
-                draw.two(normlist(w).plty,normlist(w).fs,normlist(w).pltsptimes);
+                Draw.two(normlist(w).plty,normlist(w).fs,normlist(w).pltsptimes);
                 xlabel(normlist(w).stimuliname);
                 frame = getframe(gcf);
                 Icollect{1} = frame.cdata;
@@ -3052,7 +3088,7 @@ classdef Analysis < handle
                 if ~isempty(degids)
                     for hh = 1: length(selected_deglist)
                         figure('Color','w','Position',PM.size_wide);
-                        draw.two(selected_deglist(hh).pady,selected_deglist(hh).fs,selected_deglist(hh).padsptimes);
+                        Draw.two(selected_deglist(hh).pady,selected_deglist(hh).fs,selected_deglist(hh).padsptimes);
                         xlabel(selected_deglist(hh).stimuliname);
                         frame = getframe(gcf);
                         Icollect{1 + hh} = frame.cdata;
@@ -3136,7 +3172,7 @@ classdef Analysis < handle
                     
                     afterBefore = regexp(fraglist(m).stimuliname,'(?<=before-)\S*','match');
                     afterBefore = afterBefore{1};
-                    birdid = convert.bid(afterBefore);
+                    birdid = Convert.bid(afterBefore);
                     ids_norm = find(~cellfun(@isempty, regexp(cellstr({normlist.stimuliname}.'),birdid) ) );
                     
                     if ~isempty(ids_norm)%& length(ids_norm) == 1
@@ -3161,7 +3197,7 @@ classdef Analysis < handle
             for w = 1: length(selected_normlist)
                 
                 if ~isempty(replaids)
-                    birdid = convert.bid(selected_normlist(w).stimuliname);
+                    birdid = Convert.bid(selected_normlist(w).stimuliname);
                     ids_infrag = find(~cellfun(@isempty, regexp(cellstr({fraglist.stimuliname}.'),birdid) ) );
                     selected_fraglist = fraglist(ids_infrag);
                 end
@@ -3171,7 +3207,7 @@ classdef Analysis < handle
                 Icollect = {};
                 figure('Color','w','Position',[406 675 1378 420]);
                 
-                draw.two(selected_normlist(w).pady,selected_normlist(w).fs,selected_normlist(w).padsptimes);
+                Draw.two(selected_normlist(w).pady,selected_normlist(w).fs,selected_normlist(w).padsptimes);
                 xlabel(selected_normlist(w).stimuliname);
                 frame = getframe(gcf);
                 Icollect{1} = frame.cdata;
@@ -3184,7 +3220,7 @@ classdef Analysis < handle
                     for bb = 1: length(selected_fraglist)
                         
                         figure('Color','w','Position',[406 675 1378 420]);
-                        draw.two(selected_fraglist(bb).pady,selected_fraglist(bb).fs,selected_fraglist(bb).padsptimes);
+                        Draw.two(selected_fraglist(bb).pady,selected_fraglist(bb).fs,selected_fraglist(bb).padsptimes);
                         xlabel(selected_fraglist(bb).stimuliname);
                         frame = getframe(gcf);
                         Icollect{frozen_Icollect_len + bb} = frame.cdata;
@@ -3231,7 +3267,7 @@ classdef Analysis < handle
             
             % about songs been presented % Redudant code
             songlist = Analysis(a.neurons{a.song_id}).normlist;
-            [~,postunique] = unique(cellstr(cellfun(@convert.bid,{songlist.stimuliname}.','Uni',0)))
+            [~,postunique] = unique(cellstr(cellfun(@Convert.bid,{songlist.stimuliname}.','Uni',0)))
             songlist = songlist(postunique);
             
             
@@ -3241,12 +3277,12 @@ classdef Analysis < handle
                 
                 fraglist = a.list(fragids);
                 %                 normlist = Analysis(a.neurons{a.song_id}).normlist;
-                %                 [~,postunique] = unique(cellfun(@convert.bid,[normlist.stimuliname].','Uni',0))
+                %                 [~,postunique] = unique(cellfun(@Convert.bid,[normlist.stimuliname].','Uni',0))
                 %                 normlist = normlist(postunique);
                 
                 for m = 1: length(fraglist)
                     
-                    birdid = convert.bid(fraglist(m).stimuliname);
+                    birdid = Convert.bid(fraglist(m).stimuliname);
                     ids_norm = find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),birdid) ) );
                     
                     if ~isempty(ids_norm)& length(ids_norm) == 1
@@ -3264,7 +3300,7 @@ classdef Analysis < handle
                 
                 deglist = a.list(degids);
                 for m = 1: length(deglist)
-                    birdid = convert.bid(deglist(m).stimuliname);
+                    birdid = Convert.bid(deglist(m).stimuliname);
                     ids_norm = find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),birdid) ) );
                     if ~isempty(ids_norm)& length(ids_norm) == 1
                         [deglist(m).sylIni,trump_diffvalue] = Analysis.findIni(songlist(ids_norm).plty,deglist(m).y);
@@ -3285,7 +3321,7 @@ classdef Analysis < handle
             for w = 1: length(songlist)
                 
                 if ~isempty(degids)
-                    birdid = convert.bid(songlist(w).stimuliname);
+                    birdid = Convert.bid(songlist(w).stimuliname);
                     ids_indeg = find(~cellfun(@isempty, regexp(cellstr({deglist.stimuliname}.'),birdid) ) );
                     selected_deglist = deglist(ids_indeg);
                     [~,temp_index] = sortrows([selected_deglist.sylIni].');
@@ -3293,7 +3329,7 @@ classdef Analysis < handle
                 end
                 
                 if ~isempty(fragids)
-                    birdid = convert.bid(songlist(w).stimuliname);
+                    birdid = Convert.bid(songlist(w).stimuliname);
                     ids_infrag = find(~cellfun(@isempty, regexp(cellstr({fraglist.stimuliname}.'),birdid) ) );
                     selected_fraglist = fraglist(ids_infrag);
                     [~,temp_index] = sortrows([selected_fraglist.sylIni].');
@@ -3305,7 +3341,7 @@ classdef Analysis < handle
                 Icollect = {};
                 figure('Color','w');
                 
-                draw.two(songlist(w).plty,songlist(w).fs,songlist(w).pltsptimes);
+                Draw.two(songlist(w).plty,songlist(w).fs,songlist(w).pltsptimes);
                 xlabel(songlist(w).stimuliname);
                 frame = getframe(gcf);
                 Icollect{1} = frame.cdata;
@@ -3315,7 +3351,7 @@ classdef Analysis < handle
                     for hh = 1: length(selected_deglist)
                         
                         figure('Color','w');
-                        draw.two(selected_deglist(hh).pady,selected_deglist(hh).fs,selected_deglist(hh).padsptimes);
+                        Draw.two(selected_deglist(hh).pady,selected_deglist(hh).fs,selected_deglist(hh).padsptimes);
                         xlabel(selected_deglist(hh).stimuliname);
                         frame = getframe(gcf);
                         Icollect{1 + hh} = frame.cdata;
@@ -3330,7 +3366,7 @@ classdef Analysis < handle
                     for bb = 1: length(selected_fraglist)
                         
                         figure('Color','w');
-                        draw.two(selected_fraglist(bb).pady,selected_fraglist(bb).fs,selected_fraglist(bb).padsptimes);
+                        Draw.two(selected_fraglist(bb).pady,selected_fraglist(bb).fs,selected_fraglist(bb).padsptimes);
                         xlabel(selected_fraglist(bb).stimuliname);
                         frame = getframe(gcf);
                         Icollect{frozen_Icollect_len + bb} = frame.cdata;
@@ -3355,9 +3391,9 @@ classdef Analysis < handle
                             if 4*k - kk <length(otelist)
                                 subplot(2,4,4-kk);
                                 
-                                draw.spec(otelist(4*k - kk).plty,otelist(4*k - kk).fs);
+                                Draw.spec(otelist(4*k - kk).plty,otelist(4*k - kk).fs);
                                 subplot(2,4,4-kk + 4 );
-                                draw.raster(otelist(4*k - kk).pltsptimes,otelist(4*k - kk).plty,otelist(4*k - kk).fs);
+                                Draw.raster(otelist(4*k - kk).pltsptimes,otelist(4*k - kk).plty,otelist(4*k - kk).fs);
                                 ylabel('')
                             end
                         end
@@ -3470,7 +3506,7 @@ classdef Analysis < handle
             degids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'Deg|deg') ));
             if isempty(degids); return; end
             deglist = a.list(degids);
-            deg_bids = unique(cellfun(@convert.bid,cellstr({deglist.stimuliname}.'),'Uni',0));
+            deg_bids = unique(cellfun(@Convert.bid,cellstr({deglist.stimuliname}.'),'Uni',0));
             
             I_song = {};
             for w = 1: length(deg_bids)
@@ -3481,7 +3517,7 @@ classdef Analysis < handle
                 
                 for k = 1; length(degexist_norm_list)
                     smallfig = figure('Color','w','Position',[406 675 1378 420]);
-                    draw.two(degexist_norm_list(k).plty,degexist_norm_list(k).fs,degexist_norm_list(k).pltsptimes);
+                    Draw.two(degexist_norm_list(k).plty,degexist_norm_list(k).fs,degexist_norm_list(k).pltsptimes);
                     xlabel(degexist_norm_list(k).stimuliname);
                     frame = getframe(smallfig); Icollect{1} = frame.cdata;close(gcf)
                     
@@ -3490,7 +3526,7 @@ classdef Analysis < handle
                 I_song{w} = vertcat(Icollect{:});
                 
             end
-            [~,postunique] = unique(cellstr(cellfun(@convert.bid,{songlist.stimuliname}.','Uni',0)));
+            [~,postunique] = unique(cellstr(cellfun(@Convert.bid,{songlist.stimuliname}.','Uni',0)));
             songlist = songlist(postunique);
             
             % 其二，找到deressive songs对应的birdid
@@ -3498,7 +3534,7 @@ classdef Analysis < handle
             if isempty(degids); return; end
             deglist = a.list(degids);
             for m = 1: length(deglist)
-                birdid_collect{m} = convert.bid(deglist(m).stimuliname);
+                birdid_collect{m} = Convert.bid(deglist(m).stimuliname);
                 ids_norm = find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),birdid_collect{m}) ) );
                 if ~isempty(ids_norm)& length(ids_norm) == 1
                     [deglist(m).sylIni,trump_diffvalue] = Analysis.findIni(songlist(ids_norm).plty,deglist(m).y);
@@ -3515,7 +3551,7 @@ classdef Analysis < handle
             I_Deg = {}; % 最初定义
             for w = 1: length(normlist)
                 
-                birdid = convert.bid(normlist(w).stimuliname);
+                birdid = Convert.bid(normlist(w).stimuliname);
                 ids_indeg = find(~cellfun(@isempty, regexp(cellstr({deglist.stimuliname}.'),birdid) ) );
                 selected_deglist = deglist(ids_indeg);
                 [~,temp_index] = sortrows([selected_deglist.sylIni].');
@@ -3523,14 +3559,14 @@ classdef Analysis < handle
                 
                 % draw the norm figure
                 Icollect = {};figure('Color','w','Position',[406 675 1378 420]);
-                draw.two(normlist(w).plty,normlist(w).fs,normlist(w).pltsptimes);
+                Draw.two(normlist(w).plty,normlist(w).fs,normlist(w).pltsptimes);
                 xlabel(normlist(w).stimuliname);
                 frame = getframe(gcf); Icollect{1} = frame.cdata;close(gcf)
                 
                 % draw the deg figure
                 for hh = 1: length(selected_deglist)
                     figure('Color','w','Position',[406 675 1378 420]);
-                    draw.two(selected_deglist(hh).pady,selected_deglist(hh).fs,selected_deglist(hh).padsptimes);
+                    Draw.two(selected_deglist(hh).pady,selected_deglist(hh).fs,selected_deglist(hh).padsptimes);
                     xlabel(selected_deglist(hh).stimuliname);
                     frame = getframe(gcf); Icollect{1 + hh} = frame.cdata;close(gcf);
                 end
@@ -3547,7 +3583,7 @@ classdef Analysis < handle
                 fraglist = a.list(fragids);
                 for m = 1: length(fraglist)
                     
-                    birdid = convert.bid(fraglist(m).stimuliname);
+                    birdid = Convert.bid(fraglist(m).stimuliname);
                     ids_norm = find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),birdid) ) );
                     
                     if ~isempty(ids_norm)& length(ids_norm) == 1
@@ -3563,7 +3599,7 @@ classdef Analysis < handle
             for w = 1: length(normlist)
                 
                 if ~isempty(fragids)
-                    birdid = convert.bid(normlist(w).stimuliname);
+                    birdid = Convert.bid(normlist(w).stimuliname);
                     ids_infrag = find(~cellfun(@isempty, regexp(cellstr({fraglist.stimuliname}.'),birdid) ) );
                     selected_fraglist = fraglist(ids_infrag);
                     [~,temp_index] = sortrows([selected_fraglist.sylIni].');
@@ -3571,13 +3607,13 @@ classdef Analysis < handle
                 end
                 
                 Icollect = {};figure('Color','w','Position',[406 675 1378 420]);
-                draw.two(normlist(w).plty,songlist(w).fs,normlist(w).pltsptimes);  xlabel(normlist(w).stimuliname);
+                Draw.two(normlist(w).plty,songlist(w).fs,normlist(w).pltsptimes);  xlabel(normlist(w).stimuliname);
                 frame = getframe(gcf);   Icollect{1} = frame.cdata; close(gcf)
                 
                 if ~isempty(fragids)
                     for bb = 1: length(selected_fraglist)
                         figure('Color','w','Position',[406 675 1378 420]);
-                        draw.two(selected_fraglist(bb).pady,selected_fraglist(bb).fs,selected_fraglist(bb).padsptimes);
+                        Draw.two(selected_fraglist(bb).pady,selected_fraglist(bb).fs,selected_fraglist(bb).padsptimes);
                         xlabel(selected_fraglist(bb).stimuliname);
                         frame = getframe(gcf);Icollect{1 + bb} = frame.cdata;close(gcf);
                     end
@@ -3606,7 +3642,7 @@ classdef Analysis < handle
                     
                     afterBefore = regexp(replalist(m).stimuliname,'(?<=before-)\S*','match');
                     afterBefore = afterBefore{1};
-                    birdid = convert.bid(afterBefore);
+                    birdid = Convert.bid(afterBefore);
                     ids_norm = find(~cellfun(@isempty, regexp(cellstr({normlist.stimuliname}.'),birdid) ) );
                     
                     if ~isempty(ids_norm)%& length(ids_norm) == 1
@@ -3627,7 +3663,7 @@ classdef Analysis < handle
             for w = 1: length(selected_normlist)
                 
                 if ~isempty(replaids)
-                    birdid = convert.bid(selected_normlist(w).stimuliname);
+                    birdid = Convert.bid(selected_normlist(w).stimuliname);
                     ids_inrepla = find(~cellfun(@isempty, regexp(cellstr({replalist.stimuliname}.'),birdid) ) );
                     selected_replalist = replalist(ids_inrepla);
                 end
@@ -3635,14 +3671,14 @@ classdef Analysis < handle
                 
                 % draw the basic figure
                 Icollect = {}; figure('Color','w','Position',[406 675 1378 420]);
-                draw.two(selected_normlist(w).pady,selected_normlist(w).fs,selected_normlist(w).padsptimes);
+                Draw.two(selected_normlist(w).pady,selected_normlist(w).fs,selected_normlist(w).padsptimes);
                 xlabel(selected_normlist(w).stimuliname);
                 frame = getframe(gcf);  Icollect{1} = frame.cdata;  close(gcf);
                 
                 if ~isempty(replaids)
                     for bb = 1: length(selected_replalist)
                         figure('Color','w','Position',[406 675 1378 420]);
-                        draw.two(selected_replalist(bb).pady,selected_replalist(bb).fs,selected_replalist(bb).padsptimes);
+                        Draw.two(selected_replalist(bb).pady,selected_replalist(bb).fs,selected_replalist(bb).padsptimes);
                         xlabel(selected_replalist(bb).stimuliname);
                         frame = getframe(gcf); Icollect{1 + bb} = frame.cdata; close(gcf);
                     end
@@ -3692,7 +3728,7 @@ classdef Analysis < handle
             all_degids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'Deg|deg') ));
             all_fragids = find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'frag|Frag|syl|Syl') ));
             if isempty(all_degids); return; end % If no Degs at all, no need to draw
-            bname_degAttached = unique(cellfun(@convert.bid,cellstr({a.list(all_degids).stimuliname}.'),'Uni',0));
+            bname_degAttached = unique(cellfun(@Convert.bid,cellstr({a.list(all_degids).stimuliname}.'),'Uni',0));
             I_of_each_birdname = {};
             
             for w = 1: length(bname_degAttached)
@@ -3703,7 +3739,7 @@ classdef Analysis < handle
                 
                 for k = 1: length(sub_normlist_degAttached)
                     tempfig = figure('Color','w','Position',[7 347 2960 714]);
-                    draw.two(sub_normlist_degAttached(k).plty,sub_normlist_degAttached(k).fs,sub_normlist_degAttached(k).pltsptimes);
+                    Draw.two(sub_normlist_degAttached(k).plty,sub_normlist_degAttached(k).fs,sub_normlist_degAttached(k).pltsptimes);
                     xlabel(sub_normlist_degAttached(k).stimuliname);
                     frame = getframe(tempfig); tempCollect{1} = frame.cdata;close(gcf)
                 end
@@ -3729,14 +3765,14 @@ classdef Analysis < handle
                 % draw the norm figure
                 tempCollect = {};figure('Color','w','Position',[7 347 2960 714]);
                 
-                draw.two(sub_normlist_degAttached(ids_norm).plty,...
+                Draw.two(sub_normlist_degAttached(ids_norm).plty,...
                     sub_normlist_degAttached(ids_norm).fs,sub_normlist_degAttached(ids_norm).pltsptimes);
                 xlabel(sub_normlist_degAttached(ids_norm).stimuliname);
                 frame = getframe(gcf); tempCollect{1} = frame.cdata;close(gcf);
                 % draw the deg figure
                 for hh = 1: length(deglist)
                     figure('Color','w','Position',[7 347 2960 714]);
-                    draw.two(deglist(hh).pady,deglist(hh).fs,deglist(hh).padsptimes);
+                    Draw.two(deglist(hh).pady,deglist(hh).fs,deglist(hh).padsptimes);
                     xlabel(deglist(hh).stimuliname);
                     frame = getframe(gcf); tempCollect{1 + hh} = frame.cdata;close(gcf);
                 end
@@ -3749,7 +3785,7 @@ classdef Analysis < handle
                     strcmp(fraglist(1).Fid,{sub_normlist_degAttached.Fid}.')); % To find the normsong which (1) same birdid (2) same Fid
                 if isempty(ids_norm); ids_norm = 1; disp('Warning!!!! Norm absent'); end
                 for m = 1: length(fraglist)
-                    %birdid_collect{m} = convert.bid(deglist(m).stimuliname);
+                    %birdid_collect{m} = Convert.bid(deglist(m).stimuliname);
                     %if no normsong with same Fid, then use the first normsong instead
                     if ~isempty(ids_norm)& length(ids_norm) == 1
                         fraglist(m).sylIni = Analysis.findIni(sub_normlist_degAttached(ids_norm).plty,fraglist(m).y);
@@ -3762,14 +3798,14 @@ classdef Analysis < handle
                 % draw the norm figure
                 tempCollect = {};figure('Color','w','Position',[7 347 2960 714]);
                 
-                draw.two(sub_normlist_degAttached(ids_norm).plty,...
+                Draw.two(sub_normlist_degAttached(ids_norm).plty,...
                     sub_normlist_degAttached(ids_norm).fs,sub_normlist_degAttached(ids_norm).pltsptimes);
                 xlabel(sub_normlist_degAttached(ids_norm).stimuliname);
                 frame = getframe(gcf); tempCollect{1} = frame.cdata;close(gcf);
                 % draw the deg figure
                 for hh = 1: length(fraglist)
                     figure('Color','w','Position',[7 347 2960 714]);
-                    draw.two(fraglist(hh).pady,fraglist(hh).fs,fraglist(hh).padsptimes);
+                    Draw.two(fraglist(hh).pady,fraglist(hh).fs,fraglist(hh).padsptimes);
                     xlabel(fraglist(hh).stimuliname);
                     frame = getframe(gcf); tempCollect{1 + hh} = frame.cdata;close(gcf);
                 end
@@ -3818,8 +3854,8 @@ classdef Analysis < handle
             % This function draw distribution of song elements in spectral
             % space ( scatter / small spectrogram-rasterPlot)
             
-            % extract .wav file names in the target folder
-            filenames = extract.filename(dirpath,'*.wav');
+            % Extract .wav file names in the target folder
+            filenames = Extract.filename(dirpath,'*.wav');
             nameonly = {};
             for k = 1: length(filenames)
                 [~,nameonly{k},~] = fileparts(filenames{k});
@@ -3834,7 +3870,7 @@ classdef Analysis < handle
             end
             
             
-            % extract the target song-element from the name of the target
+            % Extract the target song-element from the name of the target
             % directory
             temp = split(dirpath,'\');
             temp = temp{end};
@@ -3842,7 +3878,7 @@ classdef Analysis < handle
             targetname = sprintf('%s-%s-%s',temp{2},temp{3},temp{4});
             [~,targetid] = ismember( targetname,global_merge);
             
-            % extract element data of song element Fragments/Replacements
+            % Extract element data of song element Fragments/Replacements
             fragids = find(~cellfun(@isempty, regexp(nameonly,'Frag')))
             fragnames = nameonly(fragids);
             fragname_remove_frag = split(fragnames,'Frag-');
@@ -3869,7 +3905,7 @@ classdef Analysis < handle
             title(sprintf('Frag-%s',targetname));
             
             
-            % extract data of replaced song
+            % Extract data of replaced song
             replaids = find(~cellfun(@isempty, regexp(nameonly,'Repla')));
             replanames = nameonly(replaids);
             for e = 1: length(replanames)
@@ -3976,13 +4012,13 @@ classdef Analysis < handle
         
         function [answer,pvalue] = UseTtestToJudegeRespOrNot(y,sptimes,prey,presptimes,fs)
             dbstop if error
-            presdf = cal.sdf(presptimes,prey,fs,0.001,0.02);
-            sdf = cal.sdf(sptimes,y,fs,0.001,0.02); % 0.001,0.004
+            presdf = Cal.sdf(presptimes,prey,fs,0.001,0.02);
+            sdf = Cal.sdf(sptimes,y,fs,0.001,0.02); % 0.001,0.004
 %             [maxpresdf,~] = max(presdf);
 %             [maxsdf,maxidx] = max(sdf);
             
-            pre_frs = cal.eachTrialFiringRate(presptimes,length(prey)/fs);
-            sti_frs = cal.eachTrialFiringRate(sptimes,length(y)/fs);
+            pre_frs = Cal.eachTrialFiringRate(presptimes,length(prey)/fs);
+            sti_frs = Cal.eachTrialFiringRate(sptimes,length(y)/fs);
             [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05)
             if h == 1
                 answer = 1;
@@ -3996,13 +4032,13 @@ classdef Analysis < handle
         
          function [answer,pvalue] = UseTtestToJudegeRespOrNot_Temp(y,sptimes,prey,presptimes,fs)
             dbstop if error
-            presdf = cal.sdf(presptimes,prey,fs,0.001,0.02);
-            sdf = cal.sdf(sptimes,y,fs,0.001,0.02); % 0.001,0.004
+            presdf = Cal.sdf(presptimes,prey,fs,0.001,0.02);
+            sdf = Cal.sdf(sptimes,y,fs,0.001,0.02); % 0.001,0.004
 %             [maxpresdf,~] = max(presdf);
 %             [maxsdf,maxidx] = max(sdf);
             
-            pre_frs = cal.eachTrialFiringRate(presptimes,length(prey)/fs);
-            sti_frs = cal.eachTrialFiringRate(sptimes,length(y)/fs);
+            pre_frs = Cal.eachTrialFiringRate(presptimes,length(prey)/fs);
+            sti_frs = Cal.eachTrialFiringRate(sptimes,length(y)/fs);
             [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05)
             if h == 1
                 answer = 1;
@@ -4043,17 +4079,17 @@ classdef Analysis < handle
             
             for n = 1: length(fraglist)
                 
-                post_sptimes = extract.sptimes(fraglist(n).rawsptimes, fraglist(n).zpt, fraglist(n).zpt + DUR);
-                pre_sptimes = extract.sptimes(fraglist(n).rawsptimes, fraglist(n).zpt-DUR, fraglist(n).zpt );
+                post_sptimes = Extract.sptimes(fraglist(n).rawsptimes, fraglist(n).zpt, fraglist(n).zpt + DUR);
+                pre_sptimes = Extract.sptimes(fraglist(n).rawsptimes, fraglist(n).zpt-DUR, fraglist(n).zpt );
                 post_mfr = length(vertcat(post_sptimes{:}))/DUR;
                 pre_mfr = length(vertcat(pre_sptimes{:}))/DUR; % mfr: mean firing rate
                 fraglist(n).rs = post_mfr - pre_mfr; % response strength
                 
                 
-                tempsum = cal.psth_frag(fraglist(n).plty,fraglist(n).fs,fraglist(n).pltsptimes);
+                tempsum = Cal.psth_frag(fraglist(n).plty,fraglist(n).fs,fraglist(n).pltsptimes);
                 halfsum = sum(tempsum(end/2:end));
                 fullsum = sum(tempsum);
-                maxvalue = max(cal.psth_frag(fraglist(n).plty,fraglist(n).fs,fraglist(n).pltsptimes));
+                maxvalue = max(Cal.psth_frag(fraglist(n).plty,fraglist(n).fs,fraglist(n).pltsptimes));
                 fraglist(n).maxvalue = maxvalue;
                 fraglist(n).halfsum = halfsum;
                 fraglist(n).fullsum = fullsum;
@@ -4084,23 +4120,23 @@ classdef Analysis < handle
             Conlist = a.list(ids);
             
             for n = 1: length(Conlist)
-                sdf = cal.sdf(Conlist(n).pltsptimes,Conlist(n).plty,Conlist(n).fs,0.001,0.004);
+                sdf = Cal.sdf(Conlist(n).pltsptimes,Conlist(n).plty,Conlist(n).fs,0.001,0.004);
                 [maxsdf,maxidx] = max(sdf);
                 
                 percentage_max = maxidx/length(sdf);
                 time_max = length(Conlist(n).plty)/Conlist(n).fs*percentage_max;
                 % check whether the surroding are has spikes in most of the
                 % trials
-                extracted_sptimes = extract.sptimes(Conlist(n).pltsptimes,time_max - 0.15, time_max + 0.15); % 前后 100ms
+                extracted_sptimes = Extract.sptimes(Conlist(n).pltsptimes,time_max - 0.15, time_max + 0.15); % 前后 100ms
                 
                 num_of_not_empty_trials = length(find(~cellfun(@isempty, extracted_sptimes)));
                 
                 mean_maxsdf = maxsdf/length(Conlist(n).pltsptimes);
-                tempsum = cal.psth_frag(Conlist(n).plty,Conlist(n).fs,Conlist(n).pltsptimes);
+                tempsum = Cal.psth_frag(Conlist(n).plty,Conlist(n).fs,Conlist(n).pltsptimes);
                 halfsum = sum(tempsum(end/2:end));
                 fullsum = sum(tempsum);
-                maxvalue = max(cal.sdf(Conlist(n).pltsptimes,Conlist(n).plty,Conlist(n).fs)); % I changed the value here from cal.psth_frag to cal.sdf
-                Conlist(n).sdf = cal.sdf(Conlist(n).pltsptimes,Conlist(n).plty,Conlist(n).fs);
+                maxvalue = max(Cal.sdf(Conlist(n).pltsptimes,Conlist(n).plty,Conlist(n).fs)); % I changed the value here from Cal.psth_frag to Cal.sdf
+                Conlist(n).sdf = Cal.sdf(Conlist(n).pltsptimes,Conlist(n).plty,Conlist(n).fs);
                 Conlist(n).maxvalue = maxvalue;
                 Conlist(n).mean_maxsdf = mean_maxsdf;
                 Conlist(n).halfsum = halfsum;
@@ -4127,7 +4163,7 @@ classdef Analysis < handle
                 end
                 
                 % A rescue
-                slim_extracted_sptimes = extract.sptimes(Conlist(n).pltsptimes,time_max - 0.8, time_max + 0.8);
+                slim_extracted_sptimes = Extract.sptimes(Conlist(n).pltsptimes,time_max - 0.8, time_max + 0.8);
                 slim_trials = length(find(~cellfun(@isempty,slim_extracted_sptimes)));
                 if slim_trials/length(Conlist(n).pltsptimes)> 0.5 % if not 60% of the trails are not empty
                     Conlist(n).label = 1;
@@ -4154,7 +4190,7 @@ classdef Analysis < handle
             deglist = a.list(degids);
             birdids = {};
             for m = 1: length(deglist)
-                birdids{m} = convert.bid(deglist(m).stimuliname);
+                birdids{m} = Convert.bid(deglist(m).stimuliname);
                 ids_norm = find(~cellfun(@isempty, regexp(cellstr({normlist.stimuliname}.'),birdid) ) );
                 if ~isempty(ids_norm)&& length(ids_norm) == 1
                     [deglist(m).sylIni,trump_diffvalue] = Analysis.findIni(normlist(ids_norm).plty,deglist(m).y);
@@ -4174,7 +4210,7 @@ classdef Analysis < handle
             
             norm_bids = {};
             for k = 1:length(normlist)
-                norm_bids{k} = convert.bid(normlist(k).stimuliname);
+                norm_bids{k} = Convert.bid(normlist(k).stimuliname);
             end
             unique_bids = unique(cellstr(norm_bids));
             
@@ -4183,7 +4219,7 @@ classdef Analysis < handle
             for w = 1: length(unique_bids)
                 
                 if ~isempty(degids)
-                    bid_tosearch = convert.bid(unique_bids{w});
+                    bid_tosearch = Convert.bid(unique_bids{w});
                     ids_indeg = find(~cellfun(@isempty, regexp(cellstr({deglist.stimuliname}.'),bid_tosearch) ) );
                     selected_deglist = deglist(ids_indeg);
                     [~,temp_index] = sortrows([selected_deglist.sylIni].');
@@ -4195,7 +4231,7 @@ classdef Analysis < handle
                 Icollect = {};
                 figure('Color','w','Position',[406 675 1378 420]);
                 
-                draw.two(normlist(w).plty,normlist(w).fs,normlist(w).pltsptimes);
+                Draw.two(normlist(w).plty,normlist(w).fs,normlist(w).pltsptimes);
                 xlabel(normlist(w).stimuliname);
                 frame = getframe(gcf);
                 Icollect{1} = frame.cdata;
@@ -4206,7 +4242,7 @@ classdef Analysis < handle
                 if ~isempty(degids)
                     for hh = 1: length(selected_deglist)
                         figure('Color','w','Position',[406 675 1378 420]);
-                        draw.two(selected_deglist(hh).pady,selected_deglist(hh).fs,selected_deglist(hh).padsptimes);
+                        Draw.two(selected_deglist(hh).pady,selected_deglist(hh).fs,selected_deglist(hh).padsptimes);
                         xlabel(selected_deglist(hh).stimuliname);
                         frame = getframe(gcf);
                         Icollect{1 + hh} = frame.cdata;
@@ -4346,7 +4382,7 @@ classdef Analysis < handle
             I = {};
             for idx = 1: length(repla)
                 figure('Color','w','Position',[2031 536 732 281]);
-                draw.three(repla(idx).f0y,repla(idx).fs,repla(idx).f0sptimes); % newer version of threeplot drawing method
+                Draw.three(repla(idx).f0y,repla(idx).fs,repla(idx).f0sptimes); % newer version of threeplot drawing method
                 frame = getframe(gcf);
                 I{idx} = frame.cdata;
                 close(gcf);
@@ -4412,7 +4448,7 @@ classdef Analysis < handle
             I = {};
             for idx = 1: length(deg)
                 figure('Color','w','Position',[2031 536 732 281]);
-                draw.three(deg(idx).f0y,deg(idx).fs,deg(idx).f0sptimes); % newer version of threeplot drawing method
+                Draw.three(deg(idx).f0y,deg(idx).fs,deg(idx).f0sptimes); % newer version of threeplot drawing method
                 frame = getframe(gcf);
                 I{idx} = frame.cdata;
                 close(gcf);
@@ -4481,7 +4517,7 @@ classdef Analysis < handle
             for k = 1: length(normlist)
                 
                 figure('Position',[282 759 1444 272],'Color','w');
-                draw.two(normlist(k).plty,normlist(k).fs,normlist(k).pltsptimes);
+                Draw.two(normlist(k).plty,normlist(k).fs,normlist(k).pltsptimes);
                 frame = getframe(gcf);
                 jihe{1} = frame.cdata;
                 close(gcf);
@@ -4489,7 +4525,7 @@ classdef Analysis < handle
                 for v = 1:length(normlist(k).fragids)
                     localids = normlist(k).fragids(v);
                     figure('Position',[282 759 1444 272],'Color','w');
-                    draw.two(fraglist(localids ).addlagy,fraglist(localids ).fs,fraglist(localids ).addlagsptimes);
+                    Draw.two(fraglist(localids ).addlagy,fraglist(localids ).fs,fraglist(localids ).addlagsptimes);
                     frame = getframe(gcf);
                     jihe{1 + v} = frame.cdata;
                     close(gcf);

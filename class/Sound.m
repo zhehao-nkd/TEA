@@ -103,7 +103,7 @@ classdef Sound < handle
             dbstop if error
             if isempty(s.sapexcel)  % if there is no sapexcel
             [folder,b,c] = fileparts(s.path);
-            xlsfile = extract.filename(folder,'*.xls');
+            xlsfile = Extract.filename(folder,'*.xls');
             xlsfile = xlsfile{1};
             else
             [~,b,c] = fileparts(s.path);
@@ -280,7 +280,7 @@ classdef Sound < handle
     
     
     methods(Static)
-        function files= extract(folder_wav)
+        function files= Extract(folder_wav)
             
             % judge how many  folder_wav exist in the folder_wav dir
             
@@ -289,9 +289,9 @@ classdef Sound < handle
                 S = dir(folder_wav);
                 N = nnz(~ismember({S.name},{'.','..'})&[S.isdir]);
                 if N == 0
-                    files = extract.filename(folder_wav,'*.wav');
+                    files = Extract.filename(folder_wav,'*.wav');
                 elseif N > 0
-                    files = extract.filesAllLevel(folder_wav,'*.wav');
+                    files = Extract.filesAllLevel(folder_wav,'*.wav');
                 end
             elseif (iscell(folder_wav)||strcmp(class(folder_wav),'string'))&&length(folder_wav)>1 % if there are multiple folders as input
                 
@@ -299,9 +299,9 @@ classdef Sound < handle
                     S = dir(folder_wav{k});
                     N = nnz(~ismember({S.name},{'.','..'})&[S.isdir]);
                     if N == 0
-                        files{k} = extract.filename(folder_wav{k},'*.wav');
+                        files{k} = Extract.filename(folder_wav{k},'*.wav');
                     elseif N > 0
-                        files{k} = extract.filesAllLevel(folder_wav{k},'*.wav');
+                        files{k} = Extract.filesAllLevel(folder_wav{k},'*.wav');
                     end
                 end
                 
@@ -311,9 +311,9 @@ classdef Sound < handle
                 S = dir(folder_wav);
                 N = nnz(~ismember({S.name},{'.','..'})&[S.isdir]);
                 if N == 0
-                    files = extract.filename(folder_wav,'*.wav');
+                    files = Extract.filename(folder_wav,'*.wav');
                 elseif N > 0
-                    files = extract.filesAllLevel(folder_wav,'*.wav');
+                    files = Extract.filesAllLevel(folder_wav,'*.wav');
                 end
             end
            

@@ -7,7 +7,7 @@ function autosegmenter_restrict_bout(input_folder,num_of_bouts)
 
     dbstop if error
     
-    files = extract.filename(input_folder,'*.wav');
+    files = Extract.filename(input_folder,'*.wav');
     
     % to create outdir
     outdirname = 'SegData';
@@ -23,7 +23,7 @@ function autosegmenter_restrict_bout(input_folder,num_of_bouts)
     
     % process sumy to get feature for segmentation
     fiy = highpass(sumy, 500, 32000);
-    img = cal.spec(fiy,32000); 
+    img = Cal.spec(fiy,32000); 
     proI = smooth(mean(img),960); % preocessed I
    % figure; plot(proI);
    
@@ -74,7 +74,7 @@ fiy = bandpass(fiy,[900 6000],fs); % preiously 5000
 envy = rescale(smooth(abs(fiy),150)); % amplitide envelope of y
 %powery = downsample(fiy.^2/length(fiy),fs/1000);
 %downy = downsample(abs(fiy),fs/1000);
-I = cal.spec(fiy,fs); % I is the image of the whole song
+I = Cal.spec(fiy,fs); % I is the image of the whole song
 
 % @#%$%*() This is very dangerous step to rescale the I
 

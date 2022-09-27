@@ -47,12 +47,12 @@ end
 
 disp(['Stress is',stress]);
 
-dimscell = num2cell(dims,2); % convert dims matrix to cell
+dimscell = num2cell(dims,2); % Convert dims matrix to cell
 
 
 %%%%%%%%%% another section
 % read exported song
-wavs = extract.filename("C:\Users\Zhehao\Dropbox (OIST)\My_Luscinia\ExportedSong",'*.wav');
+wavs = Extract.filename("C:\Users\Zhehao\Dropbox (OIST)\My_Luscinia\ExportedSong",'*.wav');
 
 for w = 1: length(wavs)
     [song(w).y,song(w).fs] = audioread(wavs{w});
@@ -75,7 +75,7 @@ for e = 1: length(rawinf)
     eleinf(e).y = songy( eleinf(e).initial: eleinf(e).terminal);
     
 end
-% convert sylinf to new sylinf
+% Convert sylinf to new sylinf
 [eleinf.dims] = dimscell{:};
 
 
@@ -84,9 +84,9 @@ nclu = 4; % cluster to 10 clusters
 cluidx = x;
 %cluidx = kmedoids(dims,nclu);
 
-cluidxcell = num2cell(cluidx,2); % convert dims matrix to cell
+cluidxcell = num2cell(cluidx,2); % Convert dims matrix to cell
 
-% convert sylinf to new sylinf
+% Convert sylinf to new sylinf
 [sylinf.cluidx] = cluidxcell{:};
 
 figure('Color','w');

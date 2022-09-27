@@ -20,7 +20,7 @@ for idx = 1: length(candi)
         
         NOT_PRESSED = 1;
         
-        %figure('Position',[1 41 1920 1083]); %draw.spec2(thisn.e{ww}.plty,fs);
+        %figure('Position',[1 41 1920 1083]); %Draw.spec2(thisn.e{ww}.plty,fs);
         thisn.e{ww}.three;
         set(gcf,'units','normalized','outerposition',[0 0 1 1]);
         set(gcf, 'KeyPressFcn', @myKeyPressFcn);

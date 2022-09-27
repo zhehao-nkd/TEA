@@ -107,7 +107,7 @@ classdef DQ
                     data.syllables = data.eleinf;
                 end
                 
-                % Here I need to extract all edges from syledge and eleedge
+                % Here I need to Extract all edges from syledge and eleedge
                 while n_s < length(data.syllables)
                     
                     n_s = n_s + 1;

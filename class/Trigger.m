@@ -1,7 +1,7 @@
-% a class to extract trigger info
+% a class to Extract trigger info
 
 classdef Trigger < handle
-    % To extract and process trigger signals from .plx files
+    % To Extract and process trigger signals from .plx files
     % Trigger signal用来标定stimuli出现的时间
     properties
         equipment
@@ -151,7 +151,7 @@ classdef Trigger < handle
             
         end
         
-        function info = extract(t)
+        function info = Extract(t)
             
             fs = t.raw.ADFrequency; % avoid hard-coding;
             t.trigger_fs = fs;
@@ -438,7 +438,7 @@ classdef Trigger < handle
             t.equipment = 'ZEUS';
             t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
             t.raw.Values = -t.raw.Values;
-            t.info = t.extract; % not digital    
+            t.info = t.Extract; % not digital    
         end
         
         function coreTriggerPlexAna(t,path_plx)
@@ -450,7 +450,7 @@ classdef Trigger < handle
                     PULSE_LOCATION = m;
                     t.equipment = 'PLEXON';
                     t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
-                    t.info = t.extract; % not digital
+                    t.info = t.Extract; % not digital
                     clear plexonfile
                     return
                 end
@@ -490,7 +490,7 @@ classdef Trigger < handle
             end
                 
             dirpath = uigetdir();
-            files = extract.filename(dirpath, '*.wav');
+            files = Extract.filename(dirpath, '*.wav');
             files = flip(files,1);
             %outdir = 'AAAAAA'
             mkdir (outdir);
@@ -555,7 +555,7 @@ classdef Trigger < handle
             end
             
             dirpath = uigetdir();
-            files = extract.filename(dirpath, '*.wav');
+            files = Extract.filename(dirpath, '*.wav');
             files = flip(files,1);
             %outdir = 'AAAAAA'
             mkdir (outdir);
@@ -621,7 +621,7 @@ classdef Trigger < handle
             end
                 
             dirpath = uigetdir();
-            files = extract.filename(dirpath, '*.wav');
+            files = Extract.filename(dirpath, '*.wav');
             files = flip(files,1);
             %outdir = 'AAAAAA'
             mkdir (outdir);
@@ -689,7 +689,7 @@ classdef Trigger < handle
             initial = setinitial-1;
             
             dirpath = uigetdir();
-            files = extract.filename(dirpath, '*.wav');
+            files = Extract.filename(dirpath, '*.wav');
             files = flip(files,1);
             mkdir (outdir);
             

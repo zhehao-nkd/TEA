@@ -1,7 +1,7 @@
 function i = sf_info(i)
-% i=sf_info(i) - extract useful info from file
+% i=sf_info(i) - Extract useful info from file
 
-% Alain de Cheveigné, CNRS/Ircam, 2002.
+% Alain de Cheveignï¿½, CNRS/Ircam, 2002.
 % Copyright (c) 2002 Centre National de la Recherche Scientifique.
 %
 % Permission to use, copy, modify, and distribute this software without 

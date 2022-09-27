@@ -6,7 +6,7 @@
 #include "mwrap.h"
 #include "string.h"
 
-#define MACINTOSH	/* compiler (?) converts \n to \r: convert them back */
+#define MACINTOSH	/* compiler (?) converts \n to \r: Convert them back */
 
 void checkin_matrix(mxArray *m);
 void checkout_matrix(mxArray *m);

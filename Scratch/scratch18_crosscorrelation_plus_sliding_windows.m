@@ -5,7 +5,7 @@ wavpath =  "E:\DiskDBackUp\My_NewStimuli\All_Trimmed\B346A.wav"
 [~,birdid,~] = fileparts(wavpath);
 
 y = bandpass(y,[800 5000],fs);
-img = cal.spec(y,fs);
+img = Cal.spec(y,fs);
 
 threshold = 0.65; % best threshold might be 0.65
 high = 1;
@@ -77,7 +77,7 @@ for w = 1: length(ints2)/2  % fort each syllable, check whether it can be furthe
     syl_initial = ints2(2*w-1);
     
     syl = y( ints2(2*w-1)*fs : ints2(2*w)*fs );
-    sylimg = cal.spec(syl,fs)
+    sylimg = Cal.spec(syl,fs)
     
     
     

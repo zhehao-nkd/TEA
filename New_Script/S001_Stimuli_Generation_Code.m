@@ -2,8 +2,8 @@
 addpath(genpath("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA"))
 
 
-TargetDir_specific_bird = "E:\StimuliSource\O737_twoMotif";
-TARGET_DIR = "E:\SpecialDepot\O737_Special"
+TargetDir_specific_bird = "E:\Stimuli_Synthesis_Source\TheSource\B733_twoMotif";
+TARGET_DIR = "E:\SpecialDepot\B733_Special"
 
 
 %第一步  自动分割
@@ -13,7 +13,7 @@ as.standard;
 
 %第二部 检视 手动分割
 dirpath = "E:\StimuliSource\O737_twoMotif\SegData";%"E:\Stimuli_Source\senatusTwoMotif\SegData";
-segfiles = extract.filename(dirpath,'*.mat');
+segfiles = Extract.filename(dirpath,'*.mat');
 for k = 1: length(segfiles)   
     reviseSeg(segfiles{k});
     uiwait(gcf);
@@ -52,7 +52,7 @@ end
 
 % 第六步 生成 detailed stimulli
 
-% save(sprintf('tutbos_dir\%s.mat', convert.bid(tutbos_dir)),tutbos_dir);
+% save(sprintf('tutbos_dir\%s.mat', Convert.bid(tutbos_dir)),tutbos_dir);
 % % write fromat for coordinate analysis
 for p = 1: length(tutbos_eleinf)
     tutbos_eleinf(p).uniqueid = p;

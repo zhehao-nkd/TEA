@@ -67,7 +67,7 @@ for k = 1: length(neuron.e)
     subplot(2,1,1);
     %%%%% there are something wrong with the eleinf's terminal calculation
     
-    draw.spec(summed,fs);
+    Draw.spec(summed,fs);
     justatemp = unique(cellstr({thiss.songname}.'));
     xlabel(justatemp{1});
     hold on
@@ -90,7 +90,7 @@ for k = 1: length(neuron.e)
     title = ' ';
     
     e = neuron.e{k};
-    draw.raster(e.sptimes,e.y,e.fs,color);  % this draw the raster based on Neuron based data
+    Draw.raster(e.sptimes,e.y,e.fs,color);  % this draw the raster based on Neuron based data
     justanothertemp = e.sound.name;
     xlabel(justanothertemp);
     % ginput, then mark them

@@ -13,8 +13,8 @@ classdef Sultan
         
         function s = Sultan(dirs_of_analysis)
             
-            s.ana_filelist = extract.filename(dirs_of_analysis,'*.mat');
-            s.anas = extract.filename(dirs_of_analysis,'*.mat');
+            s.ana_filelist = Extract.filename(dirs_of_analysis,'*.mat');
+            s.anas = Extract.filename(dirs_of_analysis,'*.mat');
             
         end
         
@@ -22,9 +22,9 @@ classdef Sultan
             
             wb = waitbar(0,'Start processing');
             num_files = length(s.anas);
-            utl.UpdateParforWaitbar(num_files, wb);
+            Utl.UpdateParforWaitbar(num_files, wb);
             D = parallel.pool.DataQueue;
-            afterEach(D, @utl.UpdateParforWaitbar);
+            afterEach(D, @Utl.UpdateParforWaitbar);
             ana_pathes = s.anas;
             errors = struct;
             
@@ -238,9 +238,9 @@ classdef Sultan
             
             dbstop if error
             wb = waitbar(0,'Start processing');
-            utl.UpdateParforWaitbar(length(s.anas), wb);
+            Utl.UpdateParforWaitbar(length(s.anas), wb);
             D = parallel.pool.DataQueue;
-            afterEach(D, @utl.UpdateParforWaitbar);
+            afterEach(D, @Utl.UpdateParforWaitbar);
             
             
             conkeywords = {'B346','B512','B521','B554','B606','G429','G506','G518','G548','G573',...
@@ -366,9 +366,9 @@ classdef Sultan
             
             dbstop if error
             wb = waitbar(0,'Start processing');
-            utl.UpdateParforWaitbar(length(s.anas), wb);
+            Utl.UpdateParforWaitbar(length(s.anas), wb);
             D = parallel.pool.DataQueue;
-            afterEach(D, @utl.UpdateParforWaitbar);
+            afterEach(D, @Utl.UpdateParforWaitbar);
             
             
             acollect = {};
@@ -480,7 +480,7 @@ classdef Sultan
     methods % 作图方法
         
         function drawCONResponse(s)
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             dbstop if error
             con_info = struct;
             counts = 0;
@@ -497,7 +497,7 @@ classdef Sultan
                     % remove TUT and BOS
                     con_ids = setdiff(con_ids,spe_ids);
                     con_match = [con_match{con_ids}].';
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).neuronname = s.neurons{counts}.neuronname;
                     con_info(counts).con_match = con_match;
                     con_info(counts).con_resp = [Conlist(con_ids).label].';
@@ -518,7 +518,7 @@ classdef Sultan
             end
             
             
-            % extract binary resp map
+            % Extract binary resp map
             respmap = [];
             for m = 1: length(con_info)
                 [~,loc] = ismember (common_cons,con_info(m).con_match);
@@ -581,7 +581,7 @@ classdef Sultan
         
         function Deprecated_drawCONSPEResponse(s)
             
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             dbstop if error
             con_info = struct;
             counts = 0;
@@ -606,7 +606,7 @@ classdef Sultan
                     
                     % add TUT-BOS-Fcall-Mcall-WNS (Special)
                     
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).wav_len = A.calMeanWaveLength;
                     con_info(counts).neuronname = A.formated_imagename;
                     con_info(counts).con_match = con_match;
@@ -635,7 +635,7 @@ classdef Sultan
             end
             
             
-            % extract binary con-resp map
+            % Extract binary con-resp map
             respmap = [];
             for m = 1: length(con_info)
                 [~,loc] = ismember (common_cons,con_info(m).con_match);
@@ -645,7 +645,7 @@ classdef Sultan
             end
             
             
-            % extract spe-resp map
+            % Extract spe-resp map
             common_spes = {'TUT','BOS','Fcall','Mcall','WNS'};
             spemap = [];
             for m = 1: length(con_info)
@@ -714,7 +714,7 @@ classdef Sultan
         
         function Deprecated_drawCONOnlyResponse_NSBS(s)
             
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             dbstop if error
             con_info = struct;
             counts = 0;
@@ -739,7 +739,7 @@ classdef Sultan
                     
                     % add TUT-BOS-Fcall-Mcall-WNS (Special)
                     
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).wav_len = this_neuron.calMeanWaveLength;
                     con_info(counts).neuronname = this_neuron.unique_neuronname;
                     con_info(counts).con_match = con_match;
@@ -766,7 +766,7 @@ classdef Sultan
             end
             
             
-            % extract binary con-resp map
+            % Extract binary con-resp map
             respmap = [];
             for m = 1: length(con_info)
                 [~,loc] = ismember (common_cons,con_info(m).con_match);
@@ -776,7 +776,7 @@ classdef Sultan
             end
             
             
-            % extract spe-resp map
+            % Extract spe-resp map
             common_spes = {'TUT','BOS','Fcall','Mcall','WNS'};
             spemap = [];
             for m = 1: length(con_info)
@@ -860,7 +860,7 @@ classdef Sultan
         
         function Deprecated_drawCONSPEResponse_NSBS(s)
             
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             dbstop if error
             con_info = struct;
             counts = 0;
@@ -880,7 +880,7 @@ classdef Sultan
                     
                     % add TUT-BOS-Fcall-Mcall-WNS (Special)
                     
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).wav_len = this_neuron.calMeanWaveLength;
                     con_info(counts).neuronname = this_neuron.unique_neuronname;
                     con_info(counts).con_match = con_match;
@@ -896,7 +896,7 @@ classdef Sultan
                 'CON-G573','CON-G578','CON-O331','CON-O507','CON-O509','CON-O540','CON-Y515','CON-Y606','CON-Y616',...
                 'Fcall','BOS','Het','Mcall','TUT','WNS'};
             
-            % extract binary con-resp map
+            % Extract binary con-resp map
             respmap = [];
             for m = 1: length(con_info)
                 [ism,loc] = ismember(common_cons,[con_info(m).con_match{:}]);
@@ -963,7 +963,7 @@ classdef Sultan
         
         function Deprecated_drawCONSPEResponse_NSBS_markFrag(s)
             
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             dbstop if error
             con_info = struct;
             counts = 0;
@@ -987,7 +987,7 @@ classdef Sultan
                     
                     % add TUT-BOS-Fcall-Mcall-WNS (Special)
                     
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).wav_len = this_neuron.calMeanWaveLength;
                     con_info(counts).neuronname = this_neuron.unique_neuronname;
                     con_info(counts).con_match = con_match;
@@ -1014,7 +1014,7 @@ classdef Sultan
             end
             
             
-            % extract binary con-resp map
+            % Extract binary con-resp map
             respmap = [];
             for m = 1: length(con_info)
                 [~,loc] = ismember (common_cons,con_info(m).con_match);
@@ -1103,7 +1103,7 @@ classdef Sultan
         
         function Deprecated_drawCONSPEResponse_NSBS_FragOnly(s)
             
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             dbstop if error
             con_info = struct;
             counts = 0;
@@ -1127,7 +1127,7 @@ classdef Sultan
                     
                     % add TUT-BOS-Fcall-Mcall-WNS (Special)
                     
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).wav_len = this_neuron.calMeanWaveLength;
                     con_info(counts).neuronname = this_neuron.unique_neuronname;
                     con_info(counts).con_match = con_match;
@@ -1154,7 +1154,7 @@ classdef Sultan
             end
             
             
-            % extract binary con-resp map
+            % Extract binary con-resp map
             respmap = [];
             for m = 1: length(con_info)
                 [~,loc] = ismember (common_cons,con_info(m).con_match);
@@ -1309,7 +1309,7 @@ classdef Sultan
         
         function allSongallNeurons_FolderOrder(s) % 顺序是源文件夹的顺序
             
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             dbstop if error
             
             %             memData = memory;
@@ -1470,10 +1470,10 @@ classdef Sultan
             wb = waitbar(0,'Start processing');
             num_files = length(s.anas);
             % Dummy call to nUpdateWaitbar to initialise
-            utl.UpdateParforWaitbar(num_files, wb);
+            Utl.UpdateParforWaitbar(num_files, wb);
             % Go back to simply calling nUpdateWaitbar with the data
             D = parallel.pool.DataQueue;
-            afterEach(D, @utl.UpdateParforWaitbar);
+            afterEach(D, @Utl.UpdateParforWaitbar);
             
             conallneurons = struct;
             ana_pathes = s.anas;
@@ -1519,7 +1519,7 @@ classdef Sultan
         
         function conallneurons = How_Do_NCM_Neurons_respond_to_Songs(s)
             
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             dbstop if error
             
             conkeywords = {'B346','B512','B521','B554','B606','G429','G506','G518','G548','G573',...
@@ -1530,10 +1530,10 @@ classdef Sultan
             wb = waitbar(0,'Start processing');
             num_files = length(s.anas);
             % Dummy call to nUpdateWaitbar to initialise
-            utl.UpdateParforWaitbar(num_files, wb);
+            Utl.UpdateParforWaitbar(num_files, wb);
             % Go back to simply calling nUpdateWaitbar with the data
             D = parallel.pool.DataQueue;
-            afterEach(D, @utl.UpdateParforWaitbar);
+            afterEach(D, @Utl.UpdateParforWaitbar);
             
             conallneurons = struct;
             ana_pathes = s.anas;
@@ -1665,9 +1665,9 @@ classdef Sultan
                 for kk = 1: length(conallneurons(k).figcon)
                     Icollect{k,kk} = conallneurons(k).figcon{kk};
                     if new_con_respmap(k,kk) ==1
-                        Icollect{k,kk} = convert.colorEdge(Icollect{k,kk},'r'); %NS neurons-red
+                        Icollect{k,kk} = Convert.colorEdge(Icollect{k,kk},'r'); %NS neurons-red
                     elseif new_con_respmap(k,kk) ==2
-                        Icollect{k,kk} = convert.colorEdge(Icollect{k,kk},'b');
+                        Icollect{k,kk} = Convert.colorEdge(Icollect{k,kk},'b');
                     end
                 end
             end
@@ -1677,9 +1677,9 @@ classdef Sultan
                 for kk = 1: length(conallneurons(k).figspe)
                     specollect{k,kk} = conallneurons(k).figspe{kk};
                     if new_spe_respmap(k,kk) ==1
-                        specollect{k,kk} = convert.colorEdge(specollect{k,kk},'r'); %NS neurons-red
+                        specollect{k,kk} = Convert.colorEdge(specollect{k,kk},'r'); %NS neurons-red
                     elseif new_spe_respmap(k,kk) ==2
-                        specollect{k,kk} = convert.colorEdge(specollect{k,kk},'b');
+                        specollect{k,kk} = Convert.colorEdge(specollect{k,kk},'b');
                     end
                 end
             end
@@ -1738,7 +1738,7 @@ classdef Sultan
               
         function arrangeThreePlotsByRespMapAndDraw_IncludeSPE(s)
             
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             dbstop if error
             con_info = struct;
             counts = 0;
@@ -1757,7 +1757,7 @@ classdef Sultan
                     spe_ids = find(~cellfun(@isempty,spe_match));
                     spe_match = [spe_match{spe_ids}].';
                     
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).wav_len = this_neuron.calMeanWaveLength;
                     con_info(counts).neuronname = this_neuron.unique_neuronname;
                     con_info(counts).con_match = con_match;
@@ -1774,7 +1774,7 @@ classdef Sultan
                 'CON-G573','CON-G578','CON-O331','CON-O507','CON-O509','CON-O540','CON-Y515','CON-Y606','CON-Y616',...
                 'Fcall','BOS','Het','Mcall','TUT','WNS'};
             
-            % extract binary con-resp map
+            % Extract binary con-resp map
             respmap = [];
             for m = 1: length(con_info)
                 [ism,loc] = ismember(common_cons,[con_info(m).con_match{:}]);
@@ -1837,7 +1837,7 @@ classdef Sultan
                 new_N_id =  new_rowids(z);  % reorder the neurons ranked by numnber of eliciting songs
                 
                 [e_songs,slist_songs] = s.anas{new_N_id}.neurons{s.anas{new_N_id}.song_id}.onlyExtractEphysOfSongs;
-                converted_names = cellfun(@convert.bid,{slist_songs.name}.','UniformOutput',0);
+                converted_names = cellfun(@Convert.bid,{slist_songs.name}.','UniformOutput',0);
                 [~,order_for_three_plots] = ismember(new_cnames, converted_names);
                 
                 
@@ -1855,7 +1855,7 @@ classdef Sultan
                     e_songs{order_for_three_plots(hh)}.three;
                     subplot(3,1,3);
                     xlabel(sprintf('Neuron:%s---Stimuli:%s',s.anas{new_N_id}.unique_neuronname,...
-                        convert.bid(e_songs{order_for_three_plots(hh)}.sound.name)),'Interpreter', 'none');
+                        Convert.bid(e_songs{order_for_three_plots(hh)}.sound.name)),'Interpreter', 'none');
                     
                     switch(new_respmap(z,hh)) % change figure color based on resp and Neuron type
                         case 0
@@ -1915,7 +1915,7 @@ classdef Sultan
         
         function arrangeThreePlotsByRespMapAndDraw_NoWaveform(s)
             
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             dbstop if error
             con_info = struct;
             counts = 0;
@@ -1937,7 +1937,7 @@ classdef Sultan
                     con_ids = setdiff(con_ids,spe_ids);
                     con_match = [con_match{con_ids}].';
                     
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).wav_len = this_neuron.calMeanWaveLength;
                     con_info(counts).neuronname = this_neuron.unique_neuronname;
                     con_info(counts).con_match = con_match;
@@ -1961,7 +1961,7 @@ classdef Sultan
                 end
             end
             
-            % extract binary con-resp map
+            % Extract binary con-resp map
             respmap = [];
             for m = 1: length(con_info)
                 [~,loc] = ismember (common_cons,con_info(m).con_match);
@@ -1971,7 +1971,7 @@ classdef Sultan
             end
             
             
-            % extract spe-resp map
+            % Extract spe-resp map
             common_spes = {'TUT','BOS','Fcall','Mcall','WNS'};
             spemap = [];
             for m = 1: length(con_info)
@@ -2047,7 +2047,7 @@ classdef Sultan
                 new_N_id =  new_rowids(z);  % reorder the neurons ranked by numnber of eliciting songs
                 
                 [e_songs,slist_songs] = s.anas{new_N_id}.neurons{s.anas{new_N_id}.song_id}.onlyExtractEphysOfSongs;
-                converted_names = cellfun(@convert.bid,{slist_songs.name}.','UniformOutput',0);
+                converted_names = cellfun(@Convert.bid,{slist_songs.name}.','UniformOutput',0);
                 [~,order_for_three_plots] = ismember(new_cnames, converted_names);
                 
                 
@@ -2055,7 +2055,7 @@ classdef Sultan
                     e_songs{order_for_three_plots(hh)}.three;
                     subplot(3,1,3);
                     xlabel(sprintf('Neuron:%s---Stimuli:%s',s.anas{new_N_id}.unique_neuronname,...
-                        convert.bid(e_songs{order_for_three_plots(hh)}.sound.name)),'Interpreter', 'none');
+                        Convert.bid(e_songs{order_for_three_plots(hh)}.sound.name)),'Interpreter', 'none');
                     
                     switch(new_respmap(z,hh)) % change figure color based on resp and Neuron type
                         case 0
@@ -2119,7 +2119,7 @@ classdef Sultan
                     con_ids = setdiff(con_ids,spe_ids);
                     con_match = [con_match{con_ids}].';
                     % add TUT-BOS-Fcall-Mcall-WNS (Special)
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).wav_len = this_neuron.calMeanWaveLength;
                     con_info(counts).neuronname = this_neuron.unique_neuronname;
                     con_info(counts).con_match = con_match;
@@ -2139,7 +2139,7 @@ classdef Sultan
                     
                 end
             end
-            % extract binary con-resp map
+            % Extract binary con-resp map
             respmap = [];
             for m = 1: length(con_info)
                 [~,loc] = ismember (common_cons,con_info(m).con_match);
@@ -2227,7 +2227,7 @@ classdef Sultan
                     
                     % add TUT-BOS-Fcall-Mcall-WNS (Special)
                     
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).wav_len = this_neuron.calMeanWaveLength;
                     con_info(counts).neuronname = this_neuron.unique_neuronname;
                     con_info(counts).con_match = con_match;
@@ -2254,7 +2254,7 @@ classdef Sultan
             end
             
             
-            % extract binary con-resp map
+            % Extract binary con-resp map
             respmap = [];
             for m = 1: length(con_info)
                 [~,loc] = ismember (common_cons,con_info(m).con_match);
@@ -2387,7 +2387,7 @@ classdef Sultan
             num_id = [];
             for k = 1: length(temp)
                 guodu = split(temp{k},'_');
-                num_id(k) = str2num(guodu{2}); % extract num id from BSinfo
+                num_id(k) = str2num(guodu{2}); % Extract num id from BSinfo
             end
             
             converted_id = {};
@@ -2461,9 +2461,9 @@ classdef Sultan
             tic
             
             wb = waitbar(0,'Start processing');
-            utl.UpdateParforWaitbar(length(s.anas), wb);
+            Utl.UpdateParforWaitbar(length(s.anas), wb);
             D = parallel.pool.DataQueue;
-            afterEach(D, @utl.UpdateParforWaitbar);
+            afterEach(D, @Utl.UpdateParforWaitbar);
             
             neuroninf = struct;
             parfor k = 1:length(s.anas)
@@ -2529,7 +2529,7 @@ classdef Sultan
             dbstop if error
             
             wb = waitbar(0,'Start processing');
-            utl.UpdateParforWaitbar(length(s.anas), wb);
+            Utl.UpdateParforWaitbar(length(s.anas), wb);
             D = parallel.pool.DataQueue;
             afterEach(D, @nUpdateWaitbar);
             
@@ -2559,7 +2559,7 @@ classdef Sultan
             % feature distance
             dbstop if error
             wb = waitbar(0,'Start processing');
-            utl.UpdateParforWaitbar(length(s.anas), wb);
+            Utl.UpdateParforWaitbar(length(s.anas), wb);
             D = parallel.pool.DataQueue;
             afterEach(D, @nUpdateWaitbar);
             cdf_collect = struct;
@@ -2666,7 +2666,7 @@ classdef Sultan
     methods(Static) % 新的静态方法
         
         function writeCONSPEFig(matdir)
-            anafiles = extract.filename(matdir,'*.mat');
+            anafiles = Extract.filename(matdir,'*.mat');
             songkeywords = {'B346','B512','B521','B554','B606','G429','G506','G518','G548','G573',...
                 'G578','O331','O507','O509','O540','Y515','Y606','Y616','BOS','TUT','Fcall','Mcall','Het','WNS'};
             
@@ -2789,9 +2789,9 @@ classdef Sultan
             dbstop if error
             
             wb = waitbar(0,'Start processing');
-            utl.UpdateParforWaitbar(length(neuroninf), wb);
+            Utl.UpdateParforWaitbar(length(neuroninf), wb);
             D = parallel.pool.DataQueue;
-            afterEach(D, @utl.UpdateParforWaitbar);
+            afterEach(D, @Utl.UpdateParforWaitbar);
             
             for k = 54:length(neuroninf) % bug in 45,53
                 loaded = load(neuroninf(k).path);
@@ -2822,7 +2822,7 @@ classdef Sultan
         
         function Deprecated_arrangeThreePlotsByRespMapAndDraw(s)
             
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             dbstop if error
             con_info = struct;
             counts = 0;
@@ -2847,7 +2847,7 @@ classdef Sultan
                     
                     % add TUT-BOS-Fcall-Mcall-WNS (Special)
                     
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).wav_len = this_neuron.calMeanWaveLength;
                     con_info(counts).neuronname = A.formated_imagename;
                     con_info(counts).con_match = con_match;
@@ -2873,7 +2873,7 @@ classdef Sultan
                 end
             end
             
-            % extract binary con-resp map
+            % Extract binary con-resp map
             respmap = [];
             parfor m = 1: length(con_info)
                 [~,loc] = ismember (common_cons,con_info(m).con_match);
@@ -2883,7 +2883,7 @@ classdef Sultan
             end
             
             
-            % extract spe-resp map
+            % Extract spe-resp map
             common_spes = {'TUT','BOS','Fcall','Mcall','WNS'};
             spemap = [];
             for m = 1: length(con_info)
@@ -2959,7 +2959,7 @@ classdef Sultan
                 loaded = load(s.anas{new_N_id});
                 AA = loaded.A;
                 [e_songs,slist_songs] = AA.neurons{AA.song_id}.onlyExtractEphysOfSongs;
-                converted_names = cellfun(@convert.bid,{slist_songs.name}.','UniformOutput',0);
+                converted_names = cellfun(@Convert.bid,{slist_songs.name}.','UniformOutput',0);
                 [~,order_for_three_plots] = ismember(new_cnames, cellstr(converted_names));
                 
                 
@@ -2967,7 +2967,7 @@ classdef Sultan
                     e_songs{order_for_three_plots(hh)}.pltthree;
                     subplot(3,1,3);
                     xlabel(sprintf('Neuron:%s---Stimuli:%s',AA.formated_imagename,...
-                        convert.bid(e_songs{order_for_three_plots(hh)}.sound.name)),'Interpreter', 'none');
+                        Convert.bid(e_songs{order_for_three_plots(hh)}.sound.name)),'Interpreter', 'none');
                     
                     switch(new_respmap(z,hh)) % change figure color based on resp and Neuron type
                         case 0
@@ -3060,7 +3060,7 @@ classdef Sultan
             num_id = [];
             for k = 1: length(temp)
                 guodu = split(temp{k},'_');
-                num_id(k) = str2num(guodu{2}); % extract num id from BSinfo
+                num_id(k) = str2num(guodu{2}); % Extract num id from BSinfo
             end
             
             converted_id = {};
@@ -3089,7 +3089,7 @@ classdef Sultan
         
         function all_info = getNeuronSuoYouDeInfo(anas_dir,path_classifyfile)
             dbstop if error
-            ANAfiles = extract.filename(anas_dir,'*.mat');
+            ANAfiles = Extract.filename(anas_dir,'*.mat');
             
             for k = 1: length(ANAfiles)
                 load(ANAfiles{k});
@@ -3165,7 +3165,7 @@ classdef Sultan
         function runAllAnalysis(anas_dir)
             dbstop if error
             
-            ANAfiles = extract.filename(anas_dir,'*.mat');
+            ANAfiles = Extract.filename(anas_dir,'*.mat');
             
             wuhu = waitbar(0,'Start processing');
             
@@ -3196,7 +3196,7 @@ classdef Sultan
         function runAllAnalysis_SimpleVersion(anas_dir)
             dbstop if error
             
-            ANAfiles = extract.filename(anas_dir,'*.mat');
+            ANAfiles = Extract.filename(anas_dir,'*.mat');
             
             wuhu = waitbar(0,'Start processing');
             
@@ -3227,7 +3227,7 @@ classdef Sultan
         function pickNeurons_then_drawFragOrderArranged(anas_dir,unique_ids)
             dbstop if error
             
-            ANAfiles = extract.filename(anas_dir,'*.mat');
+            ANAfiles = Extract.filename(anas_dir,'*.mat');
             selected_ids = [];
             for m = 1: length(unique_ids)
                 selected_ids(m) = find(~cellfun(@isempty, regexp({ANAfiles{:}}.',num2str(unique_ids(m)))));
@@ -3245,7 +3245,7 @@ classdef Sultan
         function drawReplaPlots_forEachAnalysis(analysis_dir)
             dbstop if error
             
-            ANAfiles = extract.filename(analysis_dir,'*.mat');
+            ANAfiles = Extract.filename(analysis_dir,'*.mat');
             wuhu = waitbar(0,'Start processing');
             for m = 1 : length(ANAfiles)
                 load(ANAfiles{m});
@@ -3261,7 +3261,7 @@ classdef Sultan
                 dirpath = './';
             end
             
-            anapath = extract.filename(dirpath,'*.mat');
+            anapath = Extract.filename(dirpath,'*.mat');
             
             for k = 1:length(anapath)
                 load(anapath{k});
@@ -3272,8 +3272,8 @@ classdef Sultan
         
         function applySameFunctionForAll(dirpath)
             dbstop if error
-            %ana_files = extract.filename("C:\Users\Zhehao\Desktop\FragRespAs_fromCDRF",'*.mat')
-            ana_files = extract.filename(dirpath,'*.mat');
+            %ana_files = Extract.filename("C:\Users\Zhehao\Desktop\FragRespAs_fromCDRF",'*.mat')
+            ana_files = Extract.filename(dirpath,'*.mat');
             wb = waitbar(0,'Start processing');
             for k = 1: length(ana_files)
                 

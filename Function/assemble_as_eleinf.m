@@ -20,7 +20,7 @@ subdirs(to_delete) = []; % delete those does not match the id threshold
 
 for r = 1:length(subdirs)  % par-for can be used here
    
-    matfiles = extract.filename(sprintf('%s\\%s',subdirs{r},matFolder),'*.mat'); % matFolder is the folder containing segdata.mat,
+    matfiles = Extract.filename(sprintf('%s\\%s',subdirs{r},matFolder),'*.mat'); % matFolder is the folder containing segdata.mat,
     % which can be SegData or SylData or EleData
     
     song_collect = {};
@@ -44,7 +44,7 @@ for r = 1:length(subdirs)  % par-for can be used here
          end
          
          fiy = bandpass(loaded.segdata.rawy,[900 6000],fs); %% It is very important that here the y should be fiy !!!!! filtered y instead of the raw y
-         I = cal.spec(fiy,fs);
+         I = Cal.spec(fiy,fs);
          
         initials = alledges(1:2:end);
         terminals = alledges(2:2:end);

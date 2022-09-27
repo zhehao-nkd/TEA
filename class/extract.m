@@ -1,4 +1,4 @@
-classdef extract
+classdef Extract
     %EXTRACT Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -25,7 +25,7 @@ classdef extract
             
         end
         
-        function filenames = filename(dirpath,extension) % extract filename only in dirpath folder, but not in target folder
+        function filenames = filename(dirpath,extension) % Extract filename only in dirpath folder, but not in target folder
             
             switch class(dirpath)
                 
@@ -137,11 +137,11 @@ classdef extract
             
         end
         
-        function list = all(path) % extract everything files/folders in the path folder
+        function list = all(path) % Extract everything files/folders in the path folder
             list = dir(fullfile(path,'**/*.*'));
         end
         
-        function folders = foldersAllLevel(path) % extract everything files/folders in the path folder
+        function folders = foldersAllLevel(path) % Extract everything files/folders in the path folder
             list = dir(fullfile(path,'**/*.*'));
             
             dirids = find([list.isdir].');
@@ -167,11 +167,11 @@ classdef extract
         
         function files = filesAllLevel(path, extension)
             
-            folders = extract.foldersAllLevel(path);
+            folders = Extract.foldersAllLevel(path);
             
             for k = 1:length(folders)
                 
-                subdir_files{k} = extract.filename(folders{k},extension);
+                subdir_files{k} = Extract.filename(folders{k},extension);
             end
             
             files = vertcat(subdir_files{:});
@@ -180,13 +180,13 @@ classdef extract
         
         function info = fileDirRelation(path,extension) % Available for two layers of folders
             
-            subfolders = extract.folder(path).';
+            subfolders = Extract.folder(path).';
             
             info = struct;
             ids = 0;
             for k = 1:length(subfolders)
                
-                wavfiles = extract.filename(subfolders{k},extension);
+                wavfiles = Extract.filename(subfolders{k},extension);
                 
                 for p = 1: length(wavfiles)
                      ids = ids + 1;
@@ -235,7 +235,7 @@ classdef extract
                 new_sptimes{k} = local_spt(ids);
             end
             
-            new_sptimes = convert.sptimesOnset2Zero(new_sptimes, initial);
+            new_sptimes = Convert.sptimesOnset2Zero(new_sptimes, initial);
             
         end
         

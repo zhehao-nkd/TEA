@@ -10,7 +10,7 @@ pathlog = 'C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA\Input\BirdlogMatlab.xlsx
 ISOCELL = extractIso(pathlog, pathlist);
 
 
-folders = extract.folder('Y:\Yazaki-SugiyamaU\Bird-song');
+folders = Extract.folder('Y:\Yazaki-SugiyamaU\Bird-song');
 folders = rmBadfolder(ISOCELL, folders); % remove isolated birds, and wierd things
 folders = folders(randperm(numel(folders))); % random order
 %load('folders.mat');
@@ -34,7 +34,7 @@ for n = 1141: length(folders)
     
     % for each folder
     [~,inputid,~] = fileparts(folders{n});
-    filenames = extract.filename(folders{1,n},'*.wav');
+    filenames = Extract.filename(folders{1,n},'*.wav');
     %filenames = extractAdult(filenames,inputid,pathlist);
     %filenames = restrictCentroid(filenames); % restricit filenames by its centroid
     filenames = filenames(randperm(numel(filenames))); % randomize filenames

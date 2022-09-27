@@ -27,7 +27,7 @@
  * add warning about not using full-read
  * add ability to read a list of record numbers
  * read a list (or range) of datablock numbers? (probably not necessary)
- * in class wrapper, convert a list of timestamps into a list of record numbers
+ * in class wrapper, Convert a list of timestamps into a list of record numbers
  * add a check for timestamps that are not in order (within a particular channel)
  * help and version should output the revision number to the output, not just text.
  * change fullread to false when reading data, so that the header can't be used again.

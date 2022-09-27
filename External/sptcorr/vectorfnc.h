@@ -144,7 +144,7 @@ void vectorPermute(vector *v, long* perm);
  * Convert a vector to an mxArray.
  *
  * @param v
- *      The vector to convert to an mxArray.
+ *      The vector to Convert to an mxArray.
  * @return An mxArray object which represent a MATLAB numeric rowvector with the
  *      same dimension and values as the given vector.
  */

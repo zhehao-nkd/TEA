@@ -1,7 +1,7 @@
 
 function output_dir = bucketMover(goodfolder)
 
-rawfiles = extract.filename(goodfolder,'*.wav');
+rawfiles = Extract.filename(goodfolder,'*.wav');
 rawfiles = rawfiles(randperm(length(rawfiles))); % shuffling the order of the sound files
 
 num_f2c = 6; % 6 files to copy for each folder
@@ -59,7 +59,7 @@ while length(ids) < num_f2c
         
         fiy = highpass(abs(y),500,fs); %  to remove the noise generataed by low-ftrquency noise
         ampenv = envelope(fiy,320*9,'rms'); % amplitude envelope
-        %figure; plot(ampenv); figure; draw.spec(y,fs);% 1ms-32
+        %figure; plot(ampenv); figure; Draw.spec(y,fs);% 1ms-32
         
         sigs = find(ampenv>ampthres); % sigs means significant signal points
         sigy = fiy(sigs);
@@ -114,7 +114,7 @@ while length(ids) < num_f2c
     
     ids = find(filejudge);
     fprintf('目前收获了_%u_首Song',length(ids));
-    % extract 5 files from each folder
+    % Extract 5 files from each folder
     if length(ids) > num_f2c
         ids = ids(1: num_f2c );
     else
@@ -147,8 +147,8 @@ parfor w = 1: length(picked_files)
     fiy = highpass(abs(y),500,fs);
     ampenv = envelope(fiy,320*9,'rms'); % amplitude envelope
     sigs = find(ampenv>ampthres); % sigs means significant signal points
-    %spec{w}  = imresize(cal.spec(fiy(sigs),fs),[257 2000]);
-   % rawspec{w}  = imresize(cal.spec(fiy,fs),[257 2000]) ;
+    %spec{w}  = imresize(Cal.spec(fiy(sigs),fs),[257 2000]);
+   % rawspec{w}  = imresize(Cal.spec(fiy,fs),[257 2000]) ;
 end
 
 % draw the spec of the rest of the signals

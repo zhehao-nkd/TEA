@@ -24,7 +24,7 @@ classdef SAT_hijack < handle % there will be only one copy of each SAT_sound
 % global SAT_params; % make SAT parameters available to manipulate from workspace
 % mySound=SAT_sound('example 1.wav',0); % process a zebra finch song, display nothing 
 % SAT_params.segmentation_feature=SAT_params.pitch; % use pitch for segmentation
-% SAT_params.segmentation_threshold = 3000; % we want to extract high pitch syllables 
+% SAT_params.segmentation_threshold = 3000; % we want to Extract high pitch syllables 
 % SAT_params.segmentation_threshold_direction=1; % 1=more than, -1=less than 
 % SAT_params.segmentation_smooth=20; % smooth the pitch a little bit
 % mySound.segment; % segment the sound according to pitch
@@ -178,7 +178,7 @@ classdef SAT_hijack < handle % there will be only one copy of each SAT_sound
                    P.hop=SAT_params.FFT_step; %       :      samples - interval between estimates (default: 32)
                    R=yin(obj.sound.wave,P);
                    obj.features.pitch=R.f0(1:obj.num_slices); 
-                   obj.features.pitch= 440*(2.^obj.features.pitch); % convert from octave to Hz
+                   obj.features.pitch= 440*(2.^obj.features.pitch); % Convert from octave to Hz
                    obj.features.aperiodicity=R.ap(1:obj.num_slices);
                    obj.features.amplitude=sqrt(R.pwr(1:obj.num_slices)); 
                    obj.features.amplitude = log10(obj.features.amplitude + 1) * 10 ; 

@@ -47,9 +47,9 @@ end
 
 disp(['Stress is',stress]);
 
-dimscell = num2cell(dims,2); % convert dims matrix to cell
+dimscell = num2cell(dims,2); % Convert dims matrix to cell
 
-% convert sylinf to new sylinf
+% Convert sylinf to new sylinf
 [sylinf.dims] = dimscell{:};
 
 
@@ -57,9 +57,9 @@ dimscell = num2cell(dims,2); % convert dims matrix to cell
 nclu = 10; % cluster to 10 clusters
 cluidx = kmedoids(dims,nclu);
 
-cluidxcell = num2cell(cluidx,2); % convert dims matrix to cell
+cluidxcell = num2cell(cluidx,2); % Convert dims matrix to cell
 
-% convert sylinf to new sylinf
+% Convert sylinf to new sylinf
 [sylinf.cluidx] = cluidxcell{:};
 
 figure('Color','w');

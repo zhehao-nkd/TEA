@@ -3,7 +3,7 @@ dbstop if error
 
 
 wavfolder = "C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\20210611selected20songs";
-folders = extract.filename(wavfolder,'*.wav');
+folders = Extract.filename(wavfolder,'*.wav');
 syl = struct;
 num = 0;
     
@@ -16,13 +16,13 @@ for nnn = 1: length(folders)
     [~,name,~] = fileparts(folders{nnn});
     [y,fs] = audioread(folders{nnn});
     
-    figure('Position',[1 41 1920 1083]); draw.spec2(y,fs);
+    figure('Position',[1 41 1920 1083]); Draw.spec2(y,fs);
     
     roi = drawline;
     temp = roi.Position(:,1);
     motify = y(temp(1)*fs:temp(2)*fs);
     close(gcf)
-    figure('Position',[1 41 1920 1083]); draw.spec2(motify,fs); colormap('jet')
+    figure('Position',[1 41 1920 1083]); Draw.spec2(motify,fs); colormap('jet')
     
     set(gcf, 'KeyPressFcn', @myKeyPressFcn);
     

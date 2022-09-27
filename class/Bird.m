@@ -7,11 +7,11 @@ classdef Bird < handle
         folders
         selected
     end
-    % from the targeted folder to extract syllables
+    % from the targeted folder to Extract syllables
     methods
         
         function b = Bird(~) % dirpath must be a char
-            b.folders = extract.folder(convertStringsToChars("Z:\Yazaki-SugiyamaU\Bird-song"));
+            b.folders = Extract.folder(convertStringsToChars("Z:\Yazaki-SugiyamaU\Bird-song"));
             
             if isequal(exist('isoid.mat','file'),2) % 2 means it's a file.
                 display('iso exists!');
@@ -57,7 +57,7 @@ classdef Bird < handle
                     fprintf('Current Folder:%s, %n out of %n ',b.selected{n}, n, length(b.selected));
                     % for each folder
                     [~,inputid,~] = fileparts(b.selected{n});
-                    filenames = extract.filename(b.selected{1,n},'*.wav');
+                    filenames = Extract.filename(b.selected{1,n},'*.wav');
                     %filenames = extractAdult(filenames,inputid,pathlist);
                     %filenames = restrictCentroid(filenames); % restricit filenames by its centroid
                     filenames = filenames(randperm(numel(filenames))); % randomize filenames
@@ -86,7 +86,7 @@ classdef Bird < handle
                     
                     syllables =  horzcat(collect{:});
                     parts = strsplit(b.selected{n},'\');
-                    save(sprintf('%s/%s.mat',outdir,convert.bid(parts{end})),'syllables');
+                    save(sprintf('%s/%s.mat',outdir,Convert.bid(parts{end})),'syllables');
                     
                     
                     
@@ -108,7 +108,7 @@ classdef Bird < handle
     methods(Static) % 是Bird的重要底层方法，通常被其他方法调用而不会被直接使用
         
         function b = rmbad(input_dirs) % iso is a cell consists of isolated id
-            input_dirs = extract.folder("Z:\Yazaki-SugiyamaU\Bird-song").';
+            input_dirs = Extract.folder("Z:\Yazaki-SugiyamaU\Bird-song").';
             
             numVars = 5;
             varNames = {'BirdID','Hatchdate','Gender','father','mother','isolate'} ;
@@ -180,9 +180,9 @@ classdef Bird < handle
             
         end
         
-        function isofromlog = extriso(pathlog, pathlist) % extract id of isolated bird
+        function isofromlog = extriso(pathlog, pathlist) % Extract id of isolated bird
             dbstop if error
-            % a function for extract id of isolated birds from birdlog
+            % a function for Extract id of isolated birds from birdlog
             
             pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx"
       
@@ -278,7 +278,7 @@ classdef Bird < handle
                 'VariableTypes',varTypes,...
                 'DataRange', dataStartLoc);
             
-            bucketDriveletter = utl.bucketletter;
+            bucketDriveletter = Utl.bucketletter;
             
             birdlist = readtable(strcat(bucketDriveletter,...
                 ":\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx"),opts);
@@ -288,15 +288,15 @@ classdef Bird < handle
     
     methods(Static) % 有实用价值的方法
         function songstruct = birdsong(~)
-            % To extract the information about each song recording folders from bucket
+            % To Extract the information about each song recording folders from bucket
            
             dbstop if error
             %Step-1 read birdlist
-            bucketDriveletter = utl.bucketletter;
+            bucketDriveletter = Utl.bucketletter;
             birdlist = Bird.readBirdlist;
             sourcedir = strcat(bucketDriveletter,":\Yazaki-SugiyamaU\Bird-song");
 
-            folders = cellstr(extract.folder(sourcedir).');
+            folders = cellstr(Extract.folder(sourcedir).');
             songstruct =  struct('path',folders,'raw_foldernames',[],'bnames',[],'exception',0,...
                 'gender',[],'hatchdate',0,'juvsong',0,'adultsong',0,'comment',[]  );
             getDateString = @(x) regexp(x,'\d{4}-\d{2}-\d{2}','match');
@@ -306,11 +306,12 @@ classdef Bird < handle
             parfor k = 1: length(folders)
                 
                 try
-                    songstruct(k).raw_foldernames = utl.fileparts(folders{k});
-                    songstruct(k).bnames = convert.bid(songstruct(k).raw_foldernames);
+                    songstruct(k).raw_foldernames = Utl.fileparts(folders{k});
+                    songstruct(k).bnames = Convert.bid(songstruct(k).raw_foldernames);
                     corresp_index = find(~cellfun(@isempty, regexp([birdlist.BirdID].',songstruct(k).bnames)));
                     songstruct(k).hatchdate = birdlist.Hatchdate(corresp_index);
                     songstruct(k).gender = birdlist.Gender(corresp_index);
+                    songstruct(k).father = birdlist.father(corresp_index);
                     corresp_log = readtable(fullfile(...
                         folders{k},sprintf('%s.log',songstruct(k).raw_foldernames)));
                     trick = corresp_log.Var3([1,2,height(corresp_log)-2,height(corresp_log)-1]); % trick to reduce time
@@ -418,7 +419,7 @@ classdef Bird < handle
             
             %remove those do not have recording folders
             fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
-            folders = cellstr(extract.folder(fdir).');
+            folders = cellstr(Extract.folder(fdir).');
             %tokens = regexp(folders,'(?<color>[OBRGY][A-Za-z]+)(?<number>\d{3})','tokens');
             
             for b = 1: length(shortlist)
@@ -489,7 +490,7 @@ classdef Bird < handle
             
             fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
             
-            folders = cellstr(extract.folder(fdir).');
+            folders = cellstr(Extract.folder(fdir).');
             folernames = {};
             for k = 1: length(folders)
                 temp = split(folders{k},'\');
@@ -520,16 +521,21 @@ classdef Bird < handle
         
         function answer = adultsongexist(input_birdname)
             
-            % Step-1 : extract hacth date from the BIRDLIST
+            % Step-1 : Extract hacth date from the BIRDLIST
             birdlist = Bird.readBirdlist;
             corresp_list_index = find(~cellfun(@isempty, regexp([birdlist.BirdID].',input_birdname)));
             hatchdate = birdlist.Hatchdate(corresp_list_index);
+            if strcmp(hatchdate,'-')
+                answer = 1; % If dir not found, return
+                disp('Purchased!!!');
+                return
+            end
             thehatchdate = datetime(hatchdate,'InputFormat','yyMMdd');
             
             % Step-2 :get the earlist and the latest recording date from buckect dir storage
             fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
-            folders = cellstr(extract.folder(fdir).');     
-            corresp_bnames = cellfun( @convert.bid, utl.fileparts(folders),'Uni',0);  
+            folders = cellstr(Extract.folder(fdir).');     
+            corresp_bnames = cellfun( @Convert.bid, Utl.fileparts(folders),'Uni',0);  
             corresp_dir_index = find(~cellfun(@isempty, regexp(input_birdname,corresp_bnames)));
             
             if isempty(corresp_dir_index)
@@ -540,7 +546,12 @@ classdef Bird < handle
             
             getDateString = @(x) regexp(x,'\d{4}-\d{2}-\d{2}','match');
             datestring2Date = @(x) datetime(x,'InputFormat','yyyy-MM-dd');
-            logpath =  extract.filename(folders{corresp_dir_index },'*.log');
+            if length(corresp_dir_index) > 1
+                path_len = cellfun(@length, {folders{corresp_dir_index }}.');
+                [~,min_ids] = min(path_len);
+                corresp_dir_index = corresp_dir_index(min_ids);
+            end
+            logpath =  Extract.filename(folders{corresp_dir_index },'*.log');
             corresp_log = readtable(logpath{1});
             trick = corresp_log.Var3([1,2,height(corresp_log)-2,height(corresp_log)-1]); % trick to reduce time
             filedates = cellfun (@(x) datestring2Date(getDateString(char(x))),trick,'Uni',0);

@@ -4,11 +4,11 @@ TARGET_my_stimuli_folder =
 TARGET_DIR = "E:\G656_ELE";
 mkdir(TARGET_DIR);ConDirs = fromWavFindParentFolder("C:\Users\Zhehao\Dropbox (OIST)\My_Stimuli\G656@11162021","E:\Stimuli_Source\allBirdsSong");
  wav_dir = "E:\Stimuli_Source\allBirdsSong";
- subdirs = extract.folder(wav_dir);
+ subdirs = Extract.folder(wav_dir);
  [Lia,locb] = ismember([ConDirs{:}].',[subdirs{:}].');
 
 
-%(((^~^))) Convert segdata files into eleinf, and then convert eleinf into
+%(((^~^))) Convert segdata files into eleinf, and then Convert eleinf into
 noncon_dir_whole_collection = subdirs(setdiff([1: length(subdirs)],locb(locb>0)).');
 % as = autoseg("E:\Stimuli_Source\allBirdsSong");
 % as.standard(5);

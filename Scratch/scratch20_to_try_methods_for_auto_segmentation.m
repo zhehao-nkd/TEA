@@ -2,7 +2,7 @@
 [y,fs] = audioread(wavpath);
 
 y = bandpass(y,[500,6000],32000);
-img = cal.spec(y,fs);
+img = Cal.spec(y,fs);
 
 svpca = []
 sld1 = 50;% sliding window size in ms

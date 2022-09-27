@@ -34,19 +34,19 @@ colormap(newrespmat)
 % select those sample neurons
 load('O709_P15_SPKC14_1.mat')
  %twoForPoster
-draw.twoForPoster(A.list(12).plty,A.list(12).pltsptimes,32000);
+Draw.twoForPoster(A.list(12).plty,A.list(12).pltsptimes,32000);
 
 load('Y675_Z24_SPKC15_1.mat')
  %twoForPoster
-draw.twoForPoster(A.list(1).plty,A.list(1).pltsptimes,32000);
+Draw.twoForPoster(A.list(1).plty,A.list(1).pltsptimes,32000);
 
 load('R693_Z12_SPKC13_1.mat')
  %twoForPoster
-draw.twoForPoster(A.list(15).plty,A.list(15).pltsptimes,32000);
+Draw.twoForPoster(A.list(15).plty,A.list(15).pltsptimes,32000);
 
 load('R677_Z03_SPKC09_1.mat')
  %twoForPoster
-draw.twoForPoster(A.list(10).plty,A.list(10).pltsptimes,32000);
+Draw.twoForPoster(A.list(10).plty,A.list(10).pltsptimes,32000);
 
 
 % 筛选NSBS neurons

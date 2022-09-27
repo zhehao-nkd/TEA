@@ -4,7 +4,7 @@
 dirpath = "C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA\Function\SegData";
 
 
-files = extract.filename(dirpath,'*.mat')
+files = Extract.filename(dirpath,'*.mat')
 
 
 for w = 1: length(files)

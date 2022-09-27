@@ -1,4 +1,4 @@
-classdef draw
+classdef Draw
     
     methods(Static)
         
@@ -16,14 +16,14 @@ classdef draw
             figure('Position',[305 596 1413 492])
             ax = tight_subplot(2, 1, 0.05, 0.16, 0.07);
             axes(ax(1));
-            draw.spec(y,fs);
+            Draw.spec(y,fs);
             yticks([0 8000 16000])
             yticklabels({'0','8k','16k'})
             ylabel('F(Hz)')
             xticklabels('');
             set(gca,'FontSize',18)
             axes(ax(2));
-            draw.rasterBeta(sptimes,y,fs,1.4,'k')
+            Draw.rasterBeta(sptimes,y,fs,1.4,'k')
              yticks([0 5 10])
             yticklabels({'0','5','10'})
             xticks([0 1 2 3 4 5 6 7])
@@ -381,7 +381,7 @@ classdef draw
         function appsdf(ax, y, fs, sptimes)
             resolution = 0.001;
             gausswidth = 0.02;
-            msdf = cal.sdf(sptimes,y,fs,resolution,gausswidth);
+            msdf = Cal.sdf(sptimes,y,fs,resolution,gausswidth);
             %figure; 
             x = linspace(0,length(msdf),length(msdf))*resolution;
             plot(ax,x,msdf);
@@ -481,7 +481,7 @@ classdef draw
         function sdf(y, fs, sptimes)
             resolution = 0.001;
             gausswidth = 0.02;
-            msdf = cal.sdf(sptimes,y,fs,resolution,gausswidth);
+            msdf = Cal.sdf(sptimes,y,fs,resolution,gausswidth);
             %figure; 
             x = linspace(0,length(msdf),length(msdf))*resolution;
             plot(x,msdf);
@@ -494,42 +494,42 @@ classdef draw
         
         function three(y,fs,sptimes)
             subplot(3,1,1)
-            draw.spec(y,fs);
+            Draw.spec(y,fs);
             subplot(3,1,2)
-            draw.raster(sptimes, y, fs);
+            Draw.raster(sptimes, y, fs);
             subplot(3,1,3)
-            draw.sdf(y,fs,sptimes);
+            Draw.sdf(y,fs,sptimes);
         end
         
         function two(y,fs,sptimes)
             subplot(2,1,1)
-            draw.spec(y,fs);
+            Draw.spec(y,fs);
             subplot(2,1,2)
-            draw.raster(sptimes, y, fs,5);
+            Draw.raster(sptimes, y, fs,5);
          end
          
         function four(y,fs,sptimes)
             
             subplot(4,1,1)
-            draw.oscillo(y,fs);
+            Draw.oscillo(y,fs);
             subplot(4,1,2)
-            draw.spec6(y,fs);
+            Draw.spec6(y,fs);
             subplot(4,1,3)
-            draw.raster(sptimes, y, fs, 'k');
+            Draw.raster(sptimes, y, fs, 'k');
             subplot(4,1,4)
-            draw.sdf(y,fs,sptimes);
+            Draw.sdf(y,fs,sptimes);
             
         end
 
         function srps(y,fs,sptimes) % spec-raster-psth-sdf
              subplot(4,1,1)
-            draw.spec(y,fs);
+            Draw.spec(y,fs);
             subplot(4,1,2)
-            draw.raster(sptimes, y, fs, 3,'k');
+            Draw.raster(sptimes, y, fs, 3,'k');
             subplot(4,1,3)
-            draw.psth(sptimes);
+            Draw.psth(sptimes);
             subplot(4,1,4)
-            draw.sdf(y,fs,sptimes);
+            Draw.sdf(y,fs,sptimes);
         end
 
         function sixplot

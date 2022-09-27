@@ -12,11 +12,11 @@ addpath(genpath("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA"))
 
  Archon.batch_createSinChFolder(noSinChan_neuroster); % merge single-channel folder
  
- unilist = autoSap.script_autorun_scp(neuroster); % % 通过sap提取特征
- autoSap.write_sapscreenshot(unilist);
+ unilist = AutoSap.script_autorun_scp(neuroster); % % 通过sap提取特征
+ AutoSap.write_sapscreenshot(unilist);
  
- autoSap.export_infofiles(1); % 导出sap信息
- autoSap.export_datafiles(1);
+ AutoSap.export_infofiles(1); % 导出sap信息
+ AutoSap.export_datafiles(1);
  
 
 error_neuroster = Archon.batch_genAnalysis(neuroster); % run Analysis for all neuroster

@@ -1,5 +1,5 @@
 % functions to calculate sth.
-classdef cal
+classdef Cal
     %UNTITLED Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -11,7 +11,7 @@ classdef cal
         
         function diffs = allPairDiff(array)
             array = array(:)'; %强制转为行向量
-            % cal all pairwise diffs between members of an array
+            % Cal all pairwise diffs between members of an array
             part1 = nchoosek(array,2);
             part2 = part1;
             part2(:,[2,1]) = part2(:,[1,2]);
@@ -178,7 +178,7 @@ classdef cal
         
         function image = img(y,fs)
             figure('visible','off')
-            draw.spec(y,fs);
+            Draw.spec(y,fs);
             f = getframe(gcf);
             [rgb,~] = frame2im(f);
             image = rgb2gray(rgb);
@@ -271,7 +271,7 @@ classdef cal
         
         function [num,detail] = sylnum(dir) % calculate in total how many syllables in a song folder
             num = 0;
-            files = extract.filename (dir, '*.wav');
+            files = Extract.filename (dir, '*.wav');
             for idx = 1: length(files)
                 [yall,fs] = audioread(files{idx}); 
                 y = yall(:,2); % yall means 2-channels y
@@ -312,7 +312,7 @@ classdef cal
         
         function timeStimuliPresentation(dirpath)
             
-            filenames = extract.filename(dirpath);
+            filenames = Extract.filename(dirpath);
         end
     end
     

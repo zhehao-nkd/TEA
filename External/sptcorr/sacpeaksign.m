@@ -7,7 +7,7 @@ function [p, BinCenters, Ppdf, Pcdf, Nco] = SACPeakSign(Spt, CorBinWidth, NTrial
 %     Spt:        cell array of spike time vectors; each vector is "repetition"
 %     BinWidth:   width of coincidence window
 %     Ntrials:    # simulations in Monte Carlo simulation (see below)
-%     Dur:        duration of analysis window used to extract the spikes (see Anwin).
+%     Dur:        duration of analysis window used to Extract the spikes (see Anwin).
 %   Spt, BinWidth, and Dur must be specified in the same time units (e.g. ms).
 %
 %   Let Nco be the count of lag-zero coincidences from spike train collection Spt. 

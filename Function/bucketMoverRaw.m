@@ -3,7 +3,7 @@ function output_dir = bucketMover(goodfolder)
 
 
 
-rawfiles = extract.filename(goodfolder,'*.wav');
+rawfiles = Extract.filename(goodfolder,'*.wav');
 rawfiles = rawfiles(randperm(length(rawfiles))); % shuffling the order of the sound files
 if length(rawfiles) > 400
     files = rawfiles(1:400); % restrict the number of files
@@ -62,8 +62,8 @@ for n = 1: length(files)
     
     
     % calculate spec and rawspec
-    spec{n}  = cal.spec(fiy(sigs),fs);
-    rawspec{n}  = cal.spec(fiy,fs);
+    spec{n}  = Cal.spec(fiy(sigs),fs);
+    rawspec{n}  = Cal.spec(fiy,fs);
     
     %     % Others
     %     crest{n} = spectralCrest(fiy(sigs),fs);
@@ -135,7 +135,7 @@ end
 %     end
 %
 
-% extract 5 files from each folder
+% Extract 5 files from each folder
 if length(ids) > 5
     restricted_ids = ids(1: 5);
 else

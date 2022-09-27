@@ -17,7 +17,7 @@ classdef autoseg
             % plot the mean and sd
             dbstop if error
             
-            names = extract.filename(dirpath,'*.wav')
+            names = Extract.filename(dirpath,'*.wav')
             a.names = names;
             
         end
@@ -64,7 +64,7 @@ classdef autoseg
             dbstop if error    
             input_folder = a.dirpath;
             names = a.names;
-            files = extract.filename(input_folder,'*.wav');
+            files = Extract.filename(input_folder,'*.wav');
             outdirname = 'SegData';% to create outdir
             outdir = sprintf('%s\\%s',input_folder,outdirname);
             mkdir(outdir);
@@ -79,7 +79,7 @@ classdef autoseg
                 
                 %通过低精度的分割找到大概有多少个bout，从而 restrict bout
                 fiy = highpass(sumy, 500, 32000);
-                img = cal.spec(fiy,32000);
+                img = Cal.spec(fiy,32000);
                
                 %img = flip(log(1+abs(S)));
             
@@ -165,7 +165,7 @@ classdef autoseg
             % plot the mean and sd
             dbstop if error
             
-            names = extract.filename(dirpath,'*.wav')
+            names = Extract.filename(dirpath,'*.wav')
             outdirname = 'SegData';
             outdir = sprintf('%s\\%s',dirpath,outdirname);
             mkdir(outdir);
@@ -207,7 +207,7 @@ classdef autoseg
             % plot the mean and sd
             dbstop if error
             
-            names = extract.filename(dirpath,'*.wav')
+            names = Extract.filename(dirpath,'*.wav')
             outdirname = 'SegData';
             outdir = sprintf('%s\\%s',dirpath,outdirname);
             mkdir(outdir);
@@ -246,7 +246,7 @@ classdef autoseg
             dbstop if error
             input_folder = a.dirpath;
             names = a.names;
-            files = extract.filename(input_folder,'*.wav');
+            files = Extract.filename(input_folder,'*.wav');
             % to create outdir
             outdirname = 'SegData';
             outdir = sprintf('%s\\%s',input_folder,outdirname);
@@ -262,7 +262,7 @@ classdef autoseg
                 
                 % process sumy to get feature for segmentation
                 fiy = highpass(sumy, 500, 32000);
-                img = cal.spec(fiy,32000);
+                img = Cal.spec(fiy,32000);
                 proI = smooth(mean(img),960); % preocessed I
                 % figure; plot(proI);
 
@@ -408,7 +408,7 @@ classdef autoseg
             envy = rescale(smooth(abs(fiy),150)); % amplitude envelope of y
             %powery = downsample(fiy.^2/length(fiy),fs/1000);
             %downy = downsample(abs(fiy),fs/1000);
-            I = cal.spec(fiy,fs); % I is the image of the whole song   
+            I = Cal.spec(fiy,fs); % I is the image of the whole song   
             [S,F,T] = spectrogram(2*fiy,hamming(512),512-round(fs/1e3),512,fs);
             % if the input stimuli is white noise
             if regexp(birdid,'WNS|wns|Wns')
@@ -1012,7 +1012,7 @@ classdef autoseg
                 end
                 
                  fiy = highpass(song_eleinf(w).y, 500, 32000);
-                 I = cal.spec(fiy,fs); 
+                 I = Cal.spec(fiy,fs); 
                  song_eleinf(w).fragI = imresize(I,[257,50]);
                 
                 song_eleinf(w).fs = fs;
@@ -1058,7 +1058,7 @@ classdef autoseg
                 end
                 
                  fiy = highpass(song_eleinf(w).y, 500, 32000);
-                 I = cal.spec(fiy,fs); 
+                 I = Cal.spec(fiy,fs); 
                  song_eleinf(w).fragI = imresize(I,[257,50]);
                 
                 song_eleinf(w).fs = fs;

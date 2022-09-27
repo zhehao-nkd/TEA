@@ -41,7 +41,7 @@ classdef Consul < handle
         end
         
         function drawCONResponse(c)
-            % extract binarized neuron's responses to CONs
+            % Extract binarized neuron's responses to CONs
             dbstop if error
             con_info = struct;
             counts = 0;
@@ -58,7 +58,7 @@ classdef Consul < handle
                     % remove TUT and BOS
                     con_ids = setdiff(con_ids,spe_ids);
                     con_match = [con_match{con_ids}].';
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).neuronname = c.neurons{counts}.neuronname;
                     con_info(counts).con_match = con_match;
                     con_info(counts).con_resp = [Conlist(con_ids).label].';
@@ -79,7 +79,7 @@ classdef Consul < handle
             end
             
                  
-            % extract binary resp map
+            % Extract binary resp map
             respmap = [];
             for m = 1: length(con_info)
                 [~,loc] = ismember (common_cons,con_info(m).con_match);
@@ -151,7 +151,7 @@ classdef Consul < handle
         
         function drawCONSPEResponse(c)
             
-             % extract binarized neuron's responses to CONs
+             % Extract binarized neuron's responses to CONs
             dbstop if error
             con_info = struct;
             counts = 0;
@@ -174,7 +174,7 @@ classdef Consul < handle
                    
                     % add TUT-BOS-Fcall-Mcall-WNS (Special)
                     
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).wav_len = c.neurons{k}.calMeanWaveLength;
                     con_info(counts).neuronname = c.neurons{k}.neuronname;
                     con_info(counts).con_match = con_match;
@@ -203,7 +203,7 @@ classdef Consul < handle
             end
             
                  
-            % extract binary con-resp map
+            % Extract binary con-resp map
             respmap = [];
             for m = 1: length(con_info)
                 [~,loc] = ismember (common_cons,con_info(m).con_match);
@@ -213,7 +213,7 @@ classdef Consul < handle
             end
             
             
-            % extract spe-resp map
+            % Extract spe-resp map
             common_spes = {'TUT','BOS','Fcall','Mcall','WNS'};
             spemap = [];
             for m = 1: length(con_info)
@@ -282,7 +282,7 @@ classdef Consul < handle
         
         function drawCONSPEResponse_NSBS(c)
             
-             % extract binarized neuron's responses to CONs
+             % Extract binarized neuron's responses to CONs
             dbstop if error
             con_info = struct;
             counts = 0;
@@ -305,7 +305,7 @@ classdef Consul < handle
                    
                     % add TUT-BOS-Fcall-Mcall-WNS (Special)
                     
-                    % extract con_label
+                    % Extract con_label
                     con_info(counts).wav_len = c.neurons{k}.calMeanWaveLength;
                     con_info(counts).neuronname = c.neurons{k}.neuronname;
                     con_info(counts).con_match = con_match;
@@ -334,7 +334,7 @@ classdef Consul < handle
             end
             
                  
-            % extract binary con-resp map
+            % Extract binary con-resp map
             respmap = [];
             for m = 1: length(con_info)
                 [~,loc] = ismember (common_cons,con_info(m).con_match);
@@ -344,7 +344,7 @@ classdef Consul < handle
             end
             
             
-            % extract spe-resp map
+            % Extract spe-resp map
             common_spes = {'TUT','BOS','Fcall','Mcall','WNS'};
             spemap = [];
             for m = 1: length(con_info)

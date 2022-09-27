@@ -191,7 +191,7 @@ classdef stimuli < handle
 %             figure
 %             for mm = 1: length(ans)
 %                 subplot(9,1,mm);
-%                draw.spec( ans(mm).y, 32000);
+%                Draw.spec( ans(mm).y, 32000);
 %             end
             
         end
@@ -503,7 +503,7 @@ classdef stimuli < handle
                        summedele = vertcat(thiscatego(jj), samesongeles);
                 
                         summedy = stimuli.assemble(summedele);
-                       % figure; draw.spec(summedy,32000)
+                       % figure; Draw.spec(summedy,32000)
                        audiowrite(sprintf('%s/catego-%u-%s-%u-before-%s-%u-%s.wav',dir,catego,thiscatego(jj).songname,thiscatego(jj).fragid,targetsongname,targetfragid,num2str(gap)),summedy,s.fs);
                 
                    % audiowrite(sprintf('%s/catego-%u-%s-%s.wav',dir,catego,string(unique(cellstr({thiscatego(jj).songname}.'))),num2str(gap)),summedy,s.fs);
@@ -570,7 +570,7 @@ classdef stimuli < handle
               
             dbstop if error
             
-            % extract the samesong_eleinf after the target_index ele
+            % Extract the samesong_eleinf after the target_index ele
             mergedeleinf = s.prepro;
             [local_eleinf,local_id] = stimuli.samesong(mergedeleinf,number);
             targetsongname = mergedeleinf(number).songname;
@@ -601,7 +601,7 @@ classdef stimuli < handle
                 
                 to_be_summed = replace_eleinf(h).y;
                 summedy = [to_be_summed;collect];
-                % figure; draw.spec(summedy,32000)
+                % figure; Draw.spec(summedy,32000)
                 audiowrite(sprintf('%s/Repla-%s-%02u-before-%s-%02u-gapis-%s.wav',dir,replace_eleinf(h).songname,replace_eleinf(h).fragid,targetsongname,local_id,num2str(mergedeleinf(number).pregap)),summedy,s.fs);
                 
             end
@@ -621,7 +621,7 @@ classdef stimuli < handle
             % s.prepro include filtering of eleinf
             global_eleinf = s.prepro; 
             
-            % extract the inf for song contain number_indexed element
+            % Extract the inf for song contain number_indexed element
             this_songname = global_eleinf(global_id).songname;
             this_song_ids =  find(~cellfun(@isempty, regexp(this_songname,[global_eleinf.songname].'))) ;
             local_eleinf = global_eleinf(this_song_ids);
@@ -733,7 +733,7 @@ classdef stimuli < handle
         
         function writeFrag_far_from_senatus(s)% function to generat indivcidual element song with the new method
             
-            % extract senatus_eleinf
+            % Extract senatus_eleinf
             global_eleinf = s.prepro;  
             senatus_ids = find(~cellfun(@isempty,regexp([global_eleinf(:).songname].','CON'))); % ids of CON/SPE songs in all_eleinf
             senatus_eleinf = global_eleinf(senatus_ids);
@@ -767,7 +767,7 @@ classdef stimuli < handle
             
             dbstop if error
             
-            % extract the samesong_eleinf after the target_index ele
+            % Extract the samesong_eleinf after the target_index ele
             mergedeleinf = s.prepro;
             [local_eleinf,local_id] = stimuli.samesong(mergedeleinf,global_id);
             targetsongname = mergedeleinf(global_id).songname;
@@ -794,7 +794,7 @@ classdef stimuli < handle
                 rp_id = nearby_ids(h);  % mergedeleinf id for replacement
                 to_be_summed = mergedeleinf(rp_id).y;
                 summedy = [to_be_summed;collect];
-                % figure; draw.spec(summedy,32000)
+                % figure; Draw.spec(summedy,32000)
                 audiowrite(sprintf('%s/Repla-%s-%02u-before-%s-%02u-gapis-%s.wav',dir,mergedeleinf(rp_id).songname,mergedeleinf(rp_id).fragid,targetsongname,local_id,num2str(mergedeleinf(global_id).pregap)),summedy,s.fs);
            
             end
@@ -810,7 +810,7 @@ classdef stimuli < handle
         function writeRepla_near_from_senatus(s,number)
             dbstop if error
             
-            % extract the samesong_eleinf after the target_index ele
+            % Extract the samesong_eleinf after the target_index ele
             mergedeleinf = s.prepro;
             [local_eleinf,local_id] = stimuli.samesong(mergedeleinf,number);
             targetsongname = mergedeleinf(number).songname;
@@ -819,7 +819,7 @@ classdef stimuli < handle
             end
             local_eleinf(1:local_id-1) = [];
             
-            % extract senatus
+            % Extract senatus
             senatus_ids = find(~cellfun(@isempty,regexp([mergedeleinf(:).songname].','CON|SPE'))); % ids of CON/SPE songs in all_eleinf
             senatus_eleinf = mergedeleinf(senatus_ids);
             
@@ -841,7 +841,7 @@ classdef stimuli < handle
                 rp_id = nearby_ids(h);  % mergedeleinf id for replacement
                 to_be_summed = senatus_eleinf(rp_id).y;
                 summedy = [to_be_summed;collect];
-                % figure; draw.spec(summedy,32000)
+                % figure; Draw.spec(summedy,32000)
                 audiowrite(sprintf('%s/Repla-%s-%02u-before-%s-%02u-gapis-%s.wav',dir,mergedeleinf(rp_id).songname,mergedeleinf(rp_id).fragid,targetsongname,local_id,num2str(mergedeleinf(number).pregap)),summedy,s.fs);
                 
             end
@@ -857,7 +857,7 @@ classdef stimuli < handle
         function writeRepla_far_from_all(s,number) % function to generate catego_replace song with the new method
             dbstop if error
             
-            % extract the samesong_eleinf after the target_index ele
+            % Extract the samesong_eleinf after the target_index ele
             mergedeleinf = s.prepro;
             [local_eleinf,local_id] = stimuli.samesong(mergedeleinf,number);
             targetsongname = mergedeleinf(number).songname;
@@ -885,7 +885,7 @@ classdef stimuli < handle
                 rp_id = far_ids(h);  % mergedeleinf id for replacement
                 to_be_summed = mergedeleinf(rp_id).y;
                 summedy = [to_be_summed;collect];
-                % figure; draw.spec(summedy,32000)
+                % figure; Draw.spec(summedy,32000)
                 audiowrite(sprintf('%s/Repla-%s-%02u-before-%s-%02u-gapis-%s.wav',dir,mergedeleinf(rp_id).songname,mergedeleinf(rp_id).fragid,targetsongname,local_id,num2str(mergedeleinf(number).pregap)),summedy,s.fs);
                 
             end
@@ -901,7 +901,7 @@ classdef stimuli < handle
         function writeRepla_far_from_senatus(s,number)
              dbstop if error
             
-            % extract the samesong_eleinf after the target_index ele
+            % Extract the samesong_eleinf after the target_index ele
             mergedeleinf = s.prepro;
             [local_eleinf,local_id] = stimuli.samesong(mergedeleinf,number);
             targetsongname = mergedeleinf(number).songname;
@@ -910,7 +910,7 @@ classdef stimuli < handle
             end
             local_eleinf(1:local_id-1) = [];
             
-            % extract senatus
+            % Extract senatus
             senatus_ids = find(~cellfun(@isempty,regexp([mergedeleinf(:).songname].','CON'))); % ids of CON/SPE songs in all_eleinf
             senatus_eleinf = mergedeleinf(senatus_ids);
             
@@ -941,7 +941,7 @@ classdef stimuli < handle
                 rp_id = far_ids(h);  % mergedeleinf id for replacement
                 to_be_summed = senatus_eleinf(rp_id).y;
                 summedy = [to_be_summed;collect];
-                % figure; draw.spec(summedy,32000)
+                % figure; Draw.spec(summedy,32000)
                 audiowrite(sprintf('%s/Repla-%s-%02u-before-%s-%02u-gapis-%s.wav',dir,senatus_eleinf(rp_id).songname,senatus_eleinf(rp_id).fragid,targetsongname,local_id,num2str(senatus_eleinf(local_id).pregap)),summedy,s.fs);
             end
             
@@ -1008,7 +1008,7 @@ classdef stimuli < handle
             
             for w = 1: 100
                 
-                img = cal.spec(mergedeleinf(w).y,mergedeleinf(w).fs);
+                img = Cal.spec(mergedeleinf(w).y,mergedeleinf(w).fs);
                 [alpha,beta] = size(img);
                 img = imresize(flip(img,1),[alpha,beta*2]);
                 
@@ -1300,7 +1300,7 @@ classdef stimuli < handle
             
             for w = 1: 100
               
-                img = cal.spec(mergedeleinf(w).y,mergedeleinf(w).fs);
+                img = Cal.spec(mergedeleinf(w).y,mergedeleinf(w).fs);
                  [alpha,beta] = size(img);
                   img = imresize(flip(img,1),[alpha,beta*2]);
 
@@ -1404,7 +1404,7 @@ classdef stimuli < handle
                 to_be_summed = mergedeleinf(rp_id).y;
                 
                 summedy = [to_be_summed;collect];
-                % figure; draw.spec(summedy,32000)
+                % figure; Draw.spec(summedy,32000)
                 audiowrite(sprintf('%s/catego-%s-%u-before-%s-%u-%s.wav',dir,mergedeleinf(rp_id).songname,mergedeleinf(rp_id).fragid,targetsongname,targetfragid,num2str(gap)),summedy,s.fs);
                 
                 % audiowrite(sprintf('%s/catego-%u-%s-%s.wav',dir,catego,string(unique(cellstr({thiscatego(jj).songname}.'))),num2str(gap)),summedy,s.fs);
@@ -1445,7 +1445,7 @@ classdef stimuli < handle
         function with_sampling_writeRepla_near_from_all(s,global_id,edge_converted_from_senatus,mode)
             dbstop if error
             
-            % extract the samesong_eleinf after(include) the target_index ele
+            % Extract the samesong_eleinf after(include) the target_index ele
             mergedeleinf = s.prepro;
             [local_eleinf,local_id] = stimuli.samesong(mergedeleinf,global_id);
             targetsongname = mergedeleinf(global_id).songname;
@@ -1504,7 +1504,7 @@ classdef stimuli < handle
                 rp_id = sampled_nearby_ids (h);  % mergedeleinf id for replacement
                 to_be_summed = mergedeleinf(rp_id).y;
                 summedy = [to_be_summed;collect];
-                % figure; draw.spec(summedy,32000)
+                % figure; Draw.spec(summedy,32000)
                 audiowrite(sprintf('%s/Repla-%s-%02u-before-%s-%02u-gapis-%s.wav',dir,mergedeleinf(rp_id).songname,mergedeleinf(rp_id).fragid,targetsongname,local_id,num2str(mergedeleinf(global_id).pregap)),summedy,s.fs);
                 
             end
@@ -1703,7 +1703,7 @@ classdef stimuli < handle
             if exist('fs','var')
                 figure
                 subplot(3, 1, 1);
-                draw.spec(y,fs);
+                Draw.spec(y,fs);
                 grid on;
                 
                 subplot(3, 1, 2);
@@ -1714,7 +1714,7 @@ classdef stimuli < handle
                 
                 % Plot fading signal.
                 subplot(3, 1, 3);
-                draw.spec(yFaded,fs);
+                Draw.spec(yFaded,fs);
                 %title('Faded Waveform', 'FontSize', fontSize);
                 grid on;
                 % audiowrite('2.wav' ,y,Fs);
@@ -1735,7 +1735,7 @@ classdef stimuli < handle
             if exist('fs','var')
                 figure
                 subplot(3, 1, 1);
-                draw.spec(y,fs);
+                Draw.spec(y,fs);
                 grid on;
                 
                 subplot(3, 1, 2);
@@ -1746,7 +1746,7 @@ classdef stimuli < handle
                 
                 % Plot fading signal.
                 subplot(3, 1, 3);
-                draw.spec(yFaded,fs);
+                Draw.spec(yFaded,fs);
                 %title('Faded Waveform', 'FontSize', fontSize);
                 grid on;
                 % audiowrite('2.wav' ,y,Fs);
@@ -1755,9 +1755,9 @@ classdef stimuli < handle
             
         end
         
-        function sylinf = syl(dir) % this function convert songs from a folder into a single syl struct
+        function sylinf = syl(dir) % this function Convert songs from a folder into a single syl struct
             
-            names = extract.filename(dir,'*.wav');
+            names = Extract.filename(dir,'*.wav');
             sylinf = struct;
             count = 0;
             for idx = 1: length(names)
@@ -2025,8 +2025,8 @@ classdef stimuli < handle
             sharedDepot = "G:\SharedDepot";
             specialDepot = "G:\SpecialDepot";
             
-            temp1 = extract.foldersAllLevel(sharedDepot).';
-            temp2 = extract.foldersAllLevel(specialDepot).';
+            temp1 = Extract.foldersAllLevel(sharedDepot).';
+            temp2 = Extract.foldersAllLevel(specialDepot).';
             temp = vertcat(temp1,temp2);
             
             eachfragids = find(~cellfun(@isempty,regexp(cellstr(temp),'EachSongFrags')));
@@ -2037,7 +2037,7 @@ classdef stimuli < handle
                 dirids = find(~cellfun(@isempty, regexp(fragsfolders,conresp_siginfo(k).songid)));
                 contain_frag_dir = fragsfolders(dirids);
                 
-                files_in_dir = extract.filename(contain_frag_dir,'*.wav');
+                files_in_dir = Extract.filename(contain_frag_dir,'*.wav');
                 regexpression =  sprintf('%s\\S+%02u',conresp_siginfo(k).songid,conresp_siginfo(k).fragid);
                 
                 fileid = find(~cellfun(@isempty, regexp(files_in_dir,regexpression)));
@@ -2115,7 +2115,7 @@ classdef stimuli < handle
          function finalelen = timeSpent(dir_path)
              % calculate the time it takes for stimuli presentation
              
-             files = extract.filename(dir_path,'*.wav');
+             files = Extract.filename(dir_path,'*.wav');
              
              len = [];
              for k = 1: length(files)
@@ -2138,7 +2138,7 @@ classdef stimuli < handle
              outdir = './Copied';   mkdir(outdir);
              STIMULI_DEPOT = "E:\Stimuli_Synthesis_Source\StimuliDepot";
              
-             files = extract.filesAllLevel(STIMULI_DEPOT,'*.wav');
+             files = Extract.filesAllLevel(STIMULI_DEPOT,'*.wav');
              for k = 1:length(varargin)
                  selected_filenames = {files{find(~cellfun(@isempty, regexp(files,varargin{k})))}}.';
                  for kk = 1:length(selected_filenames)

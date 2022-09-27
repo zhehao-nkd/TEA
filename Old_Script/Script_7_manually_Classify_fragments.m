@@ -1,7 +1,7 @@
 sap = table2struct(readtable("C:\Users\Zhehao\Dropbox (OIST)\My_Luscinia\sap1276.xls"));
 
 wavfolder = 'Z:\Yazaki-SugiyamaU\Zhehao\My_Stimuli\G606\G606-1st';
-wavs = extract.filename(wavfolder,'*.wav');
+wavs = Extract.filename(wavfolder,'*.wav');
 
 nn = 0;
 

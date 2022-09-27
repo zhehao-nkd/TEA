@@ -43,7 +43,7 @@ set(h,'Color','cyan','Enable','on','ActionPostCallback',{@brushedDataCallback,sy
         for i=1:size(h)
             idxraw=logical(get(h(i),'BrushData'));
             sidx = find(idxraw);
-            % convert to logical
+            % Convert to logical
             % x=get(h(i),'XData');
             %sx=x(find(idx));
             
@@ -56,13 +56,13 @@ set(h,'Color','cyan','Enable','on','ActionPostCallback',{@brushedDataCallback,sy
         for kk = 1: length(sidx)
             figure;
             subplot(3,1,1);
-            draw.spec(sylinf(sidx(kk)).yplt,32000);
+            Draw.spec(sylinf(sidx(kk)).yplt,32000);
             sound(sylinf(sidx(kk)).y,32000);
             title(sprintf('%s-%u',sylinf(sidx(kk)).sound,sylinf(sidx(kk)).number));
             subplot(3,1,2);
-            draw.raster(sylinf(sidx(kk)).sptimesplt,sylinf(sidx(kk)).yplt,32000,'k');
+            Draw.raster(sylinf(sidx(kk)).sptimesplt,sylinf(sidx(kk)).yplt,32000,'k');
             subplot(3,1,3);
-            draw.sdf(sylinf(sidx(kk)).yplt, 32000, sylinf(sidx(kk)).sptimesplt);
+            Draw.sdf(sylinf(sidx(kk)).yplt, 32000, sylinf(sidx(kk)).sptimesplt);
 %             bu = uibutton(gcf);
 %             bu.Text = 'Plot';
         end

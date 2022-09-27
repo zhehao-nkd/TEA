@@ -1,4 +1,4 @@
-%%%% convert sylinf to new sylinf with cluster information
+%%%% Convert sylinf to new sylinf with cluster information
 
 % three example features
 
@@ -20,8 +20,8 @@ for trump = 1: length(fea)
     dist = [];
     for a = 1: length(feature)
         for b = 1: length(feature)
-            feature{a}(isnan( feature{a}))=0; % convert nan to zero
-            feature{b}(isnan( feature{b}))=0;% convert nan to zero
+            feature{a}(isnan( feature{a}))=0; % Convert nan to zero
+            feature{b}(isnan( feature{b}))=0;% Convert nan to zero
             dist(a,b) = dtw(feature{a},feature{b});
         end
     end
@@ -41,9 +41,9 @@ end
 
 dims = mdscale(distsum,10);  % dimensions in the mds non-paramteric
 
-dimscell = num2cell(dims,2); % convert dims matrix to cell
+dimscell = num2cell(dims,2); % Convert dims matrix to cell
 
-% convert sylinf to new sylinf
+% Convert sylinf to new sylinf
 [sylinf.dims] = dimscell{:};
 
 
@@ -51,9 +51,9 @@ dimscell = num2cell(dims,2); % convert dims matrix to cell
 nclu = 10; % cluster to 10 clusters
 cluidx = kmedoids(dims,nclu);
 
-cluidxcell = num2cell(cluidx,2); % convert dims matrix to cell
+cluidxcell = num2cell(cluidx,2); % Convert dims matrix to cell
 
-% convert sylinf to new sylinf
+% Convert sylinf to new sylinf
 [sylinf.cluidx] = cluidxcell{:};
 
 figure('Color','w');
