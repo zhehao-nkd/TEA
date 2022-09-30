@@ -2,7 +2,7 @@
 % using object batch and ephys
 mode = 2; % mode 2 means elemode
 dbstop if error
-b = Batch("C:\Users\Zhehao\Dropbox (OIST)\My_EphysInput\input2021.xlsx");
+b = Chorus("C:\Users\Zhehao\Dropbox (OIST)\My_EphysInput\input2021.xlsx");
 
 b.select(1);
 
@@ -90,7 +90,7 @@ for k = 1: length(neuron.e)
     title = ' ';
     
     e = neuron.e{k};
-    Draw.raster(e.sptimes,e.y,e.fs,color);  % this draw the raster based on Neuron based data
+    Draw.raster(e.sptimes,e.y,e.fs,color);  % this draw the raster based on Experiment based data
     justanothertemp = e.sound.name;
     xlabel(justanothertemp);
     % ginput, then mark them

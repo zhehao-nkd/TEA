@@ -1,7 +1,7 @@
 classdef Archon
     % batch processing the raw data( .plx, .txt, .wav files sorted within
     % folders
-    % 批量对raw data进行操作 ， 用以生成 Analysis object
+    % 批量对raw data进行操作 ， 用以生成 Neuron object
     
     properties
         bird_folders
@@ -14,21 +14,9 @@ classdef Archon
         function a = Archon(dirpath)
             
             dbstop if error
-            a.bird_folders = [Extract.folder(dirpath)].'; %#ok<NBRAK>
-            
-            pure_folname = {}; % 初始化
-            for k = 1: length(a.bird_folders)
-                temp1 = split(a.bird_folders{k},'\');
-                pure_folname{k} = cellstr(temp1{end});
-            end
-            
-            contain_ephys_ids = find(~cellfun(@isempty, regexp([pure_folname{:}].','Ephys')));
-            if ~isempty(contain_ephys_ids)
-                a.bird_folders =  a.bird_folders(contain_ephys_ids);
-            else
-                a.bird_folders =  dirpath;
-            end
-            
+            temp = Extract.foldersAllLevel(dirpath);
+            a.bird_folders = {temp{find(~cellfun(@isempty,regexp(temp,'[ZP]\d+$')))}}.'; % folders ended with ZP and number
+
             infocollect = {};
             for k = 1:length(a.bird_folders)
                 plxfiles = Extract.filename(a.bird_folders{k},'*.plx');
@@ -63,7 +51,8 @@ classdef Archon
                     
                     txt_hit = find(~cellfun(@isempty, regexp([cellstr(txtname)].',plxname{m})));
                     
-                    sti_hit = find(~cellfun(@isempty, regexp([cellstr(stiname)].',plxname{m})));
+                    sti_hit = find(~cellfun(@isempty,...
+                        regexp(cellfun(@Convert.fileid,[cellstr(stiname)].','Uni',0),Convert.fileid(plxname{m}) )));
                     
                     % fill the struct
                     sadtemp = regexp(plxname{m}, '[_-]', 'split');
@@ -106,6 +95,9 @@ classdef Archon
             
         end
         
+        function Three(a)
+            
+        end
     end
     
     
@@ -124,7 +116,7 @@ classdef Archon
                 
                 [folder,oldfilename,ext] = fileparts(oldname);
                 newfilename = strrep(oldfilename,'-','_');
-                parts = split(newfilename,'_');
+                parts = unique(split(newfilename,'_'));
                 
                 index = find(~cellfun(@isempty, regexp(parts,'^[OBRYGX]\d{3}$'))); % ^EXP$ is perfect match
                 
@@ -185,7 +177,13 @@ classdef Archon
                 parts = split(newdirname,'-');
                 
                 index = find(~cellfun(@isempty, regexp(parts,'^[OBRYGX]\d{3}$'))); % ^EXP$ is perfect match
+                index2 = find(~cellfun(@isempty, regexp(parts,'^[PZ]\d{2}F\d{1}$'))); % ^EXP$ is perfect match
                 
+                if isempty(index)&& ~isempty(index2)
+                    temp = regexp(oldname,'[OBRYG]\d{3}','match');
+                    parts{length(parts) + 1} = temp{1};
+                    index = find(~cellfun(@isempty, regexp(parts,'^[OBRYGX]\d{3}$'))); % ^EXP$ is perfect match
+                end
                 % 替换index位和第一位的顺序
                 if ~isempty(index)
                     temp = parts{1};
@@ -193,8 +191,7 @@ classdef Archon
                     parts{index} = temp;
                 end
                 
-                index2 = find(~cellfun(@isempty, regexp(parts,'^[PZ]\d{2}F\d{1}$'))); % ^EXP$ is perfect match
-                
+               
                 % 替换index2位和第二位的顺序
                 if ~isempty(index2)
                     temp = parts{2};
@@ -203,7 +200,7 @@ classdef Archon
                 end
                 
                 
-                newdirname = strjoin(parts,'-');
+                newdirname = strjoin(parts,'_');
                 
                 dirranks{length(dirranks)} = newdirname;
                 newname = fullfile(dirranks{:});
@@ -242,23 +239,23 @@ classdef Archon
                 
                 % 如果不存在BID，加上BID
                 if isempty(index)
-                    FS = filesep;
-                    dirparts = split(targetdir,FS);
-                    ephysid = find(~cellfun(@isempty, regexp(dirparts,'Ephys')));
-                    if ~isempty(ephysid)
-                        bid = regexp(dirparts{ephysid},'[OBRYGX]\d{3}','match');
-                        bid = bid{1};
-                    else
-                        bid = convertStringsToChars(regexp(targetdir,'[OBRYGX]\d{3}','match'));
-                    end
-                    disp(parts);
-                    badcodetemp = [{bid};parts];
-                    parts = badcodetemp ; % parts means the parts of the filename, which is modified by this code
+%                     FS = filesep;
+%                     dirparts = split(targetdir,FS);
+%                     ephysid = find(~cellfun(@isempty, regexp(dirparts,'Piece')));
+%                     if ~isempty(ephysid)
+%                         bid = regexp(dirparts{ephysid},'[OBRYGX]\d{3}','match');
+%                         bid = bid{1};
+%                     else
+                        bid = convertStringsToChars(regexp(oldname,'[OBRYGX]\d{3}','match'));
+%                     end
+%                     disp(parts);
+                   %
+                    parts = [bid;parts]; % parts means the parts of the filename, which is modified by this code
                     
                 end
                 
                 
-                index2 = find(~cellfun(@isempty, regexp(parts,'^[PZ]\d{2}F\d{1}$'))); % ^EXP$ is perfect match
+                index2 = find(~cellfun(@isempty, regexp(parts,'^[PZ]\d{1,2}F\d{1}$'))); % ^EXP$ is perfect match
                 
                 
                 %如果file id格式不对，改正格式
@@ -306,7 +303,7 @@ classdef Archon
         % 生成analysis object
         
         function genAnalysisFromSingleZPDir(datadir)
-            % generate Analysis object from a single ZP-marked raw data folder
+            % generate Neuron object from a single ZP-marked raw data folder
             [neuroster,~,~,~,~] = Archon.extractAnalysisInfo(datadir);
             Archon.batch_genAnalysisSameRecordingFile(neuroster);
             
@@ -320,7 +317,7 @@ classdef Archon
             %[neuroster,malfunctions,cdrfroster,noSinChan_neuroster,nofeature_neuroster] = Archon.extractAnalysisInfo(folder);
             
             D = parallel.pool.DataQueue;
-            h = waitbar(0, '开始生成 Analysis objects');
+            h = waitbar(0, '开始生成 Neuron objects');
             num_files = length(input_roster);% Dummy call to nUpdateWaitbar to initialise
             Utl.UpdateParforWaitbar(num_files, h);% Go back to simply calling nUpdateWaitbar with the data
             afterEach(D, @Utl.UpdateParforWaitbar);
@@ -394,13 +391,13 @@ classdef Archon
             allfolders = Extract.foldersAllLevel(datadir).';
             index = find(~cellfun(@isempty, regexp(allfolders,'[ZP]\d+$')));
             neurondir = {allfolders{index}}.';
-            neuroster = struct; % Neuron 花名册
+            neuroster = struct; % Experiment 花名册
             malfunctions = struct; % malfunctions
             count = 0;
             malcount = 0;
             
             % waitbars
-            wb2 = waitbar(0,'Neuron of this bird');
+            wb2 = waitbar(0,'Experiment of this bird');
             set(wb2,'doublebuffer','on');
             
             
@@ -554,7 +551,7 @@ classdef Archon
                 duiying_stidir_id = find(followF == str2num(fid{1}));
                 
                 
-                b = Batch(txtfiles{duiying_txt_id},plxdata{k}.inputpath,stimulidirs{duiying_stidir_id});
+                b = Chorus(txtfiles{duiying_txt_id},plxdata{k}.inputpath,stimulidirs{duiying_stidir_id});
                 
                 
                 this_channel = channelname;
@@ -579,7 +576,7 @@ classdef Archon
                 infofile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Info')));
                 % exist(feature_dir,'dir')
                 if ~isempty(datafile_id) && ~isempty(infofile_id)
-                    sorted_data = Neuron.extractFeaturesFromSapRawData(feature_files{datafile_id} , feature_files{infofile_id} );
+                    sorted_data = Experiment.extractFeaturesFromSapRawData(feature_files{datafile_id} , feature_files{infofile_id} );
                     N.setEachStimuliSapFeatures(sorted_data);
                     N.calMeanFeatures;
                 end
@@ -589,7 +586,7 @@ classdef Archon
                 
             end
             
-            A = Analysis(Ns);
+            A = Neuron(Ns);
             %A.calHarmRatio;
             
             
@@ -597,7 +594,7 @@ classdef Archon
             save(A.formated_imagename,'A','-v7.3');
         end
         
-        function A = genAnalysis(sourcedir,birdname,ZPid,channelname,unit) % generate Analysis
+        function A = genAnalysis(sourcedir,birdname,ZPid,channelname,unit) % generate Neuron
             arch = Archon(sourcedir);%Archon('D:/');
             if ~isempty(find(~cellfun(@isempty, regexp(cellstr(Extract.filesAllLevel('./','*.mat')),...
                     sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))))) % 如果当前folder已含有同名Analysis文件
@@ -651,7 +648,7 @@ classdef Archon
                 duiying_stidir_id = find(followF == str2num(fid));
                 
                 
-                b = Batch(txtfiles{duiying_txt_id},plxfiles{k},stimuli_dirs{duiying_stidir_id});
+                b = Chorus(txtfiles{duiying_txt_id},plxfiles{k},stimuli_dirs{duiying_stidir_id});
                 
                 
                 this_channel = channelname;
@@ -675,7 +672,7 @@ classdef Archon
                 datafile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Data')));
                 infofile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Info')));
                 % exist(feature_dir,'dir')
-                sorted_data = Neuron.extractFeaturesFromSapRawData(feature_files{datafile_id} , feature_files{infofile_id} );
+                sorted_data = Experiment.extractFeaturesFromSapRawData(feature_files{datafile_id} , feature_files{infofile_id} );
                 N.setEachStimuliSapFeatures(sorted_data);
                 N.calMeanFeatures;
                 
@@ -684,7 +681,7 @@ classdef Archon
                 
             end
             
-            A = Analysis(Ns);
+            A = Neuron(Ns);
             %A.calHarmRatio;
             
             
@@ -698,7 +695,7 @@ classdef Archon
             %clear
             tic
             D = parallel.pool.DataQueue;
-            h = waitbar(0, '开始生成 Analysis objects');
+            h = waitbar(0, '开始生成 Neuron objects');
             num_files = length(input_roster);
             % Dummy call to nUpdateWaitbar to initialise
             nUpdateWaitbar(num_files, h);
@@ -739,7 +736,7 @@ classdef Archon
                     % afterEach call, increment COUNT
                     COUNT = 1 + COUNT;
                     p = COUNT / TOTAL;
-                    waitbar(p, H,sprintf('此为花名册中%u个神经元中的%u',TOTAL,COUNT));
+                    waitbar(p, H,sprintf('此为花名册中%u个Chorus中的%u',TOTAL,COUNT));
                 end
             end
             
@@ -804,7 +801,7 @@ classdef Archon
         
         function channel_unit_info = findSortedNeurons(path_txt) % from one file
             
-            % path_txt = "D:\Ephys-O709-W\P07\O709_P07F5.txt"
+            % path_txt = "D:\Piece-O709-W\P07\O709_P07F5.txt"
             channel_unit_info = struct;
             sorted_tables = Spike.split(path_txt);
             
@@ -819,7 +816,7 @@ classdef Archon
         
         function shared = findConsistentNeurons(dir_txt)  % 找到在每一个文件里都有的神经元
             
-            %dir_txt = "D:\Ephys-O709-W\P07"
+            %dir_txt = "D:\Piece-O709-W\P07"
             txtfile = Extract.filename(dir_txt,'*.txt');
             
             for k = 1: length(txtfile)
@@ -844,7 +841,7 @@ classdef Archon
         
         function conexist = findConExistNeurons(dir_txt)% 找到有Cons的神经元,这里使用F1来寻找Cons文件，后期有可能有问题
             % check which Fid is the Con session
-            %dir_txt = "D:\Ephys-O709-W\P07"
+            %dir_txt = "D:\Piece-O709-W\P07"
             txtfile = Extract.filename(dir_txt,'*.txt');
             f1txtid = find(~cellfun(@isempty,regexp(cellstr(txtfile),'F1')));
             subsetid = find(~cellfun(@isempty,regexp(cellstr(txtfile),'SPKC')));
@@ -917,14 +914,14 @@ classdef Archon
             %kbad = [28,31,32,41,42,44,64,65];
             
             
-            wb = waitbar(0,'Creating Neuron analysis objects');
+            wb = waitbar(0,'Creating Experiment analysis objects');
             for k = 1: length(num_ids)
-                waitbar(k/length(num_ids),wb,sprintf('%u of %u Neuron',k,length(num_ids)));
+                waitbar(k/length(num_ids),wb,sprintf('%u of %u Experiment',k,length(num_ids)));
                 ids_in_T = find(num_ids(k) == IDs);
                 
                 Ns = {};
                 for i = 1:length(ids_in_T)
-                    b = Batch(T(ids_in_T(i)).MergedTxtPath,T(ids_in_T(i)).MergedPlxPath,T(ids_in_T(i)).StimuliPath);
+                    b = Chorus(T(ids_in_T(i)).MergedTxtPath,T(ids_in_T(i)).MergedPlxPath,T(ids_in_T(i)).StimuliPath);
                     
                     this_channel = T(ids_in_T(i)).ChannelName;
                     this_unit = T(ids_in_T(i)).UnitName;
@@ -947,13 +944,13 @@ classdef Archon
                     N.signalGoodness = T(ids_in_T(i)).Goodness;
                     N.set_uniqueid(T(ids_in_T(i)).UniqueID);
                     % allocate sap-based feature information to each neuron
-                    sorted_data = Neuron.extractFeaturesFromSapRawData(T(ids_in_T(i)).FeatureData, T(ids_in_T(i)).FeatureInfo);
+                    sorted_data = Experiment.extractFeaturesFromSapRawData(T(ids_in_T(i)).FeatureData, T(ids_in_T(i)).FeatureInfo);
                     N.setEachStimuliSapFeatures(sorted_data);
                     N.calMeanFeatures;
                     Ns{i} = N;
                 end
                 
-                A = Analysis(Ns);
+                A = Neuron(Ns);
                 A.uniqueid = num_ids(k);
                 
                 
@@ -978,14 +975,14 @@ classdef Archon
             %kbad = [28,31,32,41,42,44,64,65];
             
             
-            wb = waitbar(0,'Creating Neuron analysis objects');
+            wb = waitbar(0,'Creating Experiment analysis objects');
             for k = 1: length(num_ids)
-                waitbar(k/length(num_ids),wb,sprintf('%u of %u Neuron',k,length(num_ids)));
+                waitbar(k/length(num_ids),wb,sprintf('%u of %u Experiment',k,length(num_ids)));
                 ids_in_T = find(num_ids(k) == IDs);
                 
                 Ns = {};
                 for i = 1:length(ids_in_T)
-                    b = Batch(T(ids_in_T(i)).TxtPath,T(ids_in_T(i)).PlxPath,T(ids_in_T(i)).StimuliPath);
+                    b = Chorus(T(ids_in_T(i)).TxtPath,T(ids_in_T(i)).PlxPath,T(ids_in_T(i)).StimuliPath);
                     
                     this_channel = T(ids_in_T(i)).ChannelName;
                     this_unit = T(ids_in_T(i)).UnitName;
@@ -1003,7 +1000,7 @@ classdef Archon
                     N.set_uniqueid(T(ids_in_T(i)).UniqueID);
                     % allocate sap-based feature information to each neuron
                     if ~isnan(T(ids_in_T(i)).FeatureData)
-                        sorted_data = Neuron.extractFeaturesFromSapRawData(T(ids_in_T(i)).FeatureData, T(ids_in_T(i)).FeatureInfo);
+                        sorted_data = Experiment.extractFeaturesFromSapRawData(T(ids_in_T(i)).FeatureData, T(ids_in_T(i)).FeatureInfo);
                         N.setEachStimuliSapFeatures(sorted_data);
                         N.calMeanFeatures;
                     end
@@ -1011,7 +1008,7 @@ classdef Archon
                     Ns{i} = N;
                 end
                 
-                A = Analysis(Ns);
+                A = Neuron(Ns);
                 A.uniqueid = num_ids(k);
                 
                 
@@ -1025,7 +1022,7 @@ classdef Archon
         
         function all_data_info = Deprecated_AnalyzeFormatedEphysData(dirpath)
             % Automatically generate plx-txt-folder table based on
-            % formated Ephys folders
+            % formated Piece folders
             % 202204211 11:44 pm paused here!
             
             dbstop if error
@@ -1037,7 +1034,7 @@ classdef Archon
                 pure_folname{k} = cellstr(temp1{end});
             end
             
-            contain_ephys_ids = find(~cellfun(@isempty, regexp([pure_folname{:}].','Ephys')));
+            contain_ephys_ids = find(~cellfun(@isempty, regexp([pure_folname{:}].','Piece')));
             if ~isempty(contain_ephys_ids)
                 bird_folders =  bird_folders(contain_ephys_ids);
             else
@@ -1125,17 +1122,17 @@ classdef Archon
         
         function As = Deprecated_writeSingleAnalysiFile(txt,plx, folder,feature_data,feature_info)
             
-            b = Batch(txt,plx,folder);
+            b = Chorus(txt,plx,folder);
             b.select;
             Ns = b.getn;
             
             As = {};
             for k = 1: length(Ns)
                 N = Ns{k};
-                sorted_data = Neuron.extractFeaturesFromSapRawData(feature_data,feature_info);
+                sorted_data = Experiment.extractFeaturesFromSapRawData(feature_data,feature_info);
                 N.setEachStimuliSapFeatures(sorted_data);
                 N.calMeanFeatures;
-                A = Analysis(N);
+                A = Neuron(N);
                 As{k} = A;
             end
             
@@ -1168,7 +1165,7 @@ classdef Archon
                     
                 end
                 
-                b = Batch(path_txt,path_plx,path_folder);
+                b = Chorus(path_txt,path_plx,path_folder);
                 b.select;
                 neuronlist = b.getn;
                 for k = 1: length(neuronlist)

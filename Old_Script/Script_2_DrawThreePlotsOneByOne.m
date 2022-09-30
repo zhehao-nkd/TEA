@@ -15,14 +15,14 @@ for k = 56
     
     try
         
-    b = Batch(txt,plx,folder);
+    b = Chorus(txt,plx,folder);
     b.select;
     neuronlist = b.getn;
     
     for m = 1: length(neuronlist)
         thisn = neuronlist{m};
         thisn.rawthree;
-        %thisn.threesingle;
+        %thisn.Three;
     end
     catch error
     end

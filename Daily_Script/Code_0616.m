@@ -1,7 +1,7 @@
 % % Test movenoisefile function
 % 
 % addpath(genpath("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA"))
-% getInf.moveNoiseFiles("C:\Users\Zhehao\Music\Blue732", "C:\Users\Zhehao\Music\B732_Noise")
+% MetaStimuli.moveNoiseFiles("C:\Users\Zhehao\Music\Blue732", "C:\Users\Zhehao\Music\B732_Noise")
 
 
 % 写入并分析Neurons
@@ -19,7 +19,7 @@ addpath(genpath("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA"))
  AutoSap.export_datafiles(1);
  
 
-error_neuroster = Archon.batch_genAnalysis(neuroster); % run Analysis for all neuroster
+error_neuroster = Archon.batch_genAnalysis(neuroster); % run Neuron for all neuroster
 sul = Sultan("C:\Users\Zhehao\Downloads\Neuron0617");
 sul.allSongallNeurons_FolderOrder;
 sul.allSongallNeurons;

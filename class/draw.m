@@ -1,11 +1,6 @@
 classdef Draw
-    
     methods(Static)
-        
-       
-   
-    
-        
+           
         function oscillo(y,fs)
             x = linspace(1,length(y),length(y))/fs;
             plot(x,y);
@@ -550,7 +545,21 @@ classdef Draw
             ylim([min(log2(edited_F/f0)),max(log2(edited_F/f0))]);
 
         end
-             
+        
+        
+        function TransChordChart(transition_statics,relation_map)
+            
+            all_categos = unique([transition_statics.firstsyllable]);
+            myLabel = cell(length(all_categos));
+            for i = 1:length(all_categos)
+                myLabel{i} = num2str(all_categos(i));
+            end
+            figure;
+            myColorMap = lines(length(relation_map));
+            circularGraph(rescale(relation_map),'Colormap',myColorMap,'Label',myLabel);%作频数图， but ChordGraph based
+            
+        end
+
     end
     
 end

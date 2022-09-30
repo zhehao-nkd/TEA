@@ -40,7 +40,7 @@ classdef Utl
         
         
         function coreThree(path_txt,path_plx,path_folder)
-            b = Batch(path_txt,path_plx,path_folder);
+            b = Chorus(path_txt,path_plx,path_folder);
             b.select;
             neuronlist = b.getn;
             
@@ -63,6 +63,12 @@ classdef Utl
         end
         
         function p = UpdateParforWaitbar(data, h)
+%             D = parallel.pool.DataQueue;
+%             h = waitbar(0, '开始生成 Neuron objects');
+%             nUpdateWaitbar(num_files, h);
+%             afterEach(D, @nUpdateWaitbar);
+%             send(D, 1);
+            
             persistent TOTAL COUNT H
             if nargin == 2
                 % initialisation mode

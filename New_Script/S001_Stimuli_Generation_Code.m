@@ -21,7 +21,7 @@ end
 
 
 % 第三步 读取为 eleinf
-tutbos_eleinf = getInf.Eleinf(tutbos_dir,1,'SegData');
+tutbos_eleinf = MetaStimuli.Eleinf(tutbos_dir,1,'SegData');
 tutbos_eleinf  = categoFrags(tutbos_eleinf).eachsong;
 
 

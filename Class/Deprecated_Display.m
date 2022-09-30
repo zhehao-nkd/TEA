@@ -1,5 +1,5 @@
 classdef Display
-    %receive input from Class Neuron
+    %receive input from Class Experiment
     
     properties
         info
@@ -463,7 +463,7 @@ classdef Display
             
         end
         
-        function syls = alignsyl(d,keyword,mergedeleinf)  % the todisplay list should be a merged list between original full song and indepdenent single syllables
+        function syls = alignsyl(d,keyword,mergedeleinf)  % the toList list should be a merged list between original full song and indepdenent single syllables
             
             if exist('keyword','var')
                 kwidx = find(~cellfun(@isempty,regexp([d.info.stimuliname].',keyword)));

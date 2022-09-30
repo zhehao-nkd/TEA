@@ -22,7 +22,7 @@ dbstop if error
  %AutoSap.export_datafiles(0);
 
 
-% run Analysis for all neuroster
+% run Neuron for all neuroster
 
 
 error_neuroster = Archon.batch_genAnalysis(neuroster);

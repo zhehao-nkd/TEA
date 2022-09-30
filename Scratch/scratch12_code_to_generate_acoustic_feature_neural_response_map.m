@@ -13,7 +13,7 @@ all_elist = eleinf;
 
 % construct the new all_elist with labels
 for m = 1: length(all_elist)
-    %nn.threesingle;
+    %nn.Three;
    thesong = find( ~cellfun(@isempty,regexp({exp_elist.stimuliname}.',all_elist(m).songname)));
    
    thesyl = find( ~cellfun(@isempty,regexp({exp_elist.stimuliname}.',sprintf('-%02d-',all_elist(m).fragid))));

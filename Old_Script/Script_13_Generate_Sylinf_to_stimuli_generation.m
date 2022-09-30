@@ -10,7 +10,7 @@ ConDirs = fromWavFindParentFolder("Z:\Zhehao\Stimuli_Source\senatusTwoMotif","Z:
 %the format suitable for the python script
 
 noncon_dir_whole_collection = subdirs(setdiff([1: length(subdirs)],locb(locb>0)).');
-noncon_ote_eleinf = getInf.Sylinf(noncon_dir_whole_collection ,300,'SegData'); % 300 means remove folderes with bird id smaller than 300
+noncon_ote_eleinf = MetaStimuli.Sylinf(noncon_dir_whole_collection ,300,'SegData'); % 300 means remove folderes with bird id smaller than 300
 tic
 ote_eleinf = categoFrags(noncon_ote_eleinf).eachsong;
 toc
@@ -31,10 +31,10 @@ rm_eleinf = rmfield(rm_eleinf, 'len');
 % 这里的目的是为了让con-ELEINF的运算流程和ote-eleinf的运算流程一样
 as = autoseg("Z:\Zhehao\Dropbox (OIST)\My_Stimuli\G656@11162021\senatusTwoMotif");
 as.standard;
-raw_con_spe_eleinf = getInf.Sylinf("Z:\Zhehao\Dropbox (OIST)\My_Stimuli\G656@11162021\senatusTwoMotif" ,1,'SegData');
+raw_con_spe_eleinf = MetaStimuli.Sylinf("Z:\Zhehao\Dropbox (OIST)\My_Stimuli\G656@11162021\senatusTwoMotif" ,1,'SegData');
 con_spe_eleinf = categoFrags(raw_con_spe_eleinf).eachsong;
 parent_dir_con = subdirs(locb(locb>0));
-con_ote_eleinf = getInf.Sylinf(parent_dir_con,1,'SegData');
+con_ote_eleinf = MetaStimuli.Sylinf(parent_dir_con,1,'SegData');
 
 con_merged_eleinf = categoFrags(con_ote_eleinf).include_con(raw_con_spe_eleinf); % add catego info into the eleinf
 
@@ -43,7 +43,7 @@ con_merged_eleinf = categoFrags(con_ote_eleinf).include_con(raw_con_spe_eleinf);
 
 as = autoseg("Z:\Zhehao\Stimuli_Source\senatusOneMotif");
 as.standard;
-senatus_1_eleinf = getInf.Sylinf("Z:\Zhehao\Stimuli_Source\senatusOneMotif" ,1,'SegData');
+senatus_1_eleinf = MetaStimuli.Sylinf("Z:\Zhehao\Stimuli_Source\senatusOneMotif" ,1,'SegData');
 senatus_1_eleinf = categoFrags(senatus_1_eleinf).eachsong;
 
 

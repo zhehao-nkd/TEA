@@ -24,10 +24,10 @@ rm_eleinf = unique_ote_eleinf(find(8000 >[unique_ote_eleinf.len].'& [unique_ote_
 % 这里的目的是为了让con-ELEINF的运算流程和ote-eleinf的运算流程一样
 as = autoseg("E:\Selected_wavs");
 as.standard;
-con_spe_eleinf = getInf.Sylinf("E:\Selected_wavs" ,1,'SylData');
+con_spe_eleinf = MetaStimuli.Sylinf("E:\Selected_wavs" ,1,'SylData');
 
 parent_dir_con = subdirs(locb(locb>0));
-con_ote_eleinf = getInf.Sylinf(parent_dir_con ,1,'SegData');
+con_ote_eleinf = MetaStimuli.Sylinf(parent_dir_con ,1,'SegData');
 
 con_merged_eleinf = categoFrags(con_ote_eleinf).include_con(con_spe_eleinf); % add catego info into the eleinf
 

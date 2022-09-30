@@ -36,7 +36,7 @@ classdef Trigger < handle
                 code_method = 3;
                 
             else % Sarah's case
-                    code_method = 3;
+                code_method = 3;
             end
             
             switch code_method
@@ -63,6 +63,10 @@ classdef Trigger < handle
             properties.info = t.info(which);
             properties.plxname = t.plxname;
         end
+        
+    end
+    
+    methods(Access = private)
         
         function info = digextract(t)
             
@@ -438,7 +442,7 @@ classdef Trigger < handle
             t.equipment = 'ZEUS';
             t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
             t.raw.Values = -t.raw.Values;
-            t.info = t.Extract; % not digital    
+            t.info = t.Extract; % not digital
         end
         
         function coreTriggerPlexAna(t,path_plx)
@@ -462,20 +466,20 @@ classdef Trigger < handle
     
     methods(Static)
         
-       
+        
         
         function binary(outdir,from_which,pre,post) % add trigger channel to stimuli - Binary code
             
             dbstop if error
             
             if exist('pre','var')
-                 pre_length = pre;
+                pre_length = pre;
             else
                 pre_length = 0;
             end
             
             if exist('post','var')
-                 post_length = post;
+                post_length = post;
             else
                 post_length = 3; % default
             end
@@ -488,7 +492,7 @@ classdef Trigger < handle
             else
                 from_which = 1;
             end
-                
+            
             dirpath = uigetdir();
             files = Extract.filename(dirpath, '*.wav');
             files = flip(files,1);
@@ -498,7 +502,7 @@ classdef Trigger < handle
             for n = 1:length(files)
                 
                 [y,fs] = audioread(files{n}); % y means original y
-                binary_code = de2bi(n + from_which - 1); 
+                binary_code = de2bi(n + from_which - 1);
                 zero_pulse = [zeros(GAP_DURATION*fs,1);AMPLITUDE*ones(GAP_DURATION*fs,1)];  % 0-1
                 one_pulse = [zeros(GAP_DURATION*fs,1);zeros(GAP_DURATION*fs,1);AMPLITUDE*ones(GAP_DURATION*fs,1)]; % 0-0-1
                 
@@ -533,18 +537,18 @@ classdef Trigger < handle
             
             dbstop if error
             
-%             if exist('pre','var')
-%                 pre_length = pre;
-%             else
-%                 pre_length = 0;
-%             end
-%             
-%             if exist('post','var')
-%                 post_length = post;
-%             else
-%                 post_length = 3; % default
-%             end
-%             
+            %             if exist('pre','var')
+            %                 pre_length = pre;
+            %             else
+            %                 pre_length = 0;
+            %             end
+            %
+            %             if exist('post','var')
+            %                 post_length = post;
+            %             else
+            %                 post_length = 3; % default
+            %             end
+            %
             
             GAP_DURATION = 1*8e-3; PULSE_DURATION = 5*8e-3; AMPLITUDE = 1;
             
@@ -606,12 +610,12 @@ classdef Trigger < handle
         
         
         function binary_but_rand_gap(outdir,from_which,range)
-             dbstop if error     
+            dbstop if error
             if ~exist('range','var')
                 range = [0.5,0.75]; % unit is second
             end
-             %pre_length = 0;
-             
+            %pre_length = 0;
+            
             GAP_DURATION = 1*8e-3; PULSE_DURATION = 5*8e-3; AMPLITUDE = 1;
             
             if exist('from_which','var')
@@ -619,7 +623,7 @@ classdef Trigger < handle
             else
                 from_which = 1;
             end
-                
+            
             dirpath = uigetdir();
             files = Extract.filename(dirpath, '*.wav');
             files = flip(files,1);
@@ -632,7 +636,7 @@ classdef Trigger < handle
                 pre_length = (range(2)-range(1))*rand + range(1);
                 
                 [y,fs] = audioread(files{n}); % y means original y
-                binary_code = de2bi(n + from_which - 1); 
+                binary_code = de2bi(n + from_which - 1);
                 zero_pulse = [zeros(GAP_DURATION*fs,1);AMPLITUDE*ones(GAP_DURATION*fs,1)];  % 0-1
                 one_pulse = [zeros(GAP_DURATION*fs,1);zeros(GAP_DURATION*fs,1);AMPLITUDE*ones(GAP_DURATION*fs,1)]; % 0-0-1
                 
@@ -669,21 +673,21 @@ classdef Trigger < handle
             % It works by adding silent paddings together with trigger pulses to
             % another channel
             % By Zhehao Cheng, 0820,2020
-
+            
             dbstop if error
             
             if exist('pre','var')
-                 pre_length = pre;
+                pre_length = pre;
             else
                 pre_length = 0;
             end
             
             if exist('post','var')
-                 post_length = post;
+                post_length = post;
             else
                 post_length = 4;
             end
-               
+            
             GAP_DURATION = 8e-3; PULSE_DURATION = 8e-3; AMPLITUDE = 1;
             setinitial = 1;
             initial = setinitial-1;
@@ -713,7 +717,7 @@ classdef Trigger < handle
                 audiowrite(sprintf('%s/%s-%uPulses.wav',outdir,name,n+initial),yOut,fs);
                 
             end
-
+            
         end
         
         function tobject = get_it(path_plx)
@@ -734,7 +738,7 @@ classdef Trigger < handle
             t.raw.Timestamps = t.raw.Timestamps + shift_value*t.trigger_fs;
             
         end
-
+        
         function drawContinuousChannel(plx_path)
             
             plexonfile = readPLXFileC(convertStringsToChars(path_plx),'all');

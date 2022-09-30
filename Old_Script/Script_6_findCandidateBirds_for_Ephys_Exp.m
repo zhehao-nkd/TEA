@@ -1,4 +1,4 @@
-% A script to find out candidate  birds for Ephys experiments
+% A script to find out candidate  birds for Piece experiments
 pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx"
 birdlog = table2struct(readtable(pathlog, 'Sheet','today'));
 

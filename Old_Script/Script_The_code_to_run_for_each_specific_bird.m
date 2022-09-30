@@ -4,7 +4,7 @@
 tutbos_dir = "E:\Stimuli_Source\R690_twoMotif";
 % as = autoseg(tutbos_dir);
 % as.standard;
-tutbos_eleinf = getInf.Eleinf(tutbos_dir,1,'SegData');
+tutbos_eleinf = MetaStimuli.Eleinf(tutbos_dir,1,'SegData');
 tutbos_eleinf  = categoFrags(tutbos_eleinf).eachsong;
 % 
 % TargetDir_specific_bird = "E:\R690_Special";

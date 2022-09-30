@@ -487,7 +487,7 @@ classdef Sultan
             
             common_cons = {};
             for k = 1: length(s.neurons)
-                Conlist = Analysis(s.neurons{k}).evaluateConResponse;
+                Conlist = Neuron(s.neurons{k}).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
@@ -591,7 +591,7 @@ classdef Sultan
             for k = 1: length(s.anas)
                 load(s.anas{k});
                 this_neuron = A.neurons{A.song_id};
-                Conlist = Analysis(this_neuron).evaluateConResponse;
+                Conlist = Neuron(this_neuron).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp(cellstr({Conlist.stimuliname}.'),'[BGYRO]\d{3}','match');
@@ -724,7 +724,7 @@ classdef Sultan
             for k = 1: length(s.anas)
                 load(s.anas{k});
                 this_neuron = A.neurons{s.anas{k}.song_id};
-                Conlist = Analysis(this_neuron).evaluateConResponse;
+                Conlist = Neuron(this_neuron).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
@@ -869,7 +869,7 @@ classdef Sultan
             
             for k = 1: length(s.anas)
                 this_neuron = s.anas{k}.neurons{s.anas{k}.song_id};
-                Conlist = Analysis(this_neuron).evaluateConResponse;
+                Conlist = Neuron(this_neuron).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp({Conlist.stimuliname}.','CON-[BGYRO]\d{3}|TUT|BOS|Fcall|Mcall|WNS|Het','match');
@@ -972,7 +972,7 @@ classdef Sultan
             
             for k = 1: length(s.anas)
                 this_neuron = s.anas{k}.neurons{s.anas{k}.song_id};
-                Conlist = Analysis(this_neuron).evaluateConResponse;
+                Conlist = Neuron(this_neuron).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
@@ -1112,7 +1112,7 @@ classdef Sultan
             
             for k = 1: length(s.anas)
                 this_neuron = s.anas{k}.neurons{s.anas{k}.song_id};
-                Conlist = Analysis(this_neuron).evaluateConResponse;
+                Conlist = Neuron(this_neuron).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
@@ -1748,7 +1748,7 @@ classdef Sultan
             for k = 1: length(s.anas)
                 load(s.anas{k});
                 this_neuron = A.neurons{A.song_id};
-                Conlist = Analysis(this_neuron).evaluateConResponse;
+                Conlist = Neuron(this_neuron).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp({Conlist.stimuliname}.','CON-[BGYRO]\d{3}|TUT|BOS|Fcall|Mcall|WNS|Het','match');
@@ -1854,10 +1854,10 @@ classdef Sultan
                     
                     e_songs{order_for_three_plots(hh)}.three;
                     subplot(3,1,3);
-                    xlabel(sprintf('Neuron:%s---Stimuli:%s',s.anas{new_N_id}.unique_neuronname,...
+                    xlabel(sprintf('Experiment:%s---Stimuli:%s',s.anas{new_N_id}.unique_neuronname,...
                         Convert.bid(e_songs{order_for_three_plots(hh)}.sound.name)),'Interpreter', 'none');
                     
-                    switch(new_respmap(z,hh)) % change figure color based on resp and Neuron type
+                    switch(new_respmap(z,hh)) % change figure color based on resp and Experiment type
                         case 0
                             set(gcf,'Color','[1 1 1 ]')
                         case 1
@@ -1925,7 +1925,7 @@ classdef Sultan
             for k = 1: length(s.anas)
                 load(s.anas{k});
                 this_neuron = A.neurons{A.song_id};
-                Conlist = Analysis(this_neuron).evaluateConResponse;
+                Conlist = Neuron(this_neuron).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp(cellstr({Conlist.stimuliname}.'),'[BGYRO]\d{3}','match');
@@ -2054,10 +2054,10 @@ classdef Sultan
                 for hh = 1: length(order_for_three_plots)
                     e_songs{order_for_three_plots(hh)}.three;
                     subplot(3,1,3);
-                    xlabel(sprintf('Neuron:%s---Stimuli:%s',s.anas{new_N_id}.unique_neuronname,...
+                    xlabel(sprintf('Experiment:%s---Stimuli:%s',s.anas{new_N_id}.unique_neuronname,...
                         Convert.bid(e_songs{order_for_three_plots(hh)}.sound.name)),'Interpreter', 'none');
                     
-                    switch(new_respmap(z,hh)) % change figure color based on resp and Neuron type
+                    switch(new_respmap(z,hh)) % change figure color based on resp and Experiment type
                         case 0
                             set(gcf,'Color','[1 1 1 ]')
                         case 1
@@ -2107,7 +2107,7 @@ classdef Sultan
             
             for k = 1: length(s.anas)
                 this_neuron = s.anas{k}.neurons{s.anas{k}.song_id};
-                Conlist = Analysis(this_neuron).evaluateConResponse;
+                Conlist = Neuron(this_neuron).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
@@ -2212,7 +2212,7 @@ classdef Sultan
             
             for k = 1: length(s.anas)
                 this_neuron = s.anas{k}.neurons{s.anas{k}.song_id};
-                Conlist = Analysis(this_neuron).evaluateConResponse;
+                Conlist = Neuron(this_neuron).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
@@ -2583,7 +2583,7 @@ classdef Sultan
          
         function How_Do_Resp_Eliciting_Elements_Distributed_In_Space(s,con_allspe_inf)
             dbstop if error
-            %              fraginf = getInf.getAllTwoMotifEleinf("E:\StimuliSource");
+            %              fraginf = MetaStimuli.getAllTwoMotifEleinf("E:\StimuliSource");
             %              fraginf1 = fraginf(1:300);
             %              fraginf2 = fraginf(301:600);
             %              fraginf3 = fraginf(601:900);
@@ -2832,7 +2832,7 @@ classdef Sultan
             for k = 1: length(s.anas)
                 load(s.anas{k});
                 this_neuron = A.neurons{A.song_id};
-                Conlist = Analysis(this_neuron).evaluateConResponse;
+                Conlist = Neuron(this_neuron).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp(cellstr({Conlist.stimuliname}.'),'[BGYRO]\d{3}','match');
@@ -2966,10 +2966,10 @@ classdef Sultan
                 for hh = 1: length(order_for_three_plots)
                     e_songs{order_for_three_plots(hh)}.pltthree;
                     subplot(3,1,3);
-                    xlabel(sprintf('Neuron:%s---Stimuli:%s',AA.formated_imagename,...
+                    xlabel(sprintf('Experiment:%s---Stimuli:%s',AA.formated_imagename,...
                         Convert.bid(e_songs{order_for_three_plots(hh)}.sound.name)),'Interpreter', 'none');
                     
-                    switch(new_respmap(z,hh)) % change figure color based on resp and Neuron type
+                    switch(new_respmap(z,hh)) % change figure color based on resp and Experiment type
                         case 0
                             set(gcf,'Color','[1 1 1 ]')
                         case 1

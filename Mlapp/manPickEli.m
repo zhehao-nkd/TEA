@@ -2,7 +2,7 @@
 function  [responsiveinfo,neweleinf] = manPickEli(neuron,mergedeleinf,mergedsylinf)
     mode = 2; % mode 2 means elemode
     dbstop if error
-%     b = Batch(xlsxdir);
+%     b = Chorus(xlsxdir);
 %     b.select(neuronnum);
 % 
 %     temp = b.getn;
@@ -79,7 +79,7 @@ function  [responsiveinfo,neweleinf] = manPickEli(neuron,mergedeleinf,mergedsyli
         color = 'k';
         title = ' ';
         e = neuron.e{k};
-        Draw.raster(e.sptimes,e.y,e.fs);  % this draw the raster based on Neuron based data
+        Draw.raster(e.sptimes,e.y,e.fs);  % this draw the raster based on Experiment based data
         justanothertemp = e.sound.name;
         xlabel(justanothertemp);
 

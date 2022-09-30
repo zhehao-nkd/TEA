@@ -20,7 +20,7 @@ path_folder = "D:\Zhehao\R695_0531\P01\R695_P01F1_Cons4s";
 % addpath genpath "D:\ZhehaoScripts\Dropbox (OIST)\My_Matlab\TEA"
 addpath(genpath("D:\ZhehaoScripts\Dropbox (OIST)\My_Matlab\TEA"))
 % 核心分析代码
-b = Batch(path_txt,path_plx,path_folder);
+b = Chorus(path_txt,path_plx,path_folder);
 b.select;
 neuronlist = b.getn;
 
@@ -31,6 +31,6 @@ for k = 1: length(neuronlist)
     %thisn.ResponseBasedOrderedThreePlots;
 end
 
-A = Analysis(neuronlist{1});
+A = Neuron(neuronlist{1});
 A.drawAlignedNormFragTwoPlots;
 

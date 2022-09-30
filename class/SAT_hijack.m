@@ -1,5 +1,5 @@
 classdef SAT_hijack < handle % there will be only one copy of each SAT_sound
-%                  Sound Analysis Tools
+%                  Sound Neuron Tools
 %
 % This class performes Multitaper spectral analysis and computes acoustic features.
 %% Simple usage:
@@ -33,7 +33,7 @@ classdef SAT_hijack < handle % there will be only one copy of each SAT_sound
 % Let's look at the outcome:
 % SAT_plot(mySound); % display the results (just for show)
 %
-% % Example 2: Batch 
+% % Example 2: Chorus 
 % % Compute a histogram of feature distribution across subjects:
 %
 % a=dir('*.wav'); % Get file names from folder into array files

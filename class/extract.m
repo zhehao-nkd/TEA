@@ -162,6 +162,8 @@ classdef Extract
                 
             end
             
+            folders = folders.';
+            
             
         end
         

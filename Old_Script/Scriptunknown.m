@@ -5,7 +5,7 @@ dbstop if error
 % % senatus_dir = "E:\Stimuli_Source\senatusTwoMotif";
 % % as = autoseg(senatus_dir);
 % % as.standard;
-% % raw_con_spe_eleinf = getInf.Eleinf(senatus_dir ,1,'SegData');
+% % raw_con_spe_eleinf = MetaStimuli.Eleinf(senatus_dir ,1,'SegData');
 % con_spe_eleinf = categoFrags(raw_con_spe_eleinf).eachsong;
 % 
 % 
@@ -21,7 +21,7 @@ dbstop if error
 % % noncon_dir_whole_collection = subdirs(setdiff([1: length(subdirs)],locb(locb>0)).').';
 % 
 % 
-% % noncon_ote_eleinf = getInf.Eleinf(noncon_dir_whole_collection ,300,'SegData'); % 300 means remove folderes with bird id smaller than 300
+% % noncon_ote_eleinf = MetaStimuli.Eleinf(noncon_dir_whole_collection ,300,'SegData'); % 300 means remove folderes with bird id smaller than 300
 % % tic
 % % ote_eleinf = categoFrags(noncon_ote_eleinf).eachsong;
 % % toc
@@ -42,7 +42,7 @@ dbstop if error
 % % tutbos_dir = "E:\Stimuli_Source\R677_twoMotif";
 % % as = autoseg(tutbos_dir);
 % % as.standard;
-% tutbos_eleinf = getInf.Eleinf(tutbos_dir,1,'SegData');
+% tutbos_eleinf = MetaStimuli.Eleinf(tutbos_dir,1,'SegData');
 % tutbos_eleinf  = categoFrags(tutbos_eleinf).eachsong;
 % 
 % 

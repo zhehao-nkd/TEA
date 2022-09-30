@@ -53,7 +53,18 @@ classdef Convert
             end
             
         end
-            
+        
+        function newid = fileid(rawid)
+            [~,rawid,~] = fileparts(rawid); 'D:\Old_stimuli_before220901\O686_Ephys_W\Z06\O686_Z06F1_Cons.txt';
+            birdname = regexp(rawid,'[OGBYR]\d{3}','match');
+            zpid = regexp(rawid,'[ZP]\d{2}F\d{1}','match');
+            try
+                newid = sprintf('%s%s',birdname{1},zpid{1});
+            catch
+                newid = rawid;
+                disp('Conversion failed');
+            end
+        end
         function two2one(dir) % Convert 2 channel to 1 channel wav
             [parentdir,rawdir,~] = fileparts(dir);
             rawoutdir = sprintf('SingleChannel_%s',rawdir);
@@ -360,6 +371,23 @@ classdef Convert
               
         end
         
+        
+        
+        function cated = catStruct(struct1, struct2)
+            
+            %@功能说明： concated two structure only with the shared fields
+            commonfields = intersect(fieldnames(struct1), fieldnames(struct2));
+            table1 = struct2table(struct1);
+            table2 = struct2table(struct2);
+            struct1 = table2struct(table1(:,commonfields));
+            struct2 = table2struct(table2(:,commonfields));
+            try
+                cated = vertcat(struct1,struct2);
+            catch
+                cated = horzcat(struct1,struct2);
+            end
+            
+        end
     end
     
 end

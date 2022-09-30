@@ -362,226 +362,89 @@ classdef MetaStimuli < handle
             
         end
         
-        function all_eleinf = Eleinf(subdirs_or_matfile,id_thres,matFolder)  % 遍历 all the subdirs
+        function metadata = read2ele(file_or_dir)  % read to elements
+            % 功能：读取鸟歌的分割数据到element
             
-            num = nargin;
-            
-            if num == 1 % when the input is the segmat file
-                 matfile = subdirs_or_matfile;
-                 loaded = load(matfile);
-                    
-                    % Very dangerous bad code, temporarilary used
-                    if isfield(loaded.segdata,'eleedge')
-                        loaded.segdata.eleedge = loaded.segdata.eleedge -0.008;
-                    end
-                    
-                    if isfield(loaded.segdata,'syledge')
-                        loaded.segdata.syledge = loaded.segdata.syledge -0.008;
-                    end
-                    
-                    if isfield(loaded.segdata,'motedge')
-                        loaded.segdata.motedge = loaded.segdata.motedge -0.008;
-                    end
-                    
-                    %%%%%%%%%Extremeley bad and dangerous code shown above
-                    
-                    
-                    if isfield(loaded.segdata,'eleedge')
-                        two_eleedge = repmat(loaded.segdata.eleedge,[2,1]);
-                        alledges = sort( vertcat(loaded.segdata.syledge(:),reshape(two_eleedge,[],1) ));
-                    else
-                        alledges = sort(loaded.segdata.syledge(:));
-                    end
-                    
-                    % the following is a very bad temporily code
-                    if ~isfield(loaded.segdata,'fs') % if there is no such field named fs
-                        fs = 32000;
-                    else
-                        fs = loaded.segdata.fs;
-                    end
-                    
-                    fiy = bandpass(loaded.segdata.rawy,[900 6000],fs); %% It is very important that here the y should be fiy !!!!! filtered y instead of the raw y
-                    I = Cal.spec(fiy,fs);
-                    
-                    initials = alledges(1:2:end);
-                    terminals = alledges(2:2:end);
-                    song_eleinf = struct;
-                    
-                    for w = 1: length(initials) % can add a par-for
-                        song_eleinf(w).initial = initials(w)*fs;
-                        song_eleinf(w).terminal = terminals(w)*fs;
-                        song_eleinf(w).songname = loaded.segdata.birdid;
-                        if ~isempty(loaded.segdata.motedge)
-                            song_eleinf(w).motif = getInf.findMotif(loaded.segdata.motedge,initials(w),terminals(w));
-                        else
-                            song_eleinf(w).motif = 0;
-                        end
-                            
-                        hp_y = highpass(loaded.segdata.rawy,450,fs);
-                        if isfield(loaded.segdata,'rawy')
-                            if initials(w)== 0
-                                % when the stimuli starts from the very beginning
-                                song_eleinf(w).y = hp_y(1:terminals(w)*fs);
-                            else
-                                song_eleinf(w).y = hp_y(initials(w)*fs:terminals(w)*fs); % originally loaded.segdata.rawy
-                            end
-                        end
-                        song_eleinf(w).fs = fs;
-                        if initials(w)== 0
-                            %when the stimuli starts from the very beginning
-                            imgratio = size(I,2)/(length(hp_y)/fs);
-                            song_eleinf(w).fragI = imresize(I(:,1:round(terminals(w)*imgratio)),[257,50]);
-                        else
-                            imgratio = size(I,2)/(length(hp_y)/fs);
-                            song_eleinf(w).fragI = imresize(I(:,round(initials(w)*imgratio):round(terminals(w)*imgratio)),[257,50]);
-                        end
-                    end
-                    
-                    for f = 1:length(song_eleinf)
-                        song_eleinf(f).fragid = f;
-                    end
-                    
-                    all_eleinf = song_eleinf;
-                    
-                return
+            if exist(file_or_dir,'dir')
+                matfiles = Extract.filesAllLevel(file_or_dir,'*.mat');
+            else
+                matfiles = file_or_dir;
             end
-            % assemble into eleinf
-            % This function can be applied to both syldata or eledata
-            all_collect = {};
-            to_delete = [];
-            for w = 1:length(subdirs_or_matfile) % here should be parfor
-                birdid  = split(subdirs_or_matfile{w},'\');
-                birdid = regexp(birdid{end},'\d+','match');
+            
+            song_collect = {};
+            
+            for m = 1: length(matfiles) % parfor here
                 
-                if ~isempty(birdid) % 当subidr是以birdid来命名的时候
-                    birdid = str2double(birdid{1});
-                    
-                    if exist('id_thres','var')
-                        if birdid < id_thres
-                            to_delete = [to_delete,w];
-                        end
-                    end
+                loaded = load(matfiles{m});
+                
+                % Very dangerous bad code, temporarilary used
+                if isfield(loaded.segdata,'eleedge')
+                    loaded.segdata.eleedge = loaded.segdata.eleedge -0.008;
+                end
+                if isfield(loaded.segdata,'syledge')
+                    loaded.segdata.syledge = loaded.segdata.syledge -0.008;
+                end
+                if isfield(loaded.segdata,'motedge')
+                    loaded.segdata.motedge = loaded.segdata.motedge -0.008;
+                end
+                %%%%%%%%%Extremeley bad and dangerous code shown above
+                
+                if isfield(loaded.segdata,'eleedge')
+                    two_eleedge = repmat(loaded.segdata.eleedge,[2,1]);
+                    alledges = sort( vertcat(loaded.segdata.syledge(:),reshape(two_eleedge,[],1) ));
                 else
-                    disp('现在的folder不是以birdid命名的');
-                end
-            end
-            
-            subdirs_or_matfile(to_delete) = []; %清理 subdirs delete those does not match the id threshold
-            
-           for r = 1:length(subdirs_or_matfile)  % par-for can be used here
-                
-                matfiles = Extract.filename(sprintf('%s\\%s',subdirs_or_matfile{r},matFolder),'*.mat'); % matFolder is the folder containing segdata.mat,
-                % which can be SegData or SylData or EleData
-                
-                song_collect = {};
-                
-                for m = 1: length(matfiles)
-                    
-                    loaded = load(matfiles{m});
-                    
-                    % Very dangerous bad code, temporarilary used
-                    if isfield(loaded.segdata,'eleedge')
-                        loaded.segdata.eleedge = loaded.segdata.eleedge -0.008;
-                    end
-                    
-                    if isfield(loaded.segdata,'syledge')
-                        loaded.segdata.syledge = loaded.segdata.syledge -0.008;
-                    end
-                    
-                    if isfield(loaded.segdata,'motedge')
-                        loaded.segdata.motedge = loaded.segdata.motedge -0.008;
-                    end
-                    
-                    %%%%%%%%%Extremeley bad and dangerous code shown above
-                    
-                    
-                    if isfield(loaded.segdata,'eleedge')
-                        two_eleedge = repmat(loaded.segdata.eleedge,[2,1]);
-                        alledges = sort( vertcat(loaded.segdata.syledge(:),reshape(two_eleedge,[],1) ));
-                    else
-                        alledges = sort(loaded.segdata.syledge(:));
-                    end
-                    
-                    
-%                     if isfield(loaded.segdata,'motedge')
-%                         two_motedge = repmat(loaded.segdata.motedge,[2,1]);
-%                        motedges = sort( vertcat(reshape(two_motedge,[],1) ));
-%                     end
-%                     
-                    
-                    
-                    % the following is a very bad temporily code
-                    if ~isfield(loaded.segdata,'fs') % if there is no such field named fs
-                        fs = 32000;
-                    else
-                        fs = loaded.segdata.fs;
-                    end
-                    
-                    if ~isfield(loaded.segdata,'rawy')
-                        %song_eleinf = struct;
-                        continue
-                    end
-                    
-                    fiy = bandpass(loaded.segdata.rawy,[900 6000],fs); %% It is very important that here the y should be fiy !!!!! filtered y instead of the raw y
-                    I = Cal.spec(fiy,fs);
-                    
-                    initials = alledges(1:2:end);
-                    terminals = alledges(2:2:end);
-                    
-                    song_eleinf = struct;
-                    
-                    
-                    for w = 1: length(initials) % can add a par-for
-                        song_eleinf(w).initial = initials(w)*fs;
-                        song_eleinf(w).terminal = terminals(w)*fs;
-                        song_eleinf(w).songname = loaded.segdata.birdid;
-                        if isfield(loaded.segdata,'motedge')
-                            if ~isempty(loaded.segdata.motedge)
-                                song_eleinf(w).motif = MetaStimuli.findMotif(loaded.segdata.motedge,initials(w),terminals(w));
-                            else
-                                song_eleinf(w).motif = 0;
-                            end
-                        else
-                            song_eleinf(w).motif = 0;
-                        end
-                            
-                        hp_y = highpass(loaded.segdata.rawy,450,fs);
-                        if isfield(loaded.segdata,'rawy')
-                            if initials(w)== 0
-                                % when the stimuli starts from the very beginning
-                                song_eleinf(w).y = hp_y(1:terminals(w)*fs);
-                            else
-                                song_eleinf(w).y = hp_y(initials(w)*fs:terminals(w)*fs); % originally loaded.segdata.rawy
-                            end
-                        end
-                        song_eleinf(w).fs = fs;
-                        if initials(w)== 0
-                            %when the stimuli starts from the very beginning
-                            imgratio = size(I,2)/(length(hp_y)/fs);
-                            song_eleinf(w).fragI = imresize(I(:,1:round(terminals(w)*imgratio)),[257,50]);
-                        else
-                            imgratio = size(I,2)/(length(hp_y)/fs);
-                            song_eleinf(w).fragI = imresize(I(:,round(initials(w)*imgratio):round(terminals(w)*imgratio)),[257,50]);
-                        end
-                    end
-                    
-                    for f = 1:length(song_eleinf)
-                        song_eleinf(f).fragid = f;
-                    end
-                    
-                    song_collect {m} = song_eleinf;
-                    
+                    alledges = sort(loaded.segdata.syledge(:));
                 end
                 
-                folder_eleinf = horzcat(song_collect{:});
+                % the following is a very bad temporily code
+                try
+                    fs = loaded.segdata.fs;
+                catch
+                    fs = 32000;
+                end
                 
-                all_collect{r} = folder_eleinf;
+                fiy = bandpass(loaded.segdata.rawy,[900 6000],fs); %% It is very important that here the y should be fiy !!!!! filtered y instead of the raw y
+                I = Cal.spec(fiy,fs);
+                initials = alledges(1:2:end);
+                terminals = alledges(2:2:end);
                 
+                song_eleinf = struct;
+
+                for w = 1: length(initials) % can add a par-for
+%                     song_eleinf(w).initial = initials(w)*fs;
+%                     song_eleinf(w).terminal = terminals(w)*fs;
+                    song_eleinf(w).songname = loaded.segdata.birdid;
+                    
+                    try
+                        song_eleinf(w).motif = MetaStimuli.findMotif(loaded.segdata.motedge,initials(w),terminals(w));
+                    catch
+                        song_eleinf(w).motif = 0;
+                    end
+                    
+                    hp_y = highpass(loaded.segdata.rawy,450,fs);
+                    if isfield(loaded.segdata,'rawy')
+                        song_eleinf(w).y = hp_y(max(initials(w)*fs,1):terminals(w)*fs); % originally loaded.segdata.rawy
+
+                    end
+                    if isempty(song_eleinf(w).y)
+                        disp('Pause')
+                    end
+                    song_eleinf(w).fs = fs;
+                    
+                    imgratio = size(I,2)/(length(hp_y)/fs);
+                    song_eleinf(w).fragI = imresize(I(:,max(round(initials(w)*imgratio),1):round(terminals(w)*imgratio)),[257,50]);
+                    song_eleinf(w).fragid = w;
+                    song_eleinf(w).unifragnames = sprintf('%s-%02u',Convert.bid(song_eleinf(w).songname ),song_eleinf(w).fragid);
+          
+                    song_eleinf(w).fs = song_eleinf(w).fs;
+                    song_eleinf(w).fullname = sprintf('%s-%02u',song_eleinf(w).songname,song_eleinf(w).fragid);
+                end
+                
+                song_collect {m} = song_eleinf;
                 
             end
             
-            all_eleinf = horzcat(all_collect{:});
-            
+            metadata = horzcat(song_collect{:});
             
         end
         
@@ -704,7 +567,7 @@ classdef MetaStimuli < handle
             twomotif_ids = find(~cellfun(@isempty, regexp([subdirs{:}].','twoMotif')));
             twoMotif_subdirs = subdirs(twomotif_ids).';
             
-            all_eleinf = getInf.Eleinf(twoMotif_subdirs,1,'SegData');
+            all_eleinf = MetaStimuli.Eleinf(twoMotif_subdirs,1,'SegData');
             
         end
         
@@ -725,8 +588,37 @@ classdef MetaStimuli < handle
             end
             
         end
-
         
+        
+        function meta2fig(meta_ele)
+            % 功能说明：generate figures for streamlit app classification from input_eleinf
+            targetdir = 'Figs';
+            mkdir(targetdir);
+            for k = 1:length(meta_ele)
+                figure('Position',[681 403 length(meta_ele(k).y)*187/2305 543]);
+                Draw.spec(meta_ele(k).y,meta_ele(k).fs)
+                saveas(gcf,fullfile(targetdir,sprintf('%s.png',meta_ele(k).fullname)))
+                close(gcf)
+            end
+            
+        end
+        
+        
+        function metadata_withcatego = replenishCatego(csv_path,metadata)
+            dbstop if error
+            csv_info = table2struct(readtable(csv_path));
+            for k = 1:length(metadata)
+                if ~isempty( csv_info(find(~cellfun(@isempty, regexp({csv_info.name}.',metadata(k).fullname)))))
+                    metadata(k).catego = csv_info(find(~cellfun(@isempty, regexp({csv_info.name}.',metadata(k).fullname)))).catego;
+                else
+                    metadata(k).catego = 0;
+                end
+            end
+            
+            metadata_withcatego = metadata;
+            
+        end
+
     end
 end
 

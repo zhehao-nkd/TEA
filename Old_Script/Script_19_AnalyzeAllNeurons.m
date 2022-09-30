@@ -24,7 +24,7 @@ for k = 8:length(tbstruct)
         continue
     end
     
-    b = Batch(txt, plx,stidir);
+    b = Chorus(txt, plx,stidir);
     
     b.select;
     
@@ -33,7 +33,7 @@ for k = 8:length(tbstruct)
     for m = 1: length(neuronlist)
         thisn = neuronlist{m};
         %thisn.rawthree;
-        thisn.threesingle;
+        thisn.Three;
     end
 
     try

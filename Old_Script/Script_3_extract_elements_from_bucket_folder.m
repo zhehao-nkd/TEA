@@ -224,7 +224,7 @@ ss.draw_stimuli_space(90)
 
 %read the plx file to analyze the data 
 
-  b = Batch(path_txt,path_plx,path_stimuli);
+  b = Chorus(path_txt,path_plx,path_stimuli);
     b.select;
     neuronlist = b.getn;
     

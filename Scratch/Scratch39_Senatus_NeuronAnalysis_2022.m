@@ -73,7 +73,7 @@ path_folder = "C:\Users\Zhehao\Downloads\rippletoolbox-master\rippletoolbox-mast
 % addpath genpath
 addpath(genpath("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA"))
 % 核心分析代码
-b = Batch(path_txt,path_plx,path_folder);
+b = Chorus(path_txt,path_plx,path_folder);
 b.select;
 neuronlist = b.getn;
 
@@ -84,6 +84,6 @@ for k = 1: length(neuronlist)
     %thisn.ResponseBasedOrderedThreePlots;
 end
 
-A = Analysis(neuronlist{1});
+A = Neuron(neuronlist{1});
 A.drawAlignedNormFragTwoPlots;
 

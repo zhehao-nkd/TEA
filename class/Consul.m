@@ -48,7 +48,7 @@ classdef Consul < handle
             
             common_cons = {};
             for k = 1: length(c.neurons)
-                Conlist = Analysis(c.neurons{k}).evaluateConResponse;
+                Conlist = Neuron(c.neurons{k}).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
@@ -159,7 +159,7 @@ classdef Consul < handle
             common_spes = {};
             
             for k = 1: length(c.neurons)
-                Conlist = Analysis(c.neurons{k}).evaluateConResponse;
+                Conlist = Neuron(c.neurons{k}).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
@@ -290,7 +290,7 @@ classdef Consul < handle
             common_spes = {};
             
             for k = 1: length(c.neurons)
-                Conlist = Analysis(c.neurons{k}).evaluateConResponse;
+                Conlist = Neuron(c.neurons{k}).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
                     con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');

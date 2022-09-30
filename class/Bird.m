@@ -376,7 +376,7 @@ classdef Bird < handle
         end
         
         function findCandidates
-            % A script to find out candidate birds for Ephys experiments
+            % A script to find out candidate birds for Piece experiments
             pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx";
             pathlist = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx";
             birdlog = table2struct(readtable(pathlog, 'Sheet','today'));

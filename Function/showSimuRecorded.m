@@ -1,25 +1,28 @@
+addpath(genpath("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA"))
+path_txt = "D:\New_Stimuli_after220901\R707_Ephys_New\P14\P14F001.txt"
+path_plx = "D:\New_Stimuli_after220901\R707_Ephys_New\P14\P14F001.plx"
+path_folder = "D:\New_Stimuli_after220901\R707_Ephys_New\P14\P14F1_ConsSibs"
 
-path_txt = "D:\R705\P18\P07F002.txt"
-path_plx = "D:\R705\P07\P07F002.plx"
-path_folder = "D:\R705\P07\P07F2_SibDegs_R705"
+cho = Chorus(path_txt,path_plx,path_folder);
 
-ba= Batch(path_txt,path_plx,path_folder);
-ba.select;
-singleunits = ba.getn;
+singleunits = cho.getn;
 
+% 
+% collect = {};
+% nametxt = {};
+% for p = 1: length(singleunits) % for each single unit
+%     % generate struct
+%     singlestruct = singleunits{p}.collectImages;
+%     collect{p} = singlestruct;
+%     %nametxt{p} = singleunits{p}.neuronname;
+% end
+% 
+% 
+% cated = horzcat(ccollect{:});
+% catedcated = horzcat(cated{:});
 
-collect = {};
-nametxt = {};
-parfor p = 1: length(singleunits) % for each single unit
-    % generate struct
-    singlestruct = singleunits{p}.getImageInfo;
-    collect{p} = singlestruct;
-    %nametxt{p} = singleunits{p}.neuronname;
-end
-
-
-cated = horzcat(ccollect{:});
-catedcated = horzcat(cated{:});
+% 
+catedcated = cho.collectImages
 
 rows = unique({catedcated.channelunit}.');
 [columns,cindex] = unique(cellstr({catedcated.soundpath}.'));

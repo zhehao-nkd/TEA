@@ -42,7 +42,7 @@ for ff = 1: length(fixed)
     all_elist = eleinf;
 % construct the new all_elist with labels
 for m = 1: length(all_elist)
-    %nn.threesingle;
+    %nn.Three;
     
    thesong = find( ~cellfun(@isempty,regexp({sinexpnames.song}.',all_elist(m).songname)));
    
