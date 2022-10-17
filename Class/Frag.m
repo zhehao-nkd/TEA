@@ -3,6 +3,7 @@ classdef Frag
     properties
         fraglist
         list
+        formated_name
     end
     methods
         function fg = Frag(list)

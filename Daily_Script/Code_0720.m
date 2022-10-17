@@ -100,7 +100,7 @@ sulo706.How_Do_NCM_Neurons_respond_to_Songs; % Version: judgeConResp_FR
             %             [f1,x1]= ecdf(dists1)
             [h,p] = kstest2(dists1,dists0);
             %set(fig,'defaultTextInterpreter','none')
-           % title(sprintf('%s P-value : %.8f',a.formated_imagename,p),'interpreter', 'none');
+           % title(sprintf('%s P-value : %.8f',a.formated_name,p),'interpreter', 'none');
             
             
  

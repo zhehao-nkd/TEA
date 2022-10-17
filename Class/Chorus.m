@@ -176,7 +176,6 @@ classdef Chorus < handle
             %neurons = {};
             for idx = 1: length(cho.sneu) % Here should be parfor
                 neurons{idx} = Experiment(cho.sneu{idx},cho.splx{idx},cho.swavfolder{idx});
-                
             end
             
             
@@ -215,18 +214,18 @@ classdef Chorus < handle
         end
         
         function Three(cho)
-            
+            dbstop if error
             IMG = {};
             
-            neuronlist = cho.getn;
+            experimentlist = cho.getn;
             
-            for k = 1:length(neuronlist)
-                IMG{k} = neuronlist{k}.OneRowThree;
+            for k = 1:length(experimentlist)
+                IMG{k} = experimentlist{k}.OneRowThree;
             end
             
             final_IMG = vertcat(IMG{:});
             [~,plxname,~] = fileparts(cho.input.pathplx);
-            imwrite(final_IMG,sprintf('Three_%s.png',plxname));
+            imwrite(final_IMG,sprintf('PltThree_%s.png',plxname));
         end
         
     end

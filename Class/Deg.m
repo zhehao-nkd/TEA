@@ -3,6 +3,7 @@ classdef Deg
     properties
         deglist
         list
+        formated_name
     end
     methods
         function dg = Deg(list)
@@ -123,7 +124,7 @@ classdef Deg
             Iall = horzcat(Ipad{:});
             
             % imwrite(Iall,sprintf('Aligned_ConsDegs_%s.png',neu.neurons{1}.neuronname));
-            imwrite(Iall,sprintf('Aligned_ConsDegs_%s.png',dg.formated_imagename));
+            imwrite(Iall,sprintf('Aligned_ConsDegs_%s.png',dg.formated_name));
             toc
             
         end

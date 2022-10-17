@@ -21,18 +21,22 @@ classdef Trigger < handle
             t.inputpath = path_plx;
             [~,t.plxname,~] = fileparts(path_plx);
             path_plx = convertStringsToChars(path_plx);
-            plexonfile = readPLXFileC(path_plx,'all'); % read .plx files as a structure
-            t.recording_time = datetime(plexonfile.Date,'ConvertFrom','datenum');
+            try
+                pl2info = PL2GetFileIndex(path_plx);
+            catch
+                pl2info =  PL2GetFileIndex(strrep(path_plx,'F:','D:'));
+            end
+            %t.recording_time = datetime(plexonfile.Date,'ConvertFrom','datenum'); 
             PULSE_LOCATION = 0;
             % find the strat and stop field
             
-            if ~isempty(regexp(plexonfile.AcquiringSoftware,'Zeus'))
-                if  ~isempty(plexonfile.EventChannels(1).Timestamps)
+            if ~isempty(regexp(pl2info.CreatorSoftwareName,'Zeus'))
+                if  ~isempty(find(~cellfun(@isempty, regexp( {vertcat(pl2info.EventChannels{:}).Name}.','DIG01'))))
                     code_method = 1;
                 else
                     code_method = 2;
                 end
-            elseif ~isempty(regexp(plexonfile.AcquiringSoftware,'OmniPlex'))
+            elseif ~isempty(regexp(pl2info.CreatorSoftwareName,'OmniPlex'))
                 code_method = 3;
                 
             else % Sarah's case
@@ -157,7 +161,7 @@ classdef Trigger < handle
         
         function info = Extract(t)
             
-            fs = t.raw.ADFrequency; % avoid hard-coding;
+            fs = t.raw.ADFreq; % avoid hard-coding;
             t.trigger_fs = fs;
             %dbstop if error
             pulse_channel = t.raw.Values;
@@ -371,94 +375,60 @@ classdef Trigger < handle
         end
         
         function coreTriggerZeusDig(t,path_plx)
-            path_plx = convertStringsToChars(path_plx);
-            plexonfile = readPLXFileC(path_plx,'all'); % read .plx files as a structure
-            PULSE_LOCATION = 0;
             
-            for n = 1:length(plexonfile.EventChannels)
-                
-                %if  strcmp(plexonfile.EventChannels(n).Name, 'DIG01') %只要存在dig channel，就认定为zeus,且rigger是digital
-                if  strcmp(plexonfile.EventChannels(n).Name, 'DIG01')
-                    PULSE_LOCATION = n;
-                    t.equipment = 'ZEUS';
-                    t.raw = plexonfile.EventChannels(PULSE_LOCATION);
-                    
-                    start_idx = find(~cellfun(@isempty, regexp({plexonfile.EventChannels.Name}.','Start')));
-                    stop_idx = find(~cellfun(@isempty, regexp({plexonfile.EventChannels.Name}.','Stop')));
-                    start_timestamps = plexonfile.EventChannels(start_idx).Timestamps;
-                    stop_timestamps = plexonfile.EventChannels(stop_idx).Timestamps;
-                    if length(start_timestamps) > 1
-                        if exist('mergeIdx','var')
-                            temp = t.raw.Timestamps(start_timestamps(mergeIdx)<= t.raw.Timestamps);
-                            raw_to_analysis = temp(temp<=stop_timestamps(mergeIdx));
-                        else
-                            raw_to_analysis = t.raw.Timestamps;
-                        end
-                    else
-                        raw_to_analysis = t.raw.Timestamps;
-                    end
-                    
-                    
-                    % to judge whether to use the binary-code decoder or
-                    % dig signal extractior
-                    %                     diff_raw = diff(t.raw.Timestamps);
-                    %
-                    %
-                    %                     diff_num = histcounts(diff_raw,unique(diff_raw));
-                    %                     [diff_num,~] = sort(diff_num);
-                    %                     sort(unique(diff_raw))
-                    newdiffs = [];
-                    diffs = diff(raw_to_analysis);
-                    
-                    for mm = 1: length(diffs)
-                        newdiffs(mm) = round( double(diffs(mm)),-2 );
-                    end
-                    
-                    method_choose_thres = 5000;
-                    
-                    newdiffs = newdiffs(newdiffs < method_choose_thres );
-                    
-                    if length(unique(newdiffs))== 1 % actually this is very dangerous !!!!!!!!!!!!!!!
-                        t.info = t.digextract; % digital
-                        clear plexonfile
-                        return
-                    elseif length(unique(newdiffs))== 2
-                        
-                        t.info = t.digbidecode; % digital
-                        clear plexonfile
-                        return  % if system is zeus, the function will return here
-                    end
-                end
-                
+            t.equipment = 'ZEUS';
+           % t.raw = plexonfile.EventChannels(PULSE_LOCATION);
+            t.raw.Timestamps = PL2EventTs(path_plx,'DIG01').Ts;
+            raw_to_analysis = t.raw.Timestamps;
+            
+            % to judge whether to use the binary-code decoder or
+            % dig signal extractior
+            %                     diff_raw = diff(t.raw.Timestamps);
+            %                     diff_num = histcounts(diff_raw,unique(diff_raw));
+            %                     [diff_num,~] = sort(diff_num);
+            %                     sort(unique(diff_raw))
+            newdiffs = [];
+            diffs = diff(raw_to_analysis);
+            
+            for mm = 1: length(diffs)
+                newdiffs(mm) = round( double(diffs(mm)),-2 );
+            end
+            
+            method_choose_thres = 5000;
+            newdiffs = newdiffs(newdiffs < method_choose_thres );
+            
+            if length(unique(newdiffs))== 1 % actually this is very dangerous !!!!!!!!!!!!!!!
+                t.info = t.digextract; % digital
+                clear plexonfile
+            elseif length(unique(newdiffs))== 2
+                t.info = t.digbidecode; % digital
+                clear plexonfile % if system is zeus, the function will return here
             end
             
         end
         
         function coreTriggerZeusAna(t,path_plx)
             
-            plexonfile = readPLXFileC(path_plx,'continuous');
+            %             plexonfile = readPLXFileC(path_plx,'continuous');
+            %             PULSE_LOCATION = find(~cellfun(@isempty, regexp({plexonfile.ContinuousChannels.Name}.', 'AIN02')));
+            %             t.equipment = 'ZEUS';
+            %             t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
+            %             t.raw.Values = -t.raw.Values;
+            %             t.info = t.Extract; % not digital
             
-            PULSE_LOCATION = find(~cellfun(@isempty, regexp({plexonfile.ContinuousChannels.Name}.', 'AIN02')));
             t.equipment = 'ZEUS';
-            t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
+            t.raw = PL2Ad(path_plx,'AIN02');
             t.raw.Values = -t.raw.Values;
             t.info = t.Extract; % not digital
         end
         
         function coreTriggerPlexAna(t,path_plx)
-            plexonfile = readPLXFileC(path_plx,'continuous');
             
-            for m = 1:length(plexonfile.ContinuousChannels)
-                
-                if  strcmp(plexonfile.ContinuousChannels(m).Name, 'AI01')
-                    PULSE_LOCATION = m;
-                    t.equipment = 'PLEXON';
-                    t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
-                    t.info = t.Extract; % not digital
-                    clear plexonfile
-                    return
-                end
-            end
+            t.equipment = 'PLEXON';
+            t.raw = PL2Ad(path_plx,'AI01');
+            %t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
+            t.info = t.Extract; % not digital
+            
         end
         
     end

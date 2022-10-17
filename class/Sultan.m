@@ -37,9 +37,9 @@ classdef Sultan
                     A.judgeConResp_FR;
                     A.judgeFragResp_FR;
                     %A.judgeConResp; % update con resp labels
-                    % parsave(sprintf('%s.mat',A.formated_imagename),A);
+                    % parsave(sprintf('%s.mat',A.formated_name),A);
                     
-                    %save(A.formated_imagename,'A','-v7.3');
+                    %save(A.formated_name,'A','-v7.3');
                     
                     [~,name,ext] = fileparts(ana_pathes{k});
                     
@@ -125,7 +125,7 @@ classdef Sultan
             for k = 1: length(s.anas)
                 load(s.anas{k});
                 wl_info(k).wl = A.calMeanWaveLength;
-                wl_info(k).neuronname = A.formated_imagename;
+                wl_info(k).neuronname = A.formated_name;
             end
             
         end
@@ -185,7 +185,7 @@ classdef Sultan
                 % for each neuron
                 load(s.anas{k});
                 thisA = A;
-                fr_info(k).neuronname = A.formated_imagename;
+                fr_info(k).neuronname = A.formated_name;
                 
                 sum_prelen = 0; % summed prey length
                 concat_presptimes = []; % concatenated prey sptimes
@@ -286,7 +286,7 @@ classdef Sultan
                 A.judgeConResp_FR;
                 Collect(k).list  = struct('stimuliname', {A.list(:).stimuliname}, 'label', {A.list(:).label});
                 Collect(k).bid = A.birdid;
-                Collect(k).formated_imagename = A.formated_imagename;
+                Collect(k).formated_name = A.formated_name;
                 send(D, 1);
             end
             
@@ -297,7 +297,7 @@ classdef Sultan
                     if length(alist_ids) > 1;alist_ids = alist_ids(1);end % 万一有多个同名norm songs，只用第一个
                     if Collect(k).list(alist_ids).label == 1
                         bstruct(bird_ids).songinf(kk).neunum = bstruct(bird_ids).songinf(kk).neunum + 1;
-                        bstruct(bird_ids).songinf(kk).neuname = {bstruct(bird_ids).songinf(kk).neuname,Collect(k).formated_imagename};
+                        bstruct(bird_ids).songinf(kk).neuname = {bstruct(bird_ids).songinf(kk).neuname,Collect(k).formated_name};
                     end
                 end
                 send(D, 1);
@@ -608,7 +608,7 @@ classdef Sultan
                     
                     % Extract con_label
                     con_info(counts).wav_len = A.calMeanWaveLength;
-                    con_info(counts).neuronname = A.formated_imagename;
+                    con_info(counts).neuronname = A.formated_name;
                     con_info(counts).con_match = con_match;
                     con_info(counts).con_resp = [Conlist(con_ids).label].';
                     con_info(counts).spe_match = spe_match;
@@ -1340,7 +1340,7 @@ classdef Sultan
                 A = loaded.A;
                 FRINFO  = A.multiRepeatsFiringRate;
                 conallneurons(k).wl =  A.neurons{A.song_id}.calMeanWaveLength;
-                conallneurons(k).neuronname = A.formated_imagename;
+                conallneurons(k).neuronname = A.formated_name;
                 conallneurons(k).mean_plt_fr = FRINFO.mean_plt_fr;
                 
                 for kk = 1: length(conkeywords) % for Cons
@@ -1484,7 +1484,7 @@ classdef Sultan
                 % removed later!
                 FRINFO  = A.multiRepeatsFiringRate;
                 conallneurons(k).wl =  A.neurons{A.song_id}.calMeanWaveLength;
-                conallneurons(k).neuronname = A.formated_imagename;
+                conallneurons(k).neuronname = A.formated_name;
                 conallneurons(k).mean_pre_fr = FRINFO.mean_pre_fr;
                 conallneurons(k).mean_plt_fr = FRINFO.mean_plt_fr;
                 send(D, 1);
@@ -1544,7 +1544,7 @@ classdef Sultan
                 %A.judgeConResp; % update con resp labels
                 FRINFO  = A.multiRepeatsFiringRate;
                 conallneurons(k).wl =  A.neurons{A.song_id}.calMeanWaveLength;
-                conallneurons(k).neuronname = A.formated_imagename;
+                conallneurons(k).neuronname = A.formated_name;
                 conallneurons(k).mean_used_fr = FRINFO.mean_pre_fr;
                 
                 for kk = 1: length(conkeywords) % for Cons
@@ -2469,7 +2469,7 @@ classdef Sultan
             parfor k = 1:length(s.anas)
                 loaded = load(s.anas{k});
                 A = loaded.A;
-                neuroninf(k).name = A.formated_imagename;
+                neuroninf(k).name = A.formated_name;
                 neuroninf(k).path = s.anas{k};
                 conids = find(~cellfun(@isempty, regexp([A.list.stimuliname].','norm|con')));
                 if ~isempty(conids);neuroninf(k).conexist = 1; else;neuroninf(k).conexist = 0;end
@@ -2567,7 +2567,7 @@ classdef Sultan
                 loaded = load(s.anas{k});
                 A = loaded.A;
                 if ~isempty(A.frag_id)
-                    cdf_collect(k).neuronname = A.formated_imagename;
+                    cdf_collect(k).neuronname = A.formated_name;
                     [cdf_collect(k).dists1_pitch,cdf_collect(k).dists0_pitch,cdf_collect(k).featurename{1}] = A.calCumulativeFeatureDiff('pitch');
                     [cdf_collect(k).dists1_amp,cdf_collect(k).dists0_amp,cdf_collect(k).featurename{2}] = A.calCumulativeFeatureDiff('amplitude');
                     [cdf_collect(k).dists1_FM,cdf_collect(k).dists0_FM,cdf_collect(k).featurename{3}] = A.calCumulativeFeatureDiff('FM');
@@ -2651,10 +2651,10 @@ classdef Sultan
                     catch ME
                     end
                 end
-                title(A.formated_imagename);
+                title(A.formated_name);
                 
-                saveas(gcf,sprintf('Scatter_%s.fig',A.formated_imagename));
-                saveas(gcf,sprintf('PngScatter_%s.png',A.formated_imagename));
+                saveas(gcf,sprintf('Scatter_%s.fig',A.formated_name));
+                saveas(gcf,sprintf('PngScatter_%s.png',A.formated_name));
                 close(gcf)
             end
             
@@ -2849,7 +2849,7 @@ classdef Sultan
                     
                     % Extract con_label
                     con_info(counts).wav_len = this_neuron.calMeanWaveLength;
-                    con_info(counts).neuronname = A.formated_imagename;
+                    con_info(counts).neuronname = A.formated_name;
                     con_info(counts).con_match = con_match;
                     con_info(counts).con_resp = [Conlist(con_ids).label].'; % resp is just label
                     con_info(counts).spe_match = spe_match;
@@ -2966,7 +2966,7 @@ classdef Sultan
                 for hh = 1: length(order_for_three_plots)
                     e_songs{order_for_three_plots(hh)}.pltthree;
                     subplot(3,1,3);
-                    xlabel(sprintf('Experiment:%s---Stimuli:%s',AA.formated_imagename,...
+                    xlabel(sprintf('Experiment:%s---Stimuli:%s',AA.formated_name,...
                         Convert.bid(e_songs{order_for_three_plots(hh)}.sound.name)),'Interpreter', 'none');
                     
                     switch(new_respmap(z,hh)) % change figure color based on resp and Experiment type

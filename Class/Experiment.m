@@ -874,13 +874,13 @@
                 thelist(k).meanfeatures = exp.e{k}.meanfeatures;
                 thelist(k).Fid = exp.Fid;
                 
-                if whether_update_figure == 1
-                    exp.e{k}.pltthree(0);
-                    frame = getframe(gcf);
-                    close(gcf);
-                    thelist(k).image = frame.cdata;
-                    thelist(k).imagename = exp.e{k}.sound.name;
-                end
+%                 if whether_update_figure == 1
+%                     exp.e{k}.pltthree(0);
+%                     frame = getframe(gcf);
+%                     close(gcf);
+%                     thelist(k).image = frame.cdata;
+%                     thelist(k).imagename = exp.e{k}.sound.name;
+%                 end
                 
             end       
         end
@@ -1795,7 +1795,7 @@
                 for k = 1:length(figure_map)
                     Icollect{k} = {I{figure_map{k}}}.' ;
                 end
-                exp.draw_waveform;     % draw waveform
+                exp.drawWaveform;     % draw waveform
                 frame = getframe(gcf);
                 Icollect{length( Icollect) + 1} = {frame.cdata};
                 close(gcf);
@@ -1806,7 +1806,7 @@
             
             
             % This is Mode-zero
-            exp.draw_waveform;     % draw waveform
+            exp.drawWaveform;     % draw waveform
             frame = getframe(gcf);
             I{length( I) + 1} = frame.cdata;
                 
@@ -1885,7 +1885,8 @@
             
             
             for idx = 1: length(exp.e)
-                exp.e{idx}.Three;
+                exp.e{idx}.pltthree;
+                %exp.e{idx}.Three;
                 %exp.e{idx}.pltthree;%_with_sig_resp; % newer version of threeplot drawing method
                 frame = getframe(gcf);
                 I{idx} = frame.cdata;

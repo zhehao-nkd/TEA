@@ -102,7 +102,7 @@ classdef Analysis_categorization < handle
         function fr_info = multiRepeatsFiringRate(a)
             % 计算各种定义下，平均所有stimuli后的firing rate
             fr_info = struct;
-            fr_info.neuronname = a.formated_imagename;
+            fr_info.neuronname = a.formated_name;
             
             sum_prelen = 0; % summed prey length
             concat_presptimes = []; % concatenated prey sptimes

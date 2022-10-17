@@ -51,8 +51,8 @@ classdef Cell_acousticFeatures < handle
             %             %             [f1,x1]= ecdf(dists1)
             %             [h,p] = kstest2(dists1,dists0);
             %             %set(fig,'defaultTextInterpreter','none')
-            %             title(sprintf('%s P-value : %.8f',a.formated_imagename,p),'interpreter', 'none');
-            %             %saveas(gcf,sprintf('CDF-%s.png',a.formated_imagename));
+            %             title(sprintf('%s P-value : %.8f',a.formated_name,p),'interpreter', 'none');
+            %             %saveas(gcf,sprintf('CDF-%s.png',a.formated_name));
             %             frame = getframe(gcf);
             %             img = frame.cdata;
             %             close(gcf);
@@ -99,10 +99,10 @@ classdef Cell_acousticFeatures < handle
             xlim([0,3]);
             xticks([0 1 2 3])
             xticklabels({'','Pitch','Harmonic ratio',''});
-            title(sprintf('%s---%u song elements',a.formated_imagename,length(fraglist)),'interpreter','none');
+            title(sprintf('%s---%u song elements',a.formated_name,length(fraglist)),'interpreter','none');
             ylabel('Zscored Feature(averaged)');
             
-            saveas(gcf,sprintf('PitchHarmoLineChart-%s.png',a.formated_imagename));
+            saveas(gcf,sprintf('PitchHarmoLineChart-%s.png',a.formated_name));
             
             frame = getframe(gcf);
             img = frame.cdata;
@@ -148,10 +148,10 @@ classdef Cell_acousticFeatures < handle
             xlim([0,3]);
             xticks([0 1 2 3])
             xticklabels({'','Pitch','Harmonic ratio',''});
-            title(sprintf('%s---%u song elements',a.formated_imagename,length(fraglist)),'interpreter','none');
+            title(sprintf('%s---%u song elements',a.formated_name,length(fraglist)),'interpreter','none');
             ylabel('Zscored Feature(averaged)');
             
-            saveas(gcf,sprintf('Insong-PitchHarmoLineChart-%s.png',a.formated_imagename));
+            saveas(gcf,sprintf('Insong-PitchHarmoLineChart-%s.png',a.formated_name));
             
             frame = getframe(gcf);
             img = frame.cdata;
@@ -190,7 +190,7 @@ classdef Cell_acousticFeatures < handle
                 end
                 xlabel(replace(ncomb{idx,1},'_','-'));
                 ylabel(replace(ncomb{idx,2},'_','-'));
-                title(a.formated_imagename,'interpreter', 'none')
+                title(a.formated_name,'interpreter', 'none')
                 frame = getframe(gcf);
                 I{idx} = frame.cdata;
                 close(gcf);
@@ -200,7 +200,7 @@ classdef Cell_acousticFeatures < handle
             reshapedI = reshape(I, 1,[])';
             clear I
             img = cell2mat(reshapedI);
-            imwrite(img,sprintf('2DPitchHarmo_%s.png',a.formated_imagename));
+            imwrite(img,sprintf('2DPitchHarmo_%s.png',a.formated_name));
             
         end
         
@@ -237,7 +237,7 @@ classdef Cell_acousticFeatures < handle
                 end
                 xlabel(replace(ncomb{idx,1},'_','-'));
                 ylabel(replace(ncomb{idx,2},'_','-'));
-                title(a.formated_imagename,'interpreter', 'none')
+                title(a.formated_name,'interpreter', 'none')
                 frame = getframe(gcf);
                 I{idx} = frame.cdata;
                 close(gcf);
@@ -247,7 +247,7 @@ classdef Cell_acousticFeatures < handle
             reshapedI = reshape(I, 1,[])';
             clear I
             img = cell2mat(reshapedI);
-            imwrite(img,sprintf('Insong_2DPitchHarmo_%s.png',a.formated_imagename));
+            imwrite(img,sprintf('Insong_2DPitchHarmo_%s.png',a.formated_name));
             
         end
         
@@ -281,8 +281,8 @@ classdef Cell_acousticFeatures < handle
             %             [f1,x1]= ecdf(dists1)
             [h,p] = kstest2(dists1,dists0);
             %set(fig,'defaultTextInterpreter','none')
-            title(sprintf('%s P-value : %.8f',a.formated_imagename,p),'interpreter', 'none');
-            saveas(gcf,sprintf('CDF-%s.png',a.formated_imagename));
+            title(sprintf('%s P-value : %.8f',a.formated_name,p),'interpreter', 'none');
+            saveas(gcf,sprintf('CDF-%s.png',a.formated_name));
             frame = getframe(gcf);
             img = frame.cdata;
             close(gcf);
@@ -319,8 +319,8 @@ classdef Cell_acousticFeatures < handle
             %             [f1,x1]= ecdf(dists1)
             [h,p] = kstest2(dists1,dists0);
             %set(fig,'defaultTextInterpreter','none')
-            title(sprintf('%s P-value : %.8f',a.formated_imagename,p),'interpreter', 'none');
-            %saveas(gcf,sprintf('CDF-%s.png',a.formated_imagename));
+            title(sprintf('%s P-value : %.8f',a.formated_name,p),'interpreter', 'none');
+            %saveas(gcf,sprintf('CDF-%s.png',a.formated_name));
             frame = getframe(gcf);
             img = frame.cdata;
             close(gcf);
@@ -365,8 +365,8 @@ classdef Cell_acousticFeatures < handle
             %             [f1,x1]= ecdf(dists1)
             [h,p] = kstest2(dists1,dists0);
             %set(fig,'defaultTextInterpreter','none')
-            title(sprintf('%s P-value : %.8f',a.formated_imagename,p),'interpreter', 'none');
-            saveas(gcf,sprintf('Insong-CDF-%s.png',a.formated_imagename));
+            title(sprintf('%s P-value : %.8f',a.formated_name,p),'interpreter', 'none');
+            saveas(gcf,sprintf('Insong-CDF-%s.png',a.formated_name));
             frame = getframe(gcf);
             img = frame.cdata;
             close(gcf);

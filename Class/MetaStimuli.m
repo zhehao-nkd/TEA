@@ -378,15 +378,15 @@ classdef MetaStimuli < handle
                 loaded = load(matfiles{m});
                 
                 % Very dangerous bad code, temporarilary used
-                if isfield(loaded.segdata,'eleedge')
-                    loaded.segdata.eleedge = loaded.segdata.eleedge -0.008;
-                end
-                if isfield(loaded.segdata,'syledge')
-                    loaded.segdata.syledge = loaded.segdata.syledge -0.008;
-                end
-                if isfield(loaded.segdata,'motedge')
-                    loaded.segdata.motedge = loaded.segdata.motedge -0.008;
-                end
+%                 if isfield(loaded.segdata,'eleedge')
+%                     loaded.segdata.eleedge = loaded.segdata.eleedge -0.008;
+%                 end
+%                 if isfield(loaded.segdata,'syledge')
+%                     loaded.segdata.syledge = loaded.segdata.syledge -0.008;
+%                 end
+%                 if isfield(loaded.segdata,'motedge')
+%                     loaded.segdata.motedge = loaded.segdata.motedge -0.008;
+%                 end
                 %%%%%%%%%Extremeley bad and dangerous code shown above
                 
                 if isfield(loaded.segdata,'eleedge')
@@ -405,9 +405,11 @@ classdef MetaStimuli < handle
                 
                 fiy = bandpass(loaded.segdata.rawy,[900 6000],fs); %% It is very important that here the y should be fiy !!!!! filtered y instead of the raw y
                 I = Cal.spec(fiy,fs);
-                initials = alledges(1:2:end);
-                terminals = alledges(2:2:end);
-                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                initials = alledges(1:2:end)-0.008;
+                terminals = alledges(2:2:end)+ 0.008;
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                %Extremely extremely dangerous code
                 song_eleinf = struct;
 
                 for w = 1: length(initials) % can add a par-for

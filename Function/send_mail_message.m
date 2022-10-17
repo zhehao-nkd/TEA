@@ -9,7 +9,7 @@ function send_mail_message(address,subject,message,attachment)
 %Your gmail ID and password 
 %(from which email ID you would like to send the mail)
 mail = 'chengzh.work@gmail.com';    %Your GMail email address
-password = 'czhnju2014';          %Your GMail password
+password = 'fyrvwmkowooytupo';          %Your GMail password
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if nargin == 1

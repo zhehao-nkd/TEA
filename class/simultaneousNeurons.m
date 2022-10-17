@@ -82,7 +82,7 @@ classdef simultaneousNeurons < Sultan
                 %A.judgeConResp; % update con resp labels
                 FRINFO  = A.multiRepeatsFiringRate;
                 conallneurons(k).wl =  A.neurons{A.song_id}.calMeanWaveLength;
-                conallneurons(k).neuronname = A.formated_imagename;
+                conallneurons(k).neuronname = A.formated_name;
                 conallneurons(k).mean_used_fr = FRINFO.mean_pre_fr;
                 
                 for kk = 1: length(conkeywords) % for Cons

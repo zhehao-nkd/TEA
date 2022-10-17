@@ -1,14 +1,18 @@
-classdef Repla
+classdef Repla < handle
     %@ 类说明 Member class of Neuron
     
     properties
         replalist
+        list
+        formated_name
     end
     
     methods
         
         function rp = Repla(list)
             % 从 Neuron 文件中提取neuron对replas的反应，已经具体的replas的名称
+            rp.list = list;
+            rp.judgeReplaResp;
             replalist = rp.list(find(~cellfun(@isempty, regexp(cellstr({list.stimuliname}.'),'Repla'))));
             
             Replst_fnames = [replalist.stimuliname].';
@@ -23,6 +27,7 @@ classdef Repla
                 replalist(k).concat2 = sprintf('%s-%02u',replalist(k).bname2,replalist(k).fid2);
                 replalist(k).fullrepla = sprintf('%s-%02u-%s-%02u',replalist(k).bname1,replalist(k).fid1,replalist(k).bname2,replalist(k).fid2);
             end
+            
             rp.replalist = replalist;
             
             
@@ -34,6 +39,9 @@ classdef Repla
             % evaluate the responsiveness of song replacements
             replaids = find( ~cellfun(@isempty, regexp([rp.list.stimuliname].','Repla') ));
             
+            if isempty(replaids)
+                return
+            end
             % Find out that the repla stimuliname correspond to how many natrual songs
             bnames = unique(cellfun(@(x)Convert.bid(x,2),[rp.list(replaids).stimuliname].','Uni',0));
             
@@ -56,6 +64,7 @@ classdef Repla
                     [Ini_y,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla(...
                         rp.list(nid).y,...
                         rp.list(rids(kk)).y );
+
                     num_of_zeros = find(rp.list(nid).y(Ini_y:end),1)-1; % 在分歧点后多长一段是0
                     Ini_y = Ini_y + num_of_zeros;
                     Ini_replay = Ini_replay + num_of_zeros;
@@ -63,7 +72,8 @@ classdef Repla
                         rp.list(rids(kk)).targety = rp.list(rids(kk)).y(Ini_replay:Ini_replay + 0.2*32000); % 截取200ms
                         rp.list(rids(kk)).replaceparty = rp.list(rids(kk)).y(1:Ini_replay ); % 被替换的那一部分的y值
                     catch % if the second index overceed
-                        rp.list(rids(kk)).targety = rp.list(rids(kk)).y(Ini_replay:end); % 截取200ms
+                        rp.list(rids(kk)).targety = rp.list(rids(kk)).y(Ini_replay:end); % 截取到 end
+                        rp.list(rids(kk)).replaceparty = rp.list(rids(kk)).y(1:Ini_replay ); % 被替换的那一部分的y值
                         disp(' MEssage@Neuron.judgeReplaResp :Overceed');
                     end
                     rp.list(rids(kk)).targetsptimes = Extract.sptimes_resetSP(rp.list(rids(kk)).sptimes,Ini_replay/32000,(Ini_replay + 0.2*32000)/32000);
@@ -88,32 +98,41 @@ classdef Repla
         
         function toCheck(rp)
             % 功能说明：把replalist的神经元反应结果作图，进而探明到底哪些replacement可以使神经元反应
-            
+           dbstop if error
             replalist = rp.replalist; % let us make replalist as an internal variable
+            if isempty(replalist)
+                return
+            end
+            replalist = table2struct(sortrows(struct2table(replalist),'targetfr','descend')); % rank by firing rate
+            
+           
             replafig = {};
             prefig = {};
             replacepartfig = {};
             for k = 1:length(replalist)
                 
-                figure('Position',[2189 255 560 420])
+                figure('Position',[2189 255 560 1000])
                 Draw.two(replalist(k).targety, 32000,replalist(k).targetsptimes); % something wrong with the getReplallist
+                 xlabel(sprintf(...
+                    'mFR (target dur): %f, Result: % u ',replalist(k).targetfr,replalist(k).replaresp));%???? big problem here
+                replacepartfig {k} = getframe(gcf).cdata;
                 replafig{k} = getframe(gcf).cdata;
+                
                 close(gcf)
                 
-                figure('Position',[2189 255 200 420])
+                figure('Position',[2189 255 560 1000])  %basline level prestimuli
                 Draw.two(replalist(k).pretargety, 32000,replalist(k).pretargetsptimes);
                 prefig{k} = getframe(gcf).cdata;
                 close(gcf)
                 
                 
-                figure('Position',[2189 255 200 420])
-                Draw.two(replalist(k).replaceparty, 32000,replalist(k).replacepartsptimes);
-                replacepartfig {k} = getframe(gcf).cdata;
-                close(gcf)
+%                 figure('Position',[2189 255 200 840]) % the
+%                 Draw.two(replalist(k).replaceparty, 32000,replalist(k).replacepartsptimes);
+%                 replacepartfig {k} = getframe(gcf).cdata;
+%                 close(gcf)
                 
-                figure('Position',[2189 255 560 420])
-                text(.01,.01,sprintf(...
-                    'mFR (target dur): %f, Result: % u ',replalist(k).targetfr,replalist(k).replaresp));%???? big problem here
+                figure('Position',[2189 255 400 1000])
+               
                 Draw.two(replalist(k).replaceparty, 32000,replalist(k).replacepartsptimes);
                 replacepartfig {k} = getframe(gcf).cdata;
                 close(gcf)
@@ -124,9 +143,9 @@ classdef Repla
             sum_replacepartfig = vertcat(replacepartfig{:});
             sum_all = horzcat(sum_prefig,sum_replacepartfig,sum_replafig);
             
-            %imwrite(sum_two,sprintf('%s_Sum_repla_fig.png',A.formated_imagename));
+            %imwrite(sum_two,sprintf('%s_Sum_repla_fig.png',A.formated_name));
             
-            imwrite(sum_all,sprintf('%s_Sum_preNreplaceNtarget.png',Neu.formated_imagename));
+            imwrite(sum_all,sprintf('%s_Sum_preNreplaceNtarget.png',rp.formated_name));
             
         end
         
@@ -157,9 +176,11 @@ classdef Repla
                 if ~isempty(transID)
                     replalist(k).transrank = transition_statics(transID).rank;
                     replalist(k).count = transition_statics(transID).counts;
+                     replalist(k).chance = transition_statics(transID).chance;
                 else
                     replalist(k).transrank = 0;
                     replalist(k).count = 0;
+                    replalist(k).chance = 0;
                 end
                 
             end
@@ -255,6 +276,7 @@ classdef Repla
             all_categos = unique([sequential_song_meta .catego].');
             relation_map = zeros(length(all_categos),length(all_categos)); % initialization
             transition_statics = struct;
+            
             count = 0;
             for k = 1:length(all_categos)
                 for kk = 1:length(all_categos)
@@ -270,10 +292,13 @@ classdef Repla
                 end
             end
             
+             all_counts = sum(sum(relation_map));
+            
             % sort the transition_statics and assign the rank
             transition_statics = table2struct(sortrows(struct2table(transition_statics),'counts','descend'));
             for k = 1:length(transition_statics)
                 transition_statics(k).rank = k; % rank越小， transition越常见
+                transition_statics(k).chance =  transition_statics(k).counts/all_counts;        
             end
             
         end
@@ -348,16 +373,28 @@ classdef Repla
             otestruct = table2struct(readtable(csv_path))
             %figdir = "E:\My_Analysis_by_date\0925_CheckNeuralResponseToReplas\Figs_NewCon_OTE_For_TransStatastics\Figs_OTE";
             [~,figdirname,~]= fileparts(figdir)
-            how_many_categos = unique([otestruct.catego].');
+            which_categos = unique([otestruct.catego].');
             outdir = sprintf('Sorted_%s_figs',figdirname);
             
-            for k = 1:length(how_many_categos)
-                subdirs{k} = sprintf('%s\\%u',outdir,how_many_categos(k));
+            for k = 1:length(which_categos)
+                subdirs{k} = sprintf('%s\\%u',outdir,which_categos(k));
                 mkdir(subdirs{k});
             end
             
+            if min(which_categos) == 0
+                method = 0;
+            else
+                methods = 1;
+            end
+              
+            
             for k = 1:length(otestruct)
-                targetdir = subdirs{otestruct(k).catego};
+                if method == 0
+                    targetdir = subdirs{otestruct(k).catego + 1};
+                    
+                else
+                    targetdir = subdirs{otestruct(k).catego};
+                end
                 source = fullfile(figdir,otestruct(k).name);
                 destiney = fullfile(targetdir,otestruct(k).name);
                 copyfile(source,destiney);

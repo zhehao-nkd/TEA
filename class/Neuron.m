@@ -1,57 +1,48 @@
-classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  & Analysis_categorization
+classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & Analysis_categorization
     % The class to do all the analysis for neu single neuron
     %   Detailed explanation goes here
-    
+   
+    properties(Dependent)
+        
+    end
     properties % 必须
         neurons % raw features
-        %list_sum %???
-        %group %???
-        
-        
         % Class
+        song
+        repla
+        deg % class to process degressive song
+        frag
         
-       % source    % read xlxs into struct
-       norm
-       
-       deg % class to process degressive song
-       
-       frag
-       
-       repla
-       
         list
-        %replalist
+        fragnames % neu cell of unique frag names
+        degnames
+        replanames
         
-%         fragnames % neu cell of unique frag names
-%         degnames
-%         replanames
-%         
-%         normlist % list of norm-songs
-%         all_eleinf
-%         conspe_eleinf
-%         
-%         targets % unique(targetnames)
-%         
-%         neuinfo
-%         uniqueid
-%         birdid
-%         %formated_imagename
-%         
-%         % ids of neuros corresponding to different stimuli
-%         song_id_redundant
-%         song_id
-%         song_only_id % the neuron which has only song stimuli
-%         frag_id
-%         deg_id
-%         repla_id
-%         plx_data_fs
-%         other_id
+        normlist % list of norm-songs
+        all_eleinf
+        conspe_eleinf
+        
+        targets % unique(targetnames)
+        
+        neuinfo
+        uniqueid
+        birdid
+        
+        % ids of neuros corresponding to different stimuli
+        song_id_redundant
+        song_id
+        song_only_id % the neuron which has only song stimuli
+        frag_id
+        deg_id
+        repla_id
+        plx_data_fs
+        other_id
         
         birdname
         zpid
         channelname
         unitname
-        formated_imagename
+        formated_name
         
         insonglist
         test
@@ -68,40 +59,39 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
             % 构造方法
             if exist('neurons','var')
                 
-                if isa(neurons,'Experiment'); neu.neurons{1} = neurons;else; neu.neurons = neurons; end % 输入可以是单个Neuron或者多个neuron组成的cell
-                
+                if isa(neurons,'Experiment')
+                    neu.neurons{1} = neurons;
+                else
+                    neu.neurons = neurons;
+                end % 输入可以是单个Neuron或者多个neuron组成的cell
+                neu.neurons = neu.neurons(~cellfun(@isempty,neu.neurons)); % 去除为空的experiments
                 neu.getNeuronInfo;
                 neu.setStimuliCorrespondingNeuronId;
-                
-                % if norm stimuli exist in multiple Experiment files, then
-                % delect the first one which has only norm stimuli, as it is
-                % far away from others in time
                 neu.updatelist;
-                %neu.normlist = neu.neurons{neu.song_id}.toList;%neu.sort;
                 
                 temp = regexp(neu.neurons{1}.plxname,'[RBOYRG]\d{3}','match');
-                % set birdid uniqueid and formated_imagename
+                % set birdid uniqueid and formated_name
                 if ~isempty(temp)
                     neu.birdid = temp{1};
                 end
                 neu.zpid = regexp(neu.neurons{1}.plxname,'[ZP]\d{2}','match');
                 neu.channelname = neu.neurons{1}.channelname;
                 neu.unitname = neu.neurons{1}.unitname;
-                try
-                    neu.formated_imagename = sprintf('%s_%s_%s_%u',neu.birdid,neu.zpid{1},neu.channelname,neu.unitname);
-                catch ME
-                end
-                neu.fig_size1 = [2091 -14 755 620];
-                %neu.judgeFragResp;
-                %neu.judgeConResp;
-                %neu.writeFigdata;
+                neu.formated_name = sprintf('%s_%s_%s_%u',neu.birdid,neu.zpid{1},neu.channelname,neu.unitname);
+                
+                
+                % 构造subclass about_repla
+                 neu.song = Song(neu.list);
+                neu.song.formated_name = neu.formated_name;
+                neu.repla = Repla(neu.list);
+                neu.repla.formated_name = neu.formated_name;
+                neu.deg = Deg(neu.list);
+                neu.deg.formated_name = neu.formated_name;
+                neu.frag = Frag(neu.list);
+                neu.frag.formated_name = neu.formated_name;
+                
             end
             
-            
-            % 构造subclass about_repla
-            neu.repla = Repla(list);
-            neu.deg = Deg(list);
-            neu.frag = Frag(list);
         end
         
         function neu = updatelist(neu)
@@ -150,7 +140,7 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
                 
             end
         end
-
+        
     end
     
     methods(Access = private)% 内部计算方法
@@ -630,9 +620,9 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
             e_objects = vertcat(collects{:});
         end
         
-        function formated_imagename = neuronname(neu)
+        function formated_name = neuronname(neu)
             % 似乎没用
-            formated_imagename = sprintf('%s_%u',neu.birdid,neu.uniqueid);
+            formated_name = sprintf('%s_%u',neu.birdid,neu.uniqueid);
         end
         
     
@@ -941,7 +931,7 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
             ainf.numrespsong = length(is1ids);
             label1normlist = normlist(is1ids);
             
-            ainf.neuronname = neu.formated_imagename;
+            ainf.neuronname = neu.formated_name;
             ainf.meanCI = mean([label1normlist.CI].');
             ainf.maxCI = max([label1normlist.CI].');
             ainf.minCI = min([label1normlist.CI].');
@@ -1137,7 +1127,7 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
             reshapedI = reshape(I, lieshu,[])';
             clear I
             img = cell2mat(reshapedI);
-            imwrite(img,sprintf('晋RespToFrags_%s.png',neu.formated_imagename));
+            imwrite(img,sprintf('晋RespToFrags_%s.png',neu.formated_name));
             
         end
         
@@ -1324,7 +1314,7 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
             
             Iall = horzcat(Ipad{:});
             
-            imwrite(Iall,sprintf('Aligned_Normfrag_%s.png',neu.formated_imagename));
+            imwrite(Iall,sprintf('Aligned_Normfrag_%s.png',neu.formated_name));
             toc
             
         end
@@ -1441,7 +1431,7 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
             Iall = horzcat(Ipad{:});
             
             % imwrite(Iall,sprintf('Aligned_ConsDegs_%s.png',neu.neurons{1}.neuronname));
-            imwrite(Iall,sprintf('Aligned_ConsDegs_%s.png',neu.formated_imagename));
+            imwrite(Iall,sprintf('Aligned_ConsDegs_%s.png',neu.formated_name));
             toc
             
         end
@@ -1570,7 +1560,7 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
             
             Iall = horzcat(Ipad{:});
             
-            imwrite(Iall,sprintf('Aligned_Repla_With_Norm_%s.png',neu.formated_imagename));
+            imwrite(Iall,sprintf('Aligned_Repla_With_Norm_%s.png',neu.formated_name));
             toc
             
         end
@@ -1793,7 +1783,7 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
             
             Iall = horzcat(Ipad{:});
             
-            imwrite(Iall,sprintf('Whether_NeuResp_To_SinFrags_Coms_Or_FragsResps_affected_By_Pres_%s.png',neu.formated_imagename));
+            imwrite(Iall,sprintf('Whether_NeuResp_To_SinFrags_Coms_Or_FragsResps_affected_By_Pres_%s.png',neu.formated_name));
             toc
             
             
@@ -1922,7 +1912,7 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
             
             Iall = horzcat(Ipad{:});
             
-            imwrite(Iall,sprintf('Sibling_Songs_%s.png',neu.formated_imagename));
+            imwrite(Iall,sprintf('Sibling_Songs_%s.png',neu.formated_name));
             toc
             
         end
@@ -2360,7 +2350,7 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
             Iall = horzcat(Ipad{:});
             
             % imwrite(Iall,sprintf('Aligned_ConsDegs_%s.png',neu.neurons{1}.neuronname));
-            imwrite(Iall,sprintf('Aligned_ConsDegs_%s.png',neu.formated_imagename));
+            imwrite(Iall,sprintf('Aligned_ConsDegs_%s.png',neu.formated_name));
             toc
         end
         
@@ -2425,7 +2415,7 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
             reshapedI = reshape(I, lieshu,[])';
             clear I
             IMG = cell2mat(reshapedI);
-            imwrite(IMG,sprintf('Three_%s.png',neu.formated_imagename));
+            imwrite(IMG,sprintf('Three_%s.png',neu.formated_name));
             
         end
         
@@ -2488,7 +2478,7 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
             clear I
             IMG = cell2mat(reshapedI);
             
-            imwrite(IMG,sprintf('ReplaThree-%s.png',neu.formated_imagename));
+            imwrite(IMG,sprintf('ReplaThree-%s.png',neu.formated_name));
             
             %deg = Display.descend(deg);
             
@@ -2554,7 +2544,7 @@ classdef Neuron < handle & Analysis_basicDrawings %& Analysis_acousticFeatures  
             clear I
             IMG = cell2mat(reshapedI);
             
-            imwrite(IMG,sprintf('DegThree-%s.png',neu.formated_imagename));
+            imwrite(IMG,sprintf('DegThree-%s.png',neu.formated_name));
             
             %deg = Display.descend(deg);
             

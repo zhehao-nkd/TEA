@@ -198,7 +198,7 @@ classdef Convert
             end
         end
         
-        function renameAllLevel(targetdir,ext,old,new)
+        function renameAllLevel(targetdir,ext,oldregexp,new)
             dbstop if error
             files = Extract.filesAllLevel(targetdir, ext);
             
@@ -211,7 +211,8 @@ classdef Convert
                 oldname = files{id};
                 
                 [folder,oldfilename,ext] = fileparts(oldname);
-                newfilename = strrep(oldfilename,old,new);
+                %old = regexp(oldfilename,oldregexp,'match');
+                newfilename =  regexprep(oldfilename,oldregexp,new);
                 
                 newname = fullfile(folder,strcat(newfilename,ext));
                 if ~strcmp(oldname,newname)

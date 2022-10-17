@@ -13,7 +13,7 @@ classdef Neuron_basicDrawings <handle
             img5 = A.saveDrawSortedRespToFrags;
             img234 = padFigures({img2,img3,img4});
             allimg = padFigures({img1,img234,img5});
-            imwrite(allimg,sprintf('%s.png',a.formated_imagename));
+            imwrite(allimg,sprintf('%s.png',a.formated_name));
             
             % 首先生成一张大图
             % 之后可以生成一个报告
@@ -53,7 +53,7 @@ classdef Neuron_basicDrawings <handle
             reshapedI = reshape(I, lieshu,[])';
             clear I
             img = cell2mat(reshapedI);
-            imwrite(img,sprintf('Three_%s.png',a.formated_imagename));
+            imwrite(img,sprintf('Three_%s.png',a.formated_name));
             
         end
         
@@ -103,7 +103,7 @@ classdef Neuron_basicDrawings <handle
             colorbar('southoutside')
             
             title(sprintf('%u plexon files',length(a.neurons)));
-            saveas(gcf,sprintf('WaveformsSeparated-%s.png', a.formated_imagename));
+            saveas(gcf,sprintf('WaveformsSeparated-%s.png', a.formated_name));
         end
         
         function drawFragScatter(a,not_tested_handle)
@@ -241,7 +241,7 @@ classdef Neuron_basicDrawings <handle
             figure;
             imagesc(sim);
             
-            saveas(gcf,sprintf('SSIMSimlarityMatrix-%s.png',a.formated_imagename));
+            saveas(gcf,sprintf('SSIMSimlarityMatrix-%s.png',a.formated_name));
             close(gcf);
         end
         
@@ -376,7 +376,7 @@ classdef Neuron_basicDrawings <handle
             ylabel('Maximum FR');
             
             
-            saveas(gcf, sprintf('SeparatedFeatureVsResponse_%s.png',a.formated_imagename));
+            saveas(gcf, sprintf('SeparatedFeatureVsResponse_%s.png',a.formated_name));
             close(gcf);
             
             
@@ -441,7 +441,7 @@ classdef Neuron_basicDrawings <handle
             title(sprintf('Totally %u song elements',length(fraglist)));
             ylabel('Zscored Feature(averaged)');
             
-            saveas(gcf,sprintf('LineChartMeanFeaturesVsResp-%s.png',a.formated_imagename));
+            saveas(gcf,sprintf('LineChartMeanFeaturesVsResp-%s.png',a.formated_name));
             close(gcf);
         end
         
@@ -799,8 +799,8 @@ classdef Neuron_basicDrawings <handle
             reshapedI = reshape(img, lieshu,[])';
             clear img
             IMG = cell2mat(reshapedI);
-            imwrite(IMG,sprintf('秦lineChart_2D_Cumulative_%s.png',a.formated_imagename));
-            %imwrite(img,sprintf('新lineChart_2D_Cumulative_%s.png',a.formated_imagename));
+            imwrite(IMG,sprintf('秦lineChart_2D_Cumulative_%s.png',a.formated_name));
+            %imwrite(img,sprintf('新lineChart_2D_Cumulative_%s.png',a.formated_name));
         end
         
         function saveDrawInsong_lineChart_2D_Cumulative(a)
@@ -808,7 +808,7 @@ classdef Neuron_basicDrawings <handle
             img2 = a.Insong_draw2DPitchVsHarmo;
             img3 = a.Insong_drawCumulativePitchDiff;
             img = horzcat(img1,img2,img3);
-            imwrite(img,sprintf('汉Insong_lineChart_2D_Cumulative_%s.png',a.formated_imagename));
+            imwrite(img,sprintf('汉Insong_lineChart_2D_Cumulative_%s.png',a.formated_name));
         end
         
         function BinaryThresholdDrawMeanFeaturesVsRespAsLineChart(a) % draw the distribution of mean features
@@ -850,7 +850,7 @@ classdef Neuron_basicDrawings <handle
             
             
             % very artifical bad code
-            switch a.formated_imagename
+            switch a.formated_name
                 case 'O686_34'
                     thres = 2;
                 case 'R677_55'
@@ -884,7 +884,7 @@ classdef Neuron_basicDrawings <handle
             title(sprintf('%u of  %u song elements',kemal,length(fraglist)));
             ylabel('Zscored Feature(averaged)');
             
-            saveas(gcf,sprintf('New_BinaThres_LineChartMeanFeaturesVsResp-%s.png',a.formated_imagename));
+            saveas(gcf,sprintf('New_BinaThres_LineChartMeanFeaturesVsResp-%s.png',a.formated_name));
             close(gcf);
         end
         
@@ -959,7 +959,7 @@ classdef Neuron_basicDrawings <handle
             reshapedI = reshape(I, lieshu,[])';
             clear I
             IMG = cell2mat(reshapedI);
-            imwrite(IMG,sprintf('PairwiseFragmentsMeanFeaturesDistribution_%s.png',a.formated_imagename));
+            imwrite(IMG,sprintf('PairwiseFragmentsMeanFeaturesDistribution_%s.png',a.formated_name));
             
         end
         
@@ -1023,7 +1023,7 @@ classdef Neuron_basicDrawings <handle
             reshapedI = reshape(I, lieshu,[])';
             clear I
             IMG = cell2mat(reshapedI);
-            imwrite(IMG,sprintf('DTWSimilarityMatrix_%s.png',a.formated_imagename));
+            imwrite(IMG,sprintf('DTWSimilarityMatrix_%s.png',a.formated_name));
             
         end
         
@@ -1087,7 +1087,7 @@ classdef Neuron_basicDrawings <handle
             reshapedI = reshape(I, lieshu,[])';
             clear I
             IMG = cell2mat(reshapedI);
-            imwrite(IMG,sprintf('ZscoredFeatureSimilarity_%s.png',a.formated_imagename));
+            imwrite(IMG,sprintf('ZscoredFeatureSimilarity_%s.png',a.formated_name));
             
         end
         
@@ -1157,7 +1157,7 @@ classdef Neuron_basicDrawings <handle
             reshapedI = reshape(I, lieshu,[])';
             clear I
             IMG = cell2mat(reshapedI);
-            imwrite(IMG,sprintf('N-order-coefficient_%s.png',a.formated_imagename));
+            imwrite(IMG,sprintf('N-order-coefficient_%s.png',a.formated_name));
             
             
             
@@ -1210,7 +1210,7 @@ classdef Neuron_basicDrawings <handle
             
             ylabel('Zscored Feature(averaged)');
             title(sprintf('Totally %u song elements',length(fraglist)));
-            saveas(gcf,sprintf('V1-WithinSongsLineChartMeanFeaturesVsResp-%s.png',a.formated_imagename));
+            saveas(gcf,sprintf('V1-WithinSongsLineChartMeanFeaturesVsResp-%s.png',a.formated_name));
             close(gcf);
         end
         
@@ -1385,7 +1385,7 @@ classdef Neuron_basicDrawings <handle
             
             Iall = horzcat(Ipad{:});
             
-            imwrite(Iall,sprintf('Aligned_Normfrag_%s.png',a.formated_imagename));
+            imwrite(Iall,sprintf('Aligned_Normfrag_%s.png',a.formated_name));
             toc
             
             
@@ -1443,7 +1443,7 @@ classdef Neuron_basicDrawings <handle
             reshapedI = reshape(I, lieshu,[])';
             %clear I
             IMG = cell2mat(reshapedI);
-            imwrite(IMG,sprintf('RawThree_%s.png',a.formated_imagename));
+            imwrite(IMG,sprintf('RawThree_%s.png',a.formated_name));
             
             
         end
