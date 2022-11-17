@@ -38,13 +38,13 @@ classdef Fenxi < handle
             primpath = f.source(intersect(targets,prims));
             secondpath = f.source(intersect(targets,seconds));
             
-            b1 = Chorus(primpath.path_txt,primpath.path_plx,primpath.path_folder);
+            b1 = Chorus(primpath.path_txt,primpath.path_pl2,primpath.path_folder);
             f.b1 = b1;
             n1idx = find(~cellfun(@isempty,regexp({b1.nlist.neuronname}.',primpath.neuron)));
             
             
             
-            b2 = Chorus(secondpath.path_txt,secondpath.path_plx,secondpath.path_folder);
+            b2 = Chorus(secondpath.path_txt,secondpath.path_pl2,secondpath.path_folder);
              % b2is the batch object for 2nd-trail stimuli
             n2idx = find(~cellfun(@isempty,regexp({b2.nlist.neuronname}.',secondpath.neuron)));
             

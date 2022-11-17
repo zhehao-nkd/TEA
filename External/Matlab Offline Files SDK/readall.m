@@ -3,7 +3,8 @@
 
 % Open a plx file
 % this will bring up the file-open dialog
-StartingFileName = 'D:\New_Stimuli_after220901\R705_Ephys_New\R705_P16\R705_P16F1.plx';
+pl2files = 'D:\Old_stimuli_before220901\O686_Ephys_W\Z10\O686_Z10F1_Cons_plx-01.pl2';
+StartingFileName = pl2files;%'';
 %StartingFileName = 'c:\plexondata\NSSample.plx';
 %StartingFileName = 'c:\plexondata\au101602a.plx';
 [OpenedFileName, Version, Freq, Comment, Trodalness, NPW, PreThresh, SpikePeakV, SpikeADResBits, SlowPeakV, SlowADResBits, Duration, DateTime] = plx_information(StartingFileName);

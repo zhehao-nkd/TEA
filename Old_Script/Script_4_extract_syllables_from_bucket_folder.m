@@ -232,9 +232,9 @@ ss.draw_stimuli_space(60)
 ss.draw_stimuli_space(90)
 % sort the data , then
 
-%read the plx file to analyze the data 
+%read the pl2 file to analyze the data 
 
-  b = Chorus(path_txt,path_plx,path_stimuli);
+  b = Chorus(path_txt,path_pl2,path_stimuli);
     b.select;
     neuronlist = b.getn;
     

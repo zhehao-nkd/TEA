@@ -35,7 +35,7 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
         frag_id
         deg_id
         repla_id
-        plx_data_fs
+        pl2_data_fs
         other_id
         
         birdname
@@ -69,12 +69,12 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
                 neu.setStimuliCorrespondingNeuronId;
                 neu.updatelist;
                 
-                temp = regexp(neu.neurons{1}.plxname,'[RBOYRG]\d{3}','match');
+                temp = regexp(neu.neurons{1}.pl2name,'[RBOYRG]\d{3}','match');
                 % set birdid uniqueid and formated_name
                 if ~isempty(temp)
                     neu.birdid = temp{1};
                 end
-                neu.zpid = regexp(neu.neurons{1}.plxname,'[ZP]\d{2}','match');
+                neu.zpid = regexp(neu.neurons{1}.pl2name,'[ZP]\d{2}','match');
                 neu.channelname = neu.neurons{1}.channelname;
                 neu.unitname = neu.neurons{1}.unitname;
                 neu.formated_name = sprintf('%s_%s_%s_%u',neu.birdid,neu.zpid{1},neu.channelname,neu.unitname);
@@ -143,7 +143,7 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
         
     end
     
-    methods(Access = private)% 内部计算方法
+    methods% 内部计算方法
         
         function neu = calHarmRatio(neu)
             % calculate harmonic noise ratio
@@ -208,6 +208,7 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
         end
         
         function neu = judgeFragResp_FR(neu)
+            dbstop if error
             % 判断对frag 是否反应，通过 Firing rate
             for k = 1: length(neu.neurons)
                 for kk = 1: length( neu.neurons{k}.e)
@@ -219,6 +220,10 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
             ids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'Frag|frag|syl|ele'))); % find all norms
             % ’syl'可以兼容旧的stimuli命名规则
             
+            if length(ids)==0
+                neu = neu;
+                return
+            end
             for n = 1: length(ids)
                 thisi = ids(n);
                 
@@ -233,17 +238,75 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
                 
                 pre_frs = Cal.eachTrialFiringRate(neu.list(thisi).prejudgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
                 sti_frs = Cal.eachTrialFiringRate(neu.list(thisi).judgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
-                [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05)
+                [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05); % should be 0.05!!!
+
+
                 neu.list(thisi).pvalue = p;
+                repeats = length(neu.list(thisi).judgerespsptimes);
+                neu.list(thisi).sti_frs = length(vertcat(neu.list(thisi).judgerespsptimes{:}))...
+                    /((length(neu.list(thisi).judgerespy)/neu.list(thisi).fs) *repeats);
+                neu.list(thisi).maxsdf = maxsdf;
                 neu.list(thisi).label = 0; % 初始化
-                if h == 1
+                if h == 1 &&...
+                        length(find(~cellfun(@isempty,neu.list(thisi).judgerespsptimes)))/length(neu.list(thisi).judgerespsptimes) >=0.5...
+                        && maxsdf>13
                     neu.list(thisi).label = 1;
-                    %                     if (num_of_not_empty_trials/length(neu.list(thisi).pltsptimes)<0.5)||(num_of_not_empty_trials<5) % if not 60% of the trails are not empty
-                    %                         neu.list(thisi).label = 0;
-                    %
-                    
+                end
+                disp([h,p,neu.list(thisi).label])
+                fig1 = figure('Position',[2407 186 529 403]); Draw.two(neu.list(thisi).judgerespy,32000,neu.list(thisi).judgerespsptimes);
+                fig2 = figure('Position',[1898 205 529 403]); Draw.two(zeros(length(neu.list(thisi).judgerespy),1),32000,neu.list(thisi).prejudgerespsptimes);
+                close(fig1); close(fig2);
+            end
+
+            fraglist = neu.list(ids);
+            fraglist = table2struct( sortrows(struct2table(fraglist),'maxsdf','descend') );
+            beststimuli = SAT_sound(fraglist(1).y,fraglist(1).fs);
+            for k = 1:length(fraglist)
+                sim = SAT_similarity(beststimuli,SAT_sound(fraglist(k).y,fraglist(k).fs),0);
+                sim.calculate_similarity;
+                fraglist(k).accuracy = sim.score.accuracy;
+                fraglist(k).similarity = sim.score.similarity; % or accuracy
+            end
+
+           % fraglist = table2struct( sortrows(struct2table(fraglist),'accuracy') );
+            fraglist = table2struct( sortrows(struct2table(fraglist),'similarity') );
+            ordered_labels = [fraglist.label].';
+            pers_ordered = getPercentageOfResponse(ordered_labels);
+
+            %%%% Need to draw the list figures of song fragments response
+
+             figure('Position',[2214 -21 523 696],'Color','w');
+            
+
+             num_of_random = 100;
+             for ww = 1:num_of_random
+                 reordered = ordered_labels(randperm(length(ordered_labels)));
+                 pers = getPercentageOfResponse(reordered);
+                 hold on
+                 plot(pers,'Color',[0.5,0.5,0.5]);
+               
+             end
+              hold on
+             plot (pers_ordered,'Color','r');
+
+             positivecontrol = sort(ordered_labels, 'descend' ) ;
+             pers_pcontrol = getPercentageOfResponse(positivecontrol);
+             plot (pers_pcontrol,'Color','k') ;
+             hold off
+             title(sprintf('%s.png',neu.formated_name));
+             saveas(gcf,sprintf('PercenExplained_%s.png',neu.formated_name));
+
+
+            function pers = getPercentageOfResponse(labels)
+
+                for dd= 1: length(labels)
+                    pers(dd) = length(find(find(labels==1) <=dd))/length(find(labels==1));
                 end
             end
+
+
+            
+
         end
         
         function neu = judgeConResp(neu)
@@ -480,14 +543,18 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
                 
                 presdf = Cal.sdf(neu.list(thisi).prejudgerespsptimes,zeros(length(neu.list(thisi).judgerespy),1),neu.list(thisi).fs,0.001,0.02);
                 sdf = Cal.sdf(neu.list(thisi).judgerespsptimes,neu.list(thisi).judgerespy,neu.list(thisi).fs,0.001,0.02); % 0.001,0.004
+%                 sdf = Cal.sdf(neu.list(thisi).judgerespsptimes,neu.list(thisi).judgerespy,neu.list(thisi).fs,0.001,0.02); 
                 [maxpresdf,~] = max(presdf);
                 [maxsdf,maxidx] = max(sdf);
                 
                 pre_frs = Cal.eachTrialFiringRate(neu.list(thisi).prejudgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
                 sti_frs = Cal.eachTrialFiringRate(neu.list(thisi).judgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
+               
                 [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
                 neu.list(thisi).pvalue = p;
                 neu.list(thisi).label = 0; % 初始化
+                neu.list(thisi).sti_frs = mean(sti_frs);
+                neu.list(thisi).pre_frs = mean(pre_frs);
                 if h == 1
                     neu.list(thisi).label = 1;
                     %                     if (num_of_not_empty_trials/length(neu.list(thisi).pltsptimes)<0.5)||(num_of_not_empty_trials<5) % if not 60% of the trails are not empty
@@ -643,12 +710,12 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
             end
             
             if ~isempty(regexp(neu.zpid,'Z')) %zeus
-                neu.plx_data_fs = 30000; %hard code !!!!!! Dangerous
+                neu.pl2_data_fs = 30000; %hard code !!!!!! Dangerous
             elseif ~isempty(regexp(neu.zpid,'P')) % plexon
-                neu.plx_data_fs = 40000;
+                neu.pl2_data_fs = 40000;
             end
             
-            meanWL =  mean(wavlen_units*(1/neu.plx_data_fs)*1000); % ms
+            meanWL =  mean(wavlen_units*(1/neu.pl2_data_fs)*1000); % ms
             
             
         end
@@ -1076,12 +1143,17 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
        
         function img = saveDrawSortedRespToFrags(neu) %非常难以找到这个function
             %非常难以找到这个function
-            fraglist =  judgeFragResponse(neu);
+            
+            neu.judgeFragResp_FR;
+            finalfig = getframe(gcf).cdata;
+            close(gcf)
+            ids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'Frag|frag|syl|ele')));
+            fraglist = neu.list(ids);
             if isempty(fraglist)
                 return
             end
             %sorted_fraglist = table2struct(sortrows( struct2table(fraglist) ,'maxvalue','descend'));
-            sorted_fraglist = table2struct(sortrows( struct2table(fraglist) ,'rs','descend'));
+            sorted_fraglist = table2struct(sortrows( struct2table(fraglist) ,'maxsdf','descend'));
             
             
             I = {}; % collection of frag-response-three images
@@ -1095,13 +1167,15 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
                 
                 %h.WindowState = 'maximized';
                 Draw.two(sorted_fraglist(k).plty,sorted_fraglist(k).fs,sorted_fraglist(k).pltsptimes);
-                xlabel(sprintf('%s-RS: %f',sorted_fraglist(k).stimuliname,sorted_fraglist(k).rs));
+                xlabel(sprintf('%s-maxsdf: %f',sorted_fraglist(k).stimuliname,sorted_fraglist(k).maxsdf));
                 temp = getframe(gcf);
                 I{k} = temp.cdata;
                 
                 
                 close(h)
             end
+
+            I{k+1} = finalfig; % performance figure
             
             %             figure;
             %             n.draw_waveform;     % draw waveform
@@ -1125,7 +1199,7 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
             end
             
             reshapedI = reshape(I, lieshu,[])';
-            clear I
+            clear I;
             img = cell2mat(reshapedI);
             imwrite(img,sprintf('晋RespToFrags_%s.png',neu.formated_name));
             
@@ -1819,7 +1893,7 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 deglist = neu.list(intersect(all_degids,...
                     find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),bname_degAttached{w}))))); % conatin only and all deg stimuli
-                ids_norm = find(... % 假设不会存在一首song的Degs在不同plx文件里出现
+                ids_norm = find(... % 假设不会存在一首song的Degs在不同pl2文件里出现
                     strcmp(deglist(1).Fid,{sub_normlist_degAttached.Fid}.')); % To find the normsong which (1) same birdid (2) same Fid
                 if isempty(ids_norm); ids_norm = 1; disp('Warning!!!! Norm absent'); end
                 for m = 1: length(deglist)
@@ -1852,7 +1926,7 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 fraglist = neu.list(intersect(all_fragids,...
                     find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),bname_degAttached{w}))))); % conatin only and all deg stimuli
-                ids_norm = find(... % 假设不会存在一首song的Degs在不同plx文件里出现
+                ids_norm = find(... % 假设不会存在一首song的Degs在不同pl2文件里出现
                     strcmp(fraglist(1).Fid,{sub_normlist_degAttached.Fid}.')); % To find the normsong which (1) same birdid (2) same Fid
                 if isempty(ids_norm); ids_norm = 1; disp('Warning!!!! Norm absent'); end
                 for m = 1: length(fraglist)
@@ -2241,7 +2315,7 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
                 end
                 
                 
-                if (maxsdf) > 19.5&& strcmp(Conlist(n).stimuliname,'norm-Y515A-21Pulses') && strcmp(Conlist(n).plxname,'Y661_Z17')
+                if (maxsdf) > 19.5&& strcmp(Conlist(n).stimuliname,'norm-Y515A-21Pulses') && strcmp(Conlist(n).pl2name,'Y661_Z17')
                     disp('Incredible bug in pltsptimes of function Neuron.evaluateConResponse !!');
                     Conlist(n).label = 1;
                 end

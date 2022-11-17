@@ -312,6 +312,9 @@ classdef Bird < handle
                     songstruct(k).hatchdate = birdlist.Hatchdate(corresp_index);
                     songstruct(k).gender = birdlist.Gender(corresp_index);
                     songstruct(k).father = birdlist.father(corresp_index);
+                    if ismissing(songstruct(k).father)||isempty(songstruct(k).father)
+                      songstruct(k).father = '0'; % 0 means unknown 
+                    end
                     corresp_log = readtable(fullfile(...
                         folders{k},sprintf('%s.log',songstruct(k).raw_foldernames)));
                     trick = corresp_log.Var3([1,2,height(corresp_log)-2,height(corresp_log)-1]); % trick to reduce time
@@ -519,6 +522,65 @@ classdef Bird < handle
             end
         end
         
+        function adultfilenames = getAdultSongs(input_birdname_or_dir)
+            % Step-1 : Extract hacth date from the BIRDLIST
+            birdlist = Bird.readBirdlist;
+            corresp_list_index = find(~cellfun(@isempty, regexp([birdlist.BirdID].',input_birdname_or_dir)));
+            hatchdate = birdlist.Hatchdate(corresp_list_index);
+
+            thehatchdate = datetime(hatchdate,'InputFormat','yyMMdd');
+
+            % Step-2 :get the earlist and the latest recording date from buckect dir storage
+            fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
+            folders = cellstr(Extract.folder(fdir).');
+            corresp_bnames = cellfun( @Convert.bid, Utl.fileparts(folders),'Uni',0);
+            getDateString = @(x) regexp(x,'\d{4}-\d{2}-\d{2}','match');
+            datestring2Date = @(x) datetime(x,'InputFormat','yyyy-MM-dd');
+
+            try
+                corresp_dir_index = find(~cellfun(@isempty, regexp(corresp_bnames,input_birdname_or_dir)));
+                corresp_dir = convertCharsToStrings(folders{corresp_dir_index }.');
+
+                if isempty(corresp_dir_index)
+                    disp('Warning@Bird.adultsongexist: Not recorded!'); % If dir not found, return
+                    return
+                end
+
+                if length(corresp_dir) > 1
+                    path_len = cellfun(@length, {corresp_dir}.');
+                    [~,min_ids] = min(path_len);
+                    corresp_dir_index = corresp_dir_index(min_ids); % 取字符最短的，但此方法不一定对
+                end
+                thetargetdir = folders{corresp_dir_index };
+            catch
+                thetargetdir = input_birdname_or_dir;
+            end
+
+            trick = Extract.filename(thetargetdir,'*.wav');
+            if isempty(trick)
+                adultfilenames = [];
+                return
+            end
+            filedates = cellfun (@(x) datestring2Date(getDateString(char(x))),trick,'Uni',0);
+            filedates =  sortrows( cell2table(filedates(~cellfun(@isempty,filedates))) ,'Var1','ascend');
+
+
+            if length(thehatchdate) > 1
+                thehatchdate = thehatchdate(1);
+            end
+
+            % Step-3 :extract adult song names
+            try
+                adultids = find(days(filedates.Var1- thehatchdate) >=90);
+                adultfiles = trick(adultids);
+            catch % when hatching date not exist, means the bird is purcahsed
+                adultfiles = trick;
+                disp('Warning@Bird.adultsongexist: Purchased bird !')
+            end
+            adultfilenames = trick(find(~cellfun(@isempty, regexp(cellstr(trick),'WAV|wav'))));
+
+        end
+
         function answer = adultsongexist(input_birdname)
             
             % Step-1 : Extract hacth date from the BIRDLIST
@@ -593,6 +655,42 @@ classdef Bird < handle
             disp(date);
         end
         
+
+        function sonnames = findSons(fathername)
+               % configs for reading the table
+            birdlist = Bird.readBirdlist;
+            
+%             % get the corresponding index, set fathername
+%             index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
+%             fathername = birdlist.father(index);
+            
+%             if isempty(fathername)
+%                 fathername = string(missing);
+%             end
+            
+            children_index = find(~cellfun(@isempty, regexp(birdlist.father,fathername)));
+            male_index = find(~cellfun(@isempty, regexp(birdlist.Gender,"♂")));
+            sons_index = intersect(children_index, male_index);
+            sons_names = birdlist.BirdID(sons_index);
+            hatch_dates =birdlist.Hatchdate(sons_index);
+            
+            for k = 1: length(sons_names)
+                disp(sprintf('His song is:  %s, hatching date: %s, recording state: %s',sons_names{k},hatch_dates{k},Bird.recording_state(sons_names{k})));
+                newline;
+            end
+            
+
+
+        end
+   
+        function allnames = allFathers(~)
+
+            birdlist = Bird.readBirdlist;
+            father = birdlist.father;
+            allnames = unique(rmmissing(father));
+
+        end
+    
     end
 end
 

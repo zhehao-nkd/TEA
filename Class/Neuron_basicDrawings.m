@@ -23,23 +23,37 @@ classdef Neuron_basicDrawings <handle
             % probably draw it into one big figure
             
         end
-        function img = Three(a,subfileid)
+        function Three(a,keyword)
+            
             % draw three plot, using plt-data
             es = getAllEphysObject(a);
-            for idx = 1: length(es)
-                es{idx}.pltthree;
+            getSoundname = @(x) x.sound.name;
+            names = {};
+            for k = 1:length(es)
+                names{k} = getSoundname(es{k});
+            end
+
+            if exist('keyword','var')
+                validids = find(~cellfun(@isempty,regexp(cellstr(names),keyword)));
+                valid_es = es(validids);
+            else
+                valid_es = es;
+            end
+            
+            for idx = 1: length(valid_es)
+                valid_es{idx}.pltthree;
                 frame = getframe(gcf);
                 I{idx} = frame.cdata;
                 close(gcf);
             end
-            
+
             a.drawFirstWaveform;     % draw waveform
             frame = getframe(gcf);
             I{length(I)+ 1} = frame.cdata;
             close(gcf);
             
             % draw blank white
-            lieshu = 12;
+            lieshu = 5;
             hangshu = ceil(length(I)/lieshu);
             rest = lieshu*hangshu - length(I);
             white = uint8(255*ones(size(I{1})));
@@ -62,7 +76,7 @@ classdef Neuron_basicDrawings <handle
             
             % temporialriy a.neurons{1}
             waveforms = a.neurons{1}.waveform;
-            figure('Color','w','Position',PM.size3plots);
+            figure('Color','w','Position',PM.size1);
             hold on
             plot(waveforms.',':','Color',[.5,.5,.5]);
             plot(max(waveforms),'--','Color','blue');

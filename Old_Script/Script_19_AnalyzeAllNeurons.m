@@ -17,14 +17,14 @@ mkdir(neurondata_dir);
 %for k = 84:length(tbstruct)
 for k = 8:length(tbstruct)    
     txt = tbstruct(k).TXT;
-    plx = tbstruct(k).PLX;
+    pl2 = tbstruct(k).pl2;
     stidir = tbstruct(k).STIMULI;
     
     if ~isfile( txt)
         continue
     end
     
-    b = Chorus(txt, plx,stidir);
+    b = Chorus(txt, pl2,stidir);
     
     b.select;
     

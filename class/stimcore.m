@@ -1,6 +1,6 @@
 
 % Core of stimuli generating function 
-classdef stimcore
+classdef Stimcore
     %STIMCORE Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -11,7 +11,7 @@ classdef stimcore
     
     methods
         
-        function s = stimcore(inf)
+        function s = Stimcore(inf)
             %STIMCORE Construct an instance of this class
             %   Detailed explanation goes here
             s.inf = inf;

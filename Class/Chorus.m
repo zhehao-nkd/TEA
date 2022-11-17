@@ -8,10 +8,10 @@ classdef Chorus < handle
         input
         path % just a list of all path
         neu % these are the inputs for class Experiment
-        plx %
+        pl2 %
         wavfolder%
         sneu  % selected
-        splx
+        spl2
         swavfolder
         nlist  % to show the list of neuron name
         
@@ -23,44 +23,49 @@ classdef Chorus < handle
     
     
     methods
-        function cho = Chorus(path_txt,path_plx,path_folder)
+        function cho = Chorus(path_pl2,path_folder)
             
             if nargin== 0
                 return
             end
             
-            cho.path.path_txt = path_txt;
-            cho.path.path_plx = path_plx;
+            if exist('path_txt','var')
+                cho.path.path_txt = path_txt;
+                cho.input.pathtxt = path_txt;
+            end
+            cho.path.path_pl2 = path_pl2;
             cho.path.path_folder = path_folder;
             cho.split;
             cho.nlist = cho.nlist';
             cho.select; % default, select all
-            cho.input.pathtxt = path_txt;
-            cho.input.pathplx = path_plx;
+            
+            cho.input.pathpl2 = path_pl2;
             cho.input.pathstm = path_folder;
         end
         
         function cho = split(cho) % split a recording file to neurons with different channel and unit names
-            
+            dbstop if error
             idx = 0;
             for k = 1:size(cho.path,1)
-                spikes = Spike.split(cho.path(k).path_txt); % in this step, the unsorted spikes has been removed
+
+                spikes = Spike.split(cho.path(k).path_pl2);
+
                 for m = 1: length(spikes)
                     idx = idx + 1;
                     cho.neu{idx} = spikes{m};
-                    cho.plx{idx} = cho.path(k).path_plx;
+                    cho.pl2{idx} = cho.path(k).path_pl2;
                     cho.wavfolder{idx} = cho.path(k).path_folder;
-                    if isa(cho.plx{idx},'Trigger')
-                        [~,plxname,~] = fileparts(cho.plx{idx}.inputpath);
-                    elseif isa(cho.plx{idx},'string')||isa(cho.plx{idx},'char')
-                        [~,plxname,~] = fileparts(cho.plx{idx});
+                    if isa(cho.pl2{idx},'Trigger')
+                        [~,pl2name,~] = fileparts(cho.pl2{idx}.inputpath);
+                    elseif isa(cho.pl2{idx},'string')||isa(cho.pl2{idx},'char')
+                        [~,pl2name,~] = fileparts(cho.pl2{idx});
                     end
                     channelname = unique(cho.neu{idx}.channelname);
                     channelname = channelname{1};
                     unitname = unique(cho.neu{idx}.unit);
                     cho.nlist(idx).idx = idx;
-                    cho.nlist(idx).neuronname = sprintf('%s_%s_%u',plxname,channelname,unitname);
-                    
+                    cho.nlist(idx).neuronname = sprintf('%s_%s_%u',pl2name,channelname,unitname);
+
                 end
             end
         end
@@ -102,8 +107,8 @@ classdef Chorus < handle
             finalimg = vertcat(specrow,finalimg);
             FINALIMG = cell2mat(finalimg);
             
-            [~,plxname,~] = fileparts(path_plx);
-            imwrite(FINALIMG,sprintf('SimuRecorded_Neurons_%s.tiff',plxname));
+            [~,pl2name,~] = fileparts(path_pl2);
+            imwrite(FINALIMG,sprintf('SimuRecorded_Neurons_%s.tiff',pl2name));
         end
         
         
@@ -129,10 +134,10 @@ classdef Chorus < handle
             mkdir(outdir);
             % 48 is jumped out
             for idx = 49: length(cho.neu) %!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                temp = Experiment(cho.neu{idx},cho.plx{idx},cho.wavfolder{idx});
+                temp = Experiment(cho.neu{idx},cho.pl2{idx},cho.wavfolder{idx});
                 syllables = temp.avgn;
                 %syllables = syllables';
-                %[~,rawid,~] = fileparts(cho.plx{idx});
+                %[~,rawid,~] = fileparts(cho.pl2{idx});
                 fullid = temp.neuronname; %%%%%%%%%%%%%
                 
                 save(sprintf('%s\\%s.mat',outdir,fullid),'syllables');
@@ -145,11 +150,11 @@ classdef Chorus < handle
         function select(cho,idx)
             if ~exist('idx','var')
                 cho.sneu = cho.neu;
-                cho.splx = cho.plx;
+                cho.spl2 = cho.pl2;
                 cho.swavfolder = cho.wavfolder;
             else
                 cho.sneu = cho.neu(idx);
-                cho.splx = cho.plx(idx);
+                cho.spl2 = cho.pl2(idx);
                 cho.swavfolder = cho.wavfolder(idx);
             end
         end
@@ -158,7 +163,7 @@ classdef Chorus < handle
             
             parfor idx = 1: length(cho.sneu) % heer should be parfor , i edited here just tio chelc the bug
                 NN = Experiment;
-                neurons{idx} = NN.shiftNeuron(cho.sneu{idx},cho.splx{idx},cho.swavfolder{idx},shift_value);
+                neurons{idx} = NN.shiftNeuron(cho.sneu{idx},cho.spl2{idx},cho.swavfolder{idx},shift_value);
             end
             
             parfor w = 1: length(neurons) % for each neuron, write the same_channel_spikes info
@@ -175,14 +180,17 @@ classdef Chorus < handle
             
             %neurons = {};
             for idx = 1: length(cho.sneu) % Here should be parfor
-                neurons{idx} = Experiment(cho.sneu{idx},cho.splx{idx},cho.swavfolder{idx});
+                neurons{idx} = Experiment(cho.sneu{idx},cho.spl2{idx},cho.swavfolder{idx});
             end
             
             
             for w = 1: length(neurons) % for each neuron, write the same_channel_spikes info
                 
-                
-                same_channel_spikes = Spike.extract_specific_channel(cho.path.path_txt,neurons{w}.channelname);
+                if exist('cho.path.path_txt','var')
+                    same_channel_spikes = Spike.extract_specific_channel(cho.path.path_txt,neurons{w}.channelname);
+                else
+                    same_channel_spikes = Spike.extract_specific_channel(cho.path.path_pl2,neurons{w}.channelname);
+                end
                 neurons{w}.sameChannelSpikes = same_channel_spikes;
                 
             end
@@ -192,7 +200,7 @@ classdef Chorus < handle
         
         function featuretsne(cho)
             for idx = 11: length(cho.neu) %%%%%%%% modified here
-                Experiment(cho.neu{idx},cho.plx{idx},cho.wavfolder{idx}).featuretsne;
+                Experiment(cho.neu{idx},cho.pl2{idx},cho.wavfolder{idx}).featuretsne;
             end
         end
         
@@ -224,18 +232,18 @@ classdef Chorus < handle
             end
             
             final_IMG = vertcat(IMG{:});
-            [~,plxname,~] = fileparts(cho.input.pathplx);
-            imwrite(final_IMG,sprintf('PltThree_%s.png',plxname));
+            [~,pl2name,~] = fileparts(cho.input.pathpl2);
+            imwrite(final_IMG,sprintf('PltThree_%s.png',pl2name));
         end
         
     end
     
     methods(Static)
         
-        function neuronlist = pipline(path_txt,path_plx,path_folder)
+        function neuronlist = pipline(path_txt,path_pl2,path_folder)
             dbstop if error
             addpath(genpath("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA"))
-            cho = Chorus(path_txt,path_plx,path_folder);
+            cho = Chorus(path_txt,path_pl2,path_folder);
             cho.select;
             neuronlist = cho.getn;
             

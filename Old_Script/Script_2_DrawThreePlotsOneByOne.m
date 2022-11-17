@@ -8,14 +8,14 @@ for k = 56
     
     temp = T.path_txt(k);
     txt = temp{1};
-    temp = T.path_plx(k);
-    plx = temp{1};
+    temp = T.path_pl2(k);
+    pl2 = temp{1};
     temp = T.path_folder(k);
     folder = temp{1};
     
     try
         
-    b = Chorus(txt,plx,folder);
+    b = Chorus(txt,pl2,folder);
     b.select;
     neuronlist = b.getn;
     

@@ -1,17 +1,17 @@
 /*
- * readPLXFileC - A MEX function to read a PLX file (Plexon, Inc.).
+ * readpl2FileC - A MEX function to read a pl2 file (Plexon, Inc.).
  *
- * For detailed help run: readPLXFileC('help')
+ * For detailed help run: readpl2FileC('help')
  *
  * Author: Benjamin Kraus (bkraus@bu.edu, ben@benkraus.com)
  * Last Modified: $Date: 2013-06-04 13:21:41 -0400 (Tue, 04 Jun 2013) $
  * Copyright (c) 2012-2013, Benjamin Kraus
- * $Id: readPLXFileC.c 4886 2013-06-04 17:21:41Z bkraus $
+ * $Id: readpl2FileC.c 4886 2013-06-04 17:21:41Z bkraus $
  */
 
 /* TO DO LIST
  * 
- * make function name (readPLXFileC) a MACRO (#define)
+ * make function name (readpl2FileC) a MACRO (#define)
  * make ID and revision tags macros
  * move dispversion to a separate file (svnversion.c) for reuse in other code.
  * deal with channel maps more elegantly
@@ -20,7 +20,7 @@
  * update 'Nunits' for each spike channel based on full-read data.
  * separate 'fullread' tally from just copying the header tally, then merge two tally functions.
  * potentially merge the two 'tally' functions, and maybe even the data reading function.
- * flip orientation of the 'Waves', either post-processing or in PLXReader class.
+ * flip orientation of the 'Waves', either post-processing or in pl2Reader class.
  * separate read data counts from the file data counts.
  * check the number of continuous fragments read, and resize the storage space if necesary.
  * make sure program is robust and won't crash upon reaching channels not mentioned in the header
@@ -71,7 +71,7 @@
 int dispversion(bool disp)
 {
     int n, revnum;
-    char idstr[] = "$Id: readPLXFileC.c 4886 2013-06-04 17:21:41Z bkraus $";
+    char idstr[] = "$Id: readpl2FileC.c 4886 2013-06-04 17:21:41Z bkraus $";
     char revstr[] = "$Revision: 4886 $";
     char yearstr[] = "2012";
     char *revisionstr, *fname, *datestr, *found;
@@ -155,15 +155,15 @@ int dispversion(bool disp)
 int disphelp()
 {
     mexPrintf("\
- readPLXFileC - A MEX function to read a PLX file (Plexon, Inc.).\n\
+ readpl2FileC - A MEX function to read a pl2 file (Plexon, Inc.).\n\
  \n\
  USAGE:\n\
-   plx = readPLXFileC(filename, varargin)\n\
-   plx = readPLXFileC('help')\n\
-   plx = readPLXFileC('version')\n\
+   pl2 = readpl2FileC(filename, varargin)\n\
+   pl2 = readpl2FileC('help')\n\
+   pl2 = readpl2FileC('version')\n\
  \n\
  INPUT:\n\
-   filename - Name of the PLX file to read.\n\
+   filename - Name of the pl2 file to read.\n\
    varargin - One (or more) of the arguments listed below. Arguments are\n\
               parsed in order, with later arguments overriding earlier\n\
               arguments.\n\
@@ -206,42 +206,42 @@ int disphelp()
    then all channels are retrieved.\n\
  \n\
  OUTPUT:\n\
-   plx - A structure containing the PLX file data.\n\
+   pl2 - A structure containing the pl2 file data.\n\
 \n");
 
     return dispversion(true);
 }
 
-bool verifyPLXStruct(const mxArray *plx)
+bool verifypl2Struct(const mxArray *pl2)
 {
-    return (   mxGetFieldNumber(plx,"DataStartLocation")   >=0
-            && mxGetFieldNumber(plx,"ADFrequency")         >=0
-            && mxGetFieldNumber(plx,"NumPointsWave")       >=0
-            && mxGetFieldNumber(plx,"LastTimestamp")       >=0
-            && mxGetFieldNumber(plx,"SpikeTimestampCounts")>=0
-            && mxGetFieldNumber(plx,"SpikeWaveformCounts") >=0
-            && mxGetFieldNumber(plx,"EventCounts")         >=0
-            && mxGetFieldNumber(plx,"ContSampleCounts")    >=0
-            && mxGetFieldNumber(plx,"ContSampleFragments") >=0
-            && mxGetFieldNumber(plx,"SpikeChannels")       >=0
-            && mxGetFieldNumber(plx,"EventChannels")       >=0
-            && mxGetFieldNumber(plx,"ContinuousChannels")  >=0
-            && mxGetFieldNumber(plx,"FullRead")            >=0
-            && mxGetFieldNumber(plx,"DataStartLocation")   >=0
-            && mxIsDouble(mxGetField(plx, 0, "DataStartLocation"))
-            && mxIsDouble(mxGetField(plx, 0, "ADFrequency"))
-            && mxIsDouble(mxGetField(plx, 0, "NumPointsWave"))
-            && mxIsDouble(mxGetField(plx, 0, "LastTimestamp"))
-            && mxIsDouble(mxGetField(plx, 0, "SpikeTimestampCounts"))
-            && mxIsDouble(mxGetField(plx, 0, "SpikeWaveformCounts"))
-            && mxIsDouble(mxGetField(plx, 0, "EventCounts"))
-            && mxIsDouble(mxGetField(plx, 0, "ContSampleCounts"))
-            && mxIsDouble(mxGetField(plx, 0, "ContSampleFragments"))
-            && mxIsStruct(mxGetField(plx, 0, "SpikeChannels"))
-            && mxIsStruct(mxGetField(plx, 0, "EventChannels"))
-            && mxIsStruct(mxGetField(plx, 0, "ContinuousChannels"))
-            && mxIsLogicalScalar(mxGetField(plx, 0, "FullRead"))
-            && mxIsDouble(mxGetField(plx, 0, "FullRead"))
+    return (   mxGetFieldNumber(pl2,"DataStartLocation")   >=0
+            && mxGetFieldNumber(pl2,"ADFrequency")         >=0
+            && mxGetFieldNumber(pl2,"NumPointsWave")       >=0
+            && mxGetFieldNumber(pl2,"LastTimestamp")       >=0
+            && mxGetFieldNumber(pl2,"SpikeTimestampCounts")>=0
+            && mxGetFieldNumber(pl2,"SpikeWaveformCounts") >=0
+            && mxGetFieldNumber(pl2,"EventCounts")         >=0
+            && mxGetFieldNumber(pl2,"ContSampleCounts")    >=0
+            && mxGetFieldNumber(pl2,"ContSampleFragments") >=0
+            && mxGetFieldNumber(pl2,"SpikeChannels")       >=0
+            && mxGetFieldNumber(pl2,"EventChannels")       >=0
+            && mxGetFieldNumber(pl2,"ContinuousChannels")  >=0
+            && mxGetFieldNumber(pl2,"FullRead")            >=0
+            && mxGetFieldNumber(pl2,"DataStartLocation")   >=0
+            && mxIsDouble(mxGetField(pl2, 0, "DataStartLocation"))
+            && mxIsDouble(mxGetField(pl2, 0, "ADFrequency"))
+            && mxIsDouble(mxGetField(pl2, 0, "NumPointsWave"))
+            && mxIsDouble(mxGetField(pl2, 0, "LastTimestamp"))
+            && mxIsDouble(mxGetField(pl2, 0, "SpikeTimestampCounts"))
+            && mxIsDouble(mxGetField(pl2, 0, "SpikeWaveformCounts"))
+            && mxIsDouble(mxGetField(pl2, 0, "EventCounts"))
+            && mxIsDouble(mxGetField(pl2, 0, "ContSampleCounts"))
+            && mxIsDouble(mxGetField(pl2, 0, "ContSampleFragments"))
+            && mxIsStruct(mxGetField(pl2, 0, "SpikeChannels"))
+            && mxIsStruct(mxGetField(pl2, 0, "EventChannels"))
+            && mxIsStruct(mxGetField(pl2, 0, "ContinuousChannels"))
+            && mxIsLogicalScalar(mxGetField(pl2, 0, "FullRead"))
+            && mxIsDouble(mxGetField(pl2, 0, "FullRead"))
             );
 }
 
@@ -363,7 +363,7 @@ int tallyrange(mxArray *datacounts[5], FILE* fp,
     return 0;
 }
 
-int readPLXData(mxArray *plx, FILE* fp, bool readtypes[5], int numchanin[5],
+int readpl2Data(mxArray *pl2, FILE* fp, bool readtypes[5], int numchanin[5],
         int *channels[5], UINT64_T start, UINT64_T stop,
         int first, int last, bool switches[5])
 {
@@ -394,7 +394,7 @@ int readPLXData(mxArray *plx, FILE* fp, bool readtypes[5], int numchanin[5],
     UINT64_T ts, current_ts;
     short buf[MAX_DBH_WORDS];
     
-    lastts = (UINT64_T)mxGetScalar(mxGetField(plx, 0, "LastTimestamp"));
+    lastts = (UINT64_T)mxGetScalar(mxGetField(pl2, 0, "LastTimestamp"));
     
     bigts = (lastts > UINT32_MAX);
     
@@ -403,11 +403,11 @@ int readPLXData(mxArray *plx, FILE* fp, bool readtypes[5], int numchanin[5],
     if(!switches[0]) start = 0;
     else start = MAX(start,0);
     
-    datacounts[0] = mxGetField(plx, 0, "SpikeTimestampCounts");
-    datacounts[1] = mxGetField(plx, 0, "SpikeWaveformCounts");
-    datacounts[2] = mxGetField(plx, 0, "EventCounts");
-    datacounts[3] = mxGetField(plx, 0, "ContSampleCounts");
-    datacounts[4] = mxGetField(plx, 0, "ContSampleFragments");
+    datacounts[0] = mxGetField(pl2, 0, "SpikeTimestampCounts");
+    datacounts[1] = mxGetField(pl2, 0, "SpikeWaveformCounts");
+    datacounts[2] = mxGetField(pl2, 0, "EventCounts");
+    datacounts[3] = mxGetField(pl2, 0, "ContSampleCounts");
+    datacounts[4] = mxGetField(pl2, 0, "ContSampleFragments");
     
     /*
      * 0 = 'spikes', 1 = 'waves', 2 = 'events',
@@ -489,16 +489,16 @@ int readPLXData(mxArray *plx, FILE* fp, bool readtypes[5], int numchanin[5],
      * At the same time, clear out any existing data storage fields.
      * Also keep track of the AD frequencies on each continuous channel.
      */
-    ADFrequency = (int)mxGetScalar(mxGetField(plx, 0, "ADFrequency"));
+    ADFrequency = (int)mxGetScalar(mxGetField(pl2, 0, "ADFrequency"));
     ChanADFreq = (int *)mxMalloc(maxchans[3]*sizeof(int));
     if(maxchans[3] > 0 && ChanADFreq == NULL) return 5;
     for(i = 0; i < maxchans[3]; i++) ChanADFreq[i] = ADFrequency;
     for(i = 0; i < 4; i++)
     {
         mxptr = NULL;
-        if(i < 2) mxptr = mxGetField(plx, 0, "SpikeChannels");
-        else if(i == 2) mxptr = mxGetField(plx, 0, "EventChannels");
-        else if(i == 3) mxptr = mxGetField(plx, 0, "ContinuousChannels");
+        if(i < 2) mxptr = mxGetField(pl2, 0, "SpikeChannels");
+        else if(i == 2) mxptr = mxGetField(pl2, 0, "EventChannels");
+        else if(i == 3) mxptr = mxGetField(pl2, 0, "ContinuousChannels");
         if(mxptr == NULL || !mxIsStruct(mxptr))
         {
             readtypes[i] = false;
@@ -531,7 +531,7 @@ int readPLXData(mxArray *plx, FILE* fp, bool readtypes[5], int numchanin[5],
     }
     
     /* If a start or stop was specified, then redo tally for restricted time range. */
-    datastart = (unsigned int)mxGetScalar(mxGetField(plx, 0, "DataStartLocation"));
+    datastart = (unsigned int)mxGetScalar(mxGetField(pl2, 0, "DataStartLocation"));
     if(switches[0] || switches[1])
     {
         if(fseek(fp, datastart, SEEK_SET) != 0) return 9;
@@ -595,10 +595,10 @@ int readPLXData(mxArray *plx, FILE* fp, bool readtypes[5], int numchanin[5],
     }
     
     /* Initialize the storage to hold the spike data that is being read. */
-    npw = (int)mxGetScalar(mxGetField(plx, 0, "NumPointsWave"));
+    npw = (int)mxGetScalar(mxGetField(pl2, 0, "NumPointsWave"));
     if(readtypes[0] || readtypes[1])
     {
-        mxptr = mxGetField(plx, 0, "SpikeChannels");
+        mxptr = mxGetField(pl2, 0, "SpikeChannels");
         
         if(bigts)
         {
@@ -681,7 +681,7 @@ int readPLXData(mxArray *plx, FILE* fp, bool readtypes[5], int numchanin[5],
     /* Initialize the storage to hold the event data that is being read. */
     if(readtypes[2])
     {
-        mxptr = mxGetField(plx, 0, "EventChannels");
+        mxptr = mxGetField(pl2, 0, "EventChannels");
         
         if(bigts)
         {
@@ -739,7 +739,7 @@ int readPLXData(mxArray *plx, FILE* fp, bool readtypes[5], int numchanin[5],
     /* Initialize the storage to hold the continuous data that is being read. */
     if(readtypes[3])
     {
-        mxptr = mxGetField(plx, 0, "ContinuousChannels");
+        mxptr = mxGetField(pl2, 0, "ContinuousChannels");
         
         if(bigts)
         {
@@ -846,7 +846,7 @@ int readPLXData(mxArray *plx, FILE* fp, bool readtypes[5], int numchanin[5],
          */
         if(fread(&buf[0], sizeof(short), nbuf, fp) != nbuf)
         {
-            mexWarnMsgIdAndTxt("readPLXFile:readData:incompleteDataBlock",
+            mexWarnMsgIdAndTxt("readpl2File:readData:incompleteDataBlock",
                     "Incomplete data block:\n(type: %d, channel: %d, "
                     "timestamp: (%d,%d), offset: 0x%X).\n"
                     "Skipping this and all following data blocks.",
@@ -867,13 +867,13 @@ int readPLXData(mxArray *plx, FILE* fp, bool readtypes[5], int numchanin[5],
             {
                 if(dbh.NumberOfWaveforms > 1 && !nwavewarn)
                 {
-                    if(bigts) mexWarnMsgIdAndTxt("readPLXFile:readData:doubleSpikeBlock",
+                    if(bigts) mexWarnMsgIdAndTxt("readpl2File:readData:doubleSpikeBlock",
                             "Spike data block with more than one waveform\n"
                             "(channel: %d, unit: %d, timestamp: (%d,%d), waveforms: %d).\n"
                             "Using same timestamp for all waveforms.",
                             dbh.Channel, dbh.Unit, dbh.UpperByteOf5ByteTimestamp, 
                             dbh.TimeStamp, dbh.NumberOfWaveforms);
-                    else mexWarnMsgIdAndTxt("readPLXFile:readData:doubleSpikeBlock",
+                    else mexWarnMsgIdAndTxt("readpl2File:readData:doubleSpikeBlock",
                             "Spike data block with more than one waveform\n"
                             "(channel: %d, unit: %d, timestamp: %d, waveforms: %d).\n"
                             "Using same timestamp for all waveforms.",
@@ -1082,7 +1082,7 @@ int tally(mxArray *datacounts[5], FILE* fp, struct PL_FileHeader fh,
                  * removes it from the data count, so it isn't read later,
                  * rather than crashing.
                  */
-                mexWarnMsgIdAndTxt("readPLXFile:tally:incompleteDataBlock",
+                mexWarnMsgIdAndTxt("readpl2File:tally:incompleteDataBlock",
                         "Incomplete data block:\n(type: %d, channel: %d, "
                         "timestamp: (%d,%d), offset: 0x%X).\n"
                         "Ignoring this and all following data blocks.",
@@ -1131,9 +1131,9 @@ int tally(mxArray *datacounts[5], FILE* fp, struct PL_FileHeader fh,
         if(current_fn != NULL) mxFree(current_fn);
     } else
     {
-        maxunits = PLX_HDR_LAST_UNIT+1;
+        maxunits = pl2_HDR_LAST_UNIT+1;
         
-        nspchan = MIN(PLX_HDR_LAST_SPIKE_CHAN, maxchans[0]);
+        nspchan = MIN(pl2_HDR_LAST_SPIKE_CHAN, maxchans[0]);
         datacounts[0] = mxCreateNumericMatrix(maxunits, nspchan, mxDOUBLE_CLASS, mxREAL);
         pts = mxGetPr(datacounts[0]);
         
@@ -1150,7 +1150,7 @@ int tally(mxArray *datacounts[5], FILE* fp, struct PL_FileHeader fh,
                 pwv[j*maxunits+i] = fh.WFCounts[j+1][i];
             }
         
-        nevchan = MIN(PLX_HDR_LAST_EVENT_CHAN, maxchans[1]);
+        nevchan = MIN(pl2_HDR_LAST_EVENT_CHAN, maxchans[1]);
         datacounts[2] = mxCreateNumericMatrix(1, nevchan, mxDOUBLE_CLASS, mxREAL);
         pev = mxGetPr(datacounts[2]);
         
@@ -1159,88 +1159,88 @@ int tally(mxArray *datacounts[5], FILE* fp, struct PL_FileHeader fh,
          */
         for(i = 1; i <= nevchan; i++) pev[i-1] = fh.EVCounts[i];
         
-        nslchan = MIN(PLX_HDR_LAST_CONT_CHAN+1, maxchans[2]+1);
+        nslchan = MIN(pl2_HDR_LAST_CONT_CHAN+1, maxchans[2]+1);
         datacounts[3] = mxCreateNumericMatrix(1, nslchan, mxDOUBLE_CLASS, mxREAL);
         psl = mxGetPr(datacounts[3]);
         
         /* Slow channel numbers are 0-based, but MATLAB is 1-based. */
         for(i = 0; i < nslchan; i++)
-            psl[i] = fh.EVCounts[PLX_HDR_FIRST_CONT_CHAN_IDX+i];
+            psl[i] = fh.EVCounts[pl2_HDR_FIRST_CONT_CHAN_IDX+i];
             
         datacounts[4] = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL);
     }
     return 0;
 }
 
-int buildFileHeadStruct(mxArray *plx, struct PL_FileHeader fh)
+int buildFileHeadStruct(mxArray *pl2, struct PL_FileHeader fh)
 {
     mxArray *ma1, *ma2;
     double *p1;
     
-    if(    mxAddField(plx, "Version")             < 0
-        || mxAddField(plx, "Comment")             < 0
-        || mxAddField(plx, "Date")                < 0
-        || mxAddField(plx, "NumSpikeChannels")    < 0
-        || mxAddField(plx, "NumEventChannels")    < 0
-        || mxAddField(plx, "NumContChannels")     < 0
-        || mxAddField(plx, "ADFrequency")         < 0
-        || mxAddField(plx, "NumPointsWave")       < 0
-        || mxAddField(plx, "NumPointsPreThr")     < 0
-        || mxAddField(plx, "FastRead")            < 0
-        || mxAddField(plx, "WaveformFreq")        < 0
-        || mxAddField(plx, "LastTimestamp")       < 0
-        || mxAddField(plx, "Trodalness")          < 0
-        || mxAddField(plx, "DataTrodalness")      < 0
-        || mxAddField(plx, "BitsPerSpikeSample")  < 0
-        || mxAddField(plx, "BitsPerContSample")   < 0
-        || mxAddField(plx, "SpikeMaxMagnitudeMV") < 0
-        || mxAddField(plx, "ContMaxMagnitudeMV")  < 0
-        || mxAddField(plx, "SpikePreAmpGain")     < 0
-        || mxAddField(plx, "AcquiringSoftware")   < 0
-        || mxAddField(plx, "ProcessingSoftware")  < 0
+    if(    mxAddField(pl2, "Version")             < 0
+        || mxAddField(pl2, "Comment")             < 0
+        || mxAddField(pl2, "Date")                < 0
+        || mxAddField(pl2, "NumSpikeChannels")    < 0
+        || mxAddField(pl2, "NumEventChannels")    < 0
+        || mxAddField(pl2, "NumContChannels")     < 0
+        || mxAddField(pl2, "ADFrequency")         < 0
+        || mxAddField(pl2, "NumPointsWave")       < 0
+        || mxAddField(pl2, "NumPointsPreThr")     < 0
+        || mxAddField(pl2, "FastRead")            < 0
+        || mxAddField(pl2, "WaveformFreq")        < 0
+        || mxAddField(pl2, "LastTimestamp")       < 0
+        || mxAddField(pl2, "Trodalness")          < 0
+        || mxAddField(pl2, "DataTrodalness")      < 0
+        || mxAddField(pl2, "BitsPerSpikeSample")  < 0
+        || mxAddField(pl2, "BitsPerContSample")   < 0
+        || mxAddField(pl2, "SpikeMaxMagnitudeMV") < 0
+        || mxAddField(pl2, "ContMaxMagnitudeMV")  < 0
+        || mxAddField(pl2, "SpikePreAmpGain")     < 0
+        || mxAddField(pl2, "AcquiringSoftware")   < 0
+        || mxAddField(pl2, "ProcessingSoftware")  < 0
         ) return 1;
     
-    mxSetField(plx, 0, "Version", mxCreateDoubleScalar(fh.Version));
-    mxSetField(plx, 0, "Comment", mxCreateString(fh.Comment));
-    mxSetField(plx, 0, "ADFrequency", mxCreateDoubleScalar(fh.ADFrequency));
-    mxSetField(plx, 0, "NumSpikeChannels", mxCreateDoubleScalar(fh.NumDSPChannels));
-    mxSetField(plx, 0, "NumEventChannels", mxCreateDoubleScalar(fh.NumEventChannels));
-    mxSetField(plx, 0, "NumContChannels", mxCreateDoubleScalar(fh.NumSlowChannels));
-    mxSetField(plx, 0, "NumPointsWave", mxCreateDoubleScalar(fh.NumPointsWave));
-    mxSetField(plx, 0, "NumPointsPreThr", mxCreateDoubleScalar(fh.NumPointsPreThr));
-    mxSetField(plx, 0, "FastRead", mxCreateDoubleScalar(fh.FastRead));
-    mxSetField(plx, 0, "WaveformFreq", mxCreateDoubleScalar(fh.WaveformFreq));
-    mxSetField(plx, 0, "LastTimestamp", mxCreateDoubleScalar(fh.LastTimestamp));
+    mxSetField(pl2, 0, "Version", mxCreateDoubleScalar(fh.Version));
+    mxSetField(pl2, 0, "Comment", mxCreateString(fh.Comment));
+    mxSetField(pl2, 0, "ADFrequency", mxCreateDoubleScalar(fh.ADFrequency));
+    mxSetField(pl2, 0, "NumSpikeChannels", mxCreateDoubleScalar(fh.NumDSPChannels));
+    mxSetField(pl2, 0, "NumEventChannels", mxCreateDoubleScalar(fh.NumEventChannels));
+    mxSetField(pl2, 0, "NumContChannels", mxCreateDoubleScalar(fh.NumSlowChannels));
+    mxSetField(pl2, 0, "NumPointsWave", mxCreateDoubleScalar(fh.NumPointsWave));
+    mxSetField(pl2, 0, "NumPointsPreThr", mxCreateDoubleScalar(fh.NumPointsPreThr));
+    mxSetField(pl2, 0, "FastRead", mxCreateDoubleScalar(fh.FastRead));
+    mxSetField(pl2, 0, "WaveformFreq", mxCreateDoubleScalar(fh.WaveformFreq));
+    mxSetField(pl2, 0, "LastTimestamp", mxCreateDoubleScalar(fh.LastTimestamp));
     
     if(fh.Version >= 103)
     {
-        mxSetField(plx, 0, "Trodalness", mxCreateDoubleScalar(fh.Trodalness));
-        mxSetField(plx, 0, "DataTrodalness", mxCreateDoubleScalar(fh.DataTrodalness));
-        mxSetField(plx, 0, "BitsPerSpikeSample", mxCreateDoubleScalar(fh.BitsPerSpikeSample));
-        mxSetField(plx, 0, "BitsPerContSample", mxCreateDoubleScalar(fh.BitsPerSlowSample));
-        mxSetField(plx, 0, "SpikeMaxMagnitudeMV", mxCreateDoubleScalar(fh.SpikeMaxMagnitudeMV));
-        mxSetField(plx, 0, "ContMaxMagnitudeMV", mxCreateDoubleScalar(fh.SlowMaxMagnitudeMV));
+        mxSetField(pl2, 0, "Trodalness", mxCreateDoubleScalar(fh.Trodalness));
+        mxSetField(pl2, 0, "DataTrodalness", mxCreateDoubleScalar(fh.DataTrodalness));
+        mxSetField(pl2, 0, "BitsPerSpikeSample", mxCreateDoubleScalar(fh.BitsPerSpikeSample));
+        mxSetField(pl2, 0, "BitsPerContSample", mxCreateDoubleScalar(fh.BitsPerSlowSample));
+        mxSetField(pl2, 0, "SpikeMaxMagnitudeMV", mxCreateDoubleScalar(fh.SpikeMaxMagnitudeMV));
+        mxSetField(pl2, 0, "ContMaxMagnitudeMV", mxCreateDoubleScalar(fh.SlowMaxMagnitudeMV));
     } else
     {
-        mxSetField(plx, 0, "Trodalness", mxCreateDoubleScalar(1));
-        mxSetField(plx, 0, "DataTrodalness", mxCreateDoubleScalar(1));
-        mxSetField(plx, 0, "BitsPerSpikeSample", mxCreateDoubleScalar(12));
-        mxSetField(plx, 0, "BitsPerContSample", mxCreateDoubleScalar(12));
-        mxSetField(plx, 0, "SpikeMaxMagnitudeMV", mxCreateDoubleScalar(3000));
-        mxSetField(plx, 0, "ContMaxMagnitudeMV", mxCreateDoubleScalar(5000));
+        mxSetField(pl2, 0, "Trodalness", mxCreateDoubleScalar(1));
+        mxSetField(pl2, 0, "DataTrodalness", mxCreateDoubleScalar(1));
+        mxSetField(pl2, 0, "BitsPerSpikeSample", mxCreateDoubleScalar(12));
+        mxSetField(pl2, 0, "BitsPerContSample", mxCreateDoubleScalar(12));
+        mxSetField(pl2, 0, "SpikeMaxMagnitudeMV", mxCreateDoubleScalar(3000));
+        mxSetField(pl2, 0, "ContMaxMagnitudeMV", mxCreateDoubleScalar(5000));
     }
 
-    if(fh.Version >= 105) mxSetField(plx, 0, "SpikePreAmpGain", mxCreateDoubleScalar(fh.SpikePreAmpGain));
-    else mxSetField(plx, 0, "SpikePreAmpGain", mxCreateDoubleScalar(fh.SpikePreAmpGain));
+    if(fh.Version >= 105) mxSetField(pl2, 0, "SpikePreAmpGain", mxCreateDoubleScalar(fh.SpikePreAmpGain));
+    else mxSetField(pl2, 0, "SpikePreAmpGain", mxCreateDoubleScalar(fh.SpikePreAmpGain));
 
     if(fh.Version >= 106)
     {
-        mxSetField(plx, 0, "AcquiringSoftware", mxCreateString(fh.AcquiringSoftware));
-        mxSetField(plx, 0, "ProcessingSoftware", mxCreateString(fh.ProcessingSoftware));
+        mxSetField(pl2, 0, "AcquiringSoftware", mxCreateString(fh.AcquiringSoftware));
+        mxSetField(pl2, 0, "ProcessingSoftware", mxCreateString(fh.ProcessingSoftware));
     } else
     {
-        mxSetField(plx, 0, "AcquiringSoftware", mxCreateString(""));
-        mxSetField(plx, 0, "ProcessingSoftware", mxCreateString(""));
+        mxSetField(pl2, 0, "AcquiringSoftware", mxCreateString(""));
+        mxSetField(pl2, 0, "ProcessingSoftware", mxCreateString(""));
     }
 
     /* Convert file header date into MATLAB datenum */
@@ -1253,12 +1253,12 @@ int buildFileHeadStruct(mxArray *plx, struct PL_FileHeader fh)
     if(mexCallMATLAB(1, &ma2, 1, &ma1, "datenum") != 0) return 2; /* Error in date */
     mxDestroyArray(ma1);
     
-    mxSetField(plx, 0, "Date", ma2);
+    mxSetField(pl2, 0, "Date", ma2);
 
     return 0;
 }
 
-int buildChanHeadStruct(mxArray *plx, struct PL_ChanHeader *ch, int ver, int nchans)
+int buildChanHeadStruct(mxArray *pl2, struct PL_ChanHeader *ch, int ver, int nchans)
 {
     int i, j, k, m;
     mxArray *mach, *ma;
@@ -1267,8 +1267,8 @@ int buildChanHeadStruct(mxArray *plx, struct PL_ChanHeader *ch, int ver, int nch
     
     mach = mxCreateStructMatrix(nchans, 1, 0, NULL);
     
-    if(mxAddField(plx, "SpikeChannels") < 0) return 3;
-    mxSetField(plx, 0, "SpikeChannels", mach);
+    if(mxAddField(pl2, "SpikeChannels") < 0) return 3;
+    mxSetField(pl2, 0, "SpikeChannels", mach);
     
     if(    mxAddField(mach, "Name")     < 0 || mxAddField(mach, "Channel")    < 0
         || mxAddField(mach, "SIGName")  < 0 || mxAddField(mach, "SIG")        < 0
@@ -1336,15 +1336,15 @@ int buildChanHeadStruct(mxArray *plx, struct PL_ChanHeader *ch, int ver, int nch
     return 0;
 }
 
-int buildEventHeadStruct(mxArray *plx, struct PL_EventHeader *eh, int ver, int nchans)
+int buildEventHeadStruct(mxArray *pl2, struct PL_EventHeader *eh, int ver, int nchans)
 {
     int i;
     mxArray *mach;
     
     mach = mxCreateStructMatrix(nchans, 1, 0, NULL);
     
-    if(mxAddField(plx, "EventChannels") < 0) return 5;
-    mxSetField(plx, 0, "EventChannels", mach);
+    if(mxAddField(pl2, "EventChannels") < 0) return 5;
+    mxSetField(pl2, 0, "EventChannels", mach);
     
     if(    mxAddField(mach, "Name")      < 0
         || mxAddField(mach, "Channel")   < 0
@@ -1374,15 +1374,15 @@ int buildEventHeadStruct(mxArray *plx, struct PL_EventHeader *eh, int ver, int n
     return 0;
 }
 
-int buildSlowHeadStruct(mxArray *plx, struct PL_SlowChannelHeader *sh, int ver, int nchans)
+int buildSlowHeadStruct(mxArray *pl2, struct PL_SlowChannelHeader *sh, int ver, int nchans)
 {
     int i;
     mxArray *mach;
     
     mach = mxCreateStructMatrix(nchans, 1, 0, NULL);
     
-    if(mxAddField(plx, "ContinuousChannels") < 0) return 7;
-    mxSetField(plx, 0, "ContinuousChannels", mach);
+    if(mxAddField(pl2, "ContinuousChannels") < 0) return 7;
+    mxSetField(pl2, 0, "ContinuousChannels", mach);
     
     if(    mxAddField(mach, "Name")         < 0
         || mxAddField(mach, "Channel")      < 0
@@ -1425,7 +1425,7 @@ int buildSlowHeadStruct(mxArray *plx, struct PL_SlowChannelHeader *sh, int ver, 
     return 0;
 }
 
-int scanPLXFile(mxArray *plx, FILE* fp, bool fullread)
+int scanpl2File(mxArray *pl2, FILE* fp, bool fullread)
 {
     struct PL_FileHeader fh;
     struct PL_ChanHeader *spchans;
@@ -1444,7 +1444,7 @@ int scanPLXFile(mxArray *plx, FILE* fp, bool fullread)
         else return 3;
     }
     
-    if(fh.MagicNumber != *(int *)magic) return 4; /* Invalid PLX file */
+    if(fh.MagicNumber != *(int *)magic) return 4; /* Invalid pl2 file */
     
     /* Read in spike channel headers */
     spchans = (struct PL_ChanHeader *)mxMalloc(fh.NumDSPChannels*sizeof(spchans[0]));
@@ -1497,32 +1497,32 @@ int scanPLXFile(mxArray *plx, FILE* fp, bool fullread)
     if(retval != 0) return 100+retval;
     
     /* Build a MATLAB structure from the data in the file header. */
-    retval = buildFileHeadStruct(plx, fh);
+    retval = buildFileHeadStruct(pl2, fh);
     if(retval != 0) return 200+retval;
     
     /* Add data counts to the MATLAB structure. */
-    if(    mxAddField(plx, "SpikeTimestampCounts"  ) < 0
-        || mxAddField(plx, "SpikeWaveformCounts"   ) < 0
-        || mxAddField(plx, "EventCounts"           ) < 0
-        || mxAddField(plx, "ContSampleCounts"      ) < 0
-        || mxAddField(plx, "ContSampleFragments"   ) < 0) return 6;
+    if(    mxAddField(pl2, "SpikeTimestampCounts"  ) < 0
+        || mxAddField(pl2, "SpikeWaveformCounts"   ) < 0
+        || mxAddField(pl2, "EventCounts"           ) < 0
+        || mxAddField(pl2, "ContSampleCounts"      ) < 0
+        || mxAddField(pl2, "ContSampleFragments"   ) < 0) return 6;
         
-    mxSetField(plx, 0, "SpikeTimestampCounts" , datacounts[0]);    
-    mxSetField(plx, 0, "SpikeWaveformCounts"  , datacounts[1]);
-    mxSetField(plx, 0, "EventCounts"          , datacounts[2]);
-    mxSetField(plx, 0, "ContSampleCounts"     , datacounts[3]);
-    mxSetField(plx, 0, "ContSampleFragments"  , datacounts[4]);
+    mxSetField(pl2, 0, "SpikeTimestampCounts" , datacounts[0]);    
+    mxSetField(pl2, 0, "SpikeWaveformCounts"  , datacounts[1]);
+    mxSetField(pl2, 0, "EventCounts"          , datacounts[2]);
+    mxSetField(pl2, 0, "ContSampleCounts"     , datacounts[3]);
+    mxSetField(pl2, 0, "ContSampleFragments"  , datacounts[4]);
     
     /* Build a MATLAB structure for the spike channel headers. */
-    retval = buildChanHeadStruct( plx, spchans, fh.Version, fh.NumDSPChannels);
+    retval = buildChanHeadStruct( pl2, spchans, fh.Version, fh.NumDSPChannels);
     if(retval != 0) return 200+retval;
     
     /* Build a MATLAB structure for the event channel headers. */
-    retval = buildEventHeadStruct(plx, evchans, fh.Version, fh.NumEventChannels);
+    retval = buildEventHeadStruct(pl2, evchans, fh.Version, fh.NumEventChannels);
     if(retval != 0) return 200+retval;
     
     /* Build a MATLAB structure for the continuous channel headers. */
-    retval = buildSlowHeadStruct( plx, slchans, fh.Version, fh.NumSlowChannels);
+    retval = buildSlowHeadStruct( pl2, slchans, fh.Version, fh.NumSlowChannels);
     if(retval != 0) return 200+retval;
 
     /* Free the memory used by the channel headers. */
@@ -1532,12 +1532,12 @@ int scanPLXFile(mxArray *plx, FILE* fp, bool fullread)
     if(ChanADFreq != NULL) mxFree(ChanADFreq);
     
     /* Note whether a full read was performed. */
-    if(mxAddField(plx, "FullRead") < 0) return 7;
-    mxSetField(plx, 0, "FullRead", mxCreateLogicalScalar(fullread));
+    if(mxAddField(pl2, "FullRead") < 0) return 7;
+    mxSetField(pl2, 0, "FullRead", mxCreateLogicalScalar(fullread));
 
     /* Store the start location of the data in the file. */
-    if(mxAddField(plx, "DataStartLocation") < 0) return 8;
-    mxSetField(plx, 0, "DataStartLocation", mxCreateDoubleScalar(datastart));
+    if(mxAddField(pl2, "DataStartLocation") < 0) return 8;
+    mxSetField(pl2, 0, "DataStartLocation", mxCreateDoubleScalar(datastart));
 
     return 0;
 }
@@ -1555,7 +1555,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     bool switches[4], haveheader = false, havenum = false;
     /* 0 = 'havestart', 1 = 'havestop',
      * 2 = 'havefirst', 3 = 'havelast' */
-    const char helpstr[] = "For detailed help run: readPLXFileC('help')";
+    const char helpstr[] = "For detailed help run: readpl2FileC('help')";
     int i, n, ADFrequency, retval = 0;
     int lastarg = -1, revnum;
     long offset = 0;
@@ -1564,14 +1564,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     /* Check that inputs and outputs are OK */
     if(nrhs < 1)
-        mexErrMsgIdAndTxt("readPLXFile:usage",
+        mexErrMsgIdAndTxt("readpl2File:usage",
             "At least one input argument is required.\n%s", helpstr);
     else if(!mxIsChar(prhs[0]))
-        mexErrMsgIdAndTxt("readPLXFile:usage",
+        mexErrMsgIdAndTxt("readpl2File:usage",
             "First argument must be a filename (string), 'help', or 'version'.\n%s", helpstr);
     
     if(nlhs > 1)
-        mexErrMsgIdAndTxt("readPLXFile:usage",
+        mexErrMsgIdAndTxt("readpl2File:usage",
             "Too many output arguments.\n%s", helpstr);
     
     /* Copy the first input argument to the variable fname. */
@@ -1610,9 +1610,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         if(n>1 && mxIsChar(prhs[n-1]) && !mxIsDouble(prhs[n]) && lastarg >= 4)
         {
             if(mxIsNumeric(prhs[n]) && !mxIsDouble(prhs[n]))
-                mexErrMsgIdAndTxt("readPLXFile:usage",
+                mexErrMsgIdAndTxt("readpl2File:usage",
                         "Numeric arguments must be of class 'double'.\n");
-            mexErrMsgIdAndTxt("readPLXFile:usage",
+            mexErrMsgIdAndTxt("readpl2File:usage",
                     "The argument '%s' must be followed by a numeric argument.\n%s", arg, helpstr);
         } else if(mxIsChar(prhs[n]))
         {
@@ -1675,7 +1675,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             else if(strcmp(arg,"num") == 0) lastarg = 9;
             else if(strcmp(arg,"last") == 0) lastarg = 10;
             else
-                mexErrMsgIdAndTxt("readPLXFile:usage",
+                mexErrMsgIdAndTxt("readpl2File:usage",
                         "Unrecognized string argument: %s\n%s", arg, helpstr);
         } else if(mxIsDouble(prhs[n]))
         {
@@ -1693,7 +1693,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             } else if(lastarg == 5) /* 5 = range */
             {
                 if(mxGetNumberOfElements(prhs[n])!=2)
-                    mexErrMsgIdAndTxt("readPLXFile:usage",
+                    mexErrMsgIdAndTxt("readpl2File:usage",
                             "'range' requires a two element array.\n");
                 range = mxGetPr(prhs[n]);
                 start = range[0];
@@ -1703,7 +1703,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             } else if(lastarg == 6) /* 6 = start */
             {
                 if(mxGetNumberOfElements(prhs[n])!=1)
-                    mexErrMsgIdAndTxt("readPLXFile:usage",
+                    mexErrMsgIdAndTxt("readpl2File:usage",
                             "'start' requires a scalar double.\n");
                 start = mxGetScalar(prhs[n]);
                 if(start < 0) start = 0;
@@ -1711,14 +1711,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             } else if(lastarg == 7) /* 7 = stop */
             {
                 if(mxGetNumberOfElements(prhs[n])!=1)
-                    mexErrMsgIdAndTxt("readPLXFile:usage",
+                    mexErrMsgIdAndTxt("readpl2File:usage",
                             "'stop' requires a scalar double.\n");
                 stop = mxGetScalar(prhs[n]);
                 switches[1] = true;
             } else if(lastarg == 8) /* 8 = first */
             {
                 if(mxGetNumberOfElements(prhs[n])!=1)
-                    mexErrMsgIdAndTxt("readPLXFile:usage",
+                    mexErrMsgIdAndTxt("readpl2File:usage",
                             "'first' requires a scalar.\n");
                 first = (int)mxGetScalar(prhs[n]);
                 switches[2] = true;
@@ -1731,7 +1731,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             } else if(lastarg == 9) /* 9 = num */
             {
                 if(mxGetNumberOfElements(prhs[n])!=1)
-                    mexErrMsgIdAndTxt("readPLXFile:usage",
+                    mexErrMsgIdAndTxt("readpl2File:usage",
                             "'num' requires a scalar.\n");
                 num = (int)mxGetScalar(prhs[n]);
                 if(switches[2])
@@ -1746,7 +1746,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             } else if(lastarg == 10) /* 10 = last */
             {
                 if(mxGetNumberOfElements(prhs[n])!=1)
-                    mexErrMsgIdAndTxt("readPLXFile:usage",
+                    mexErrMsgIdAndTxt("readpl2File:usage",
                             "'last' requires a scalar.\n");
                 last = (int)mxGetScalar(prhs[n]);
                 switches[3] = true;
@@ -1757,23 +1757,23 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     havenum = false;
                 }
             } else
-                mexErrMsgIdAndTxt("readPLXFile:usage",
+                mexErrMsgIdAndTxt("readpl2File:usage",
                         "Unexpected numerical argument.\n%s", helpstr);
             lastarg = -1;
         } else if(mxIsStruct(prhs[n])) /* headers provided as structure */
         {
-            if(verifyPLXStruct(prhs[n]))
+            if(verifypl2Struct(prhs[n]))
             {
                 mxDestroyArray(plhs[0]);
                 plhs[0] = mxDuplicateArray(prhs[n]);
                 haveheader = true;
             }
         } else
-            mexErrMsgIdAndTxt("readPLXFile:usage",
+            mexErrMsgIdAndTxt("readpl2File:usage",
                     "Unexpected argument.\n%s", helpstr);
     }
     if(lastarg >= 4)
-        mexErrMsgIdAndTxt("readPLXFile:usage",
+        mexErrMsgIdAndTxt("readpl2File:usage",
                 "The argument '%s' must be followed by a numeric argument.\n", arg);
     
     if(readtypes[0] || readtypes[1] || readtypes[2] || readtypes[3])
@@ -1792,11 +1792,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     /* Open file for reading. */
     fp = fopen(fname,"rb");
     
-    if(fp == 0) mexErrMsgIdAndTxt("readPLXFile:fileerror",
+    if(fp == 0) mexErrMsgIdAndTxt("readpl2File:fileerror",
         "Error opening file: %s\n", fname);
     
     /* If necessary, read the file headers. */
-    if(!haveheader) retval = scanPLXFile(plhs[0], fp, fullread);
+    if(!haveheader) retval = scanpl2File(plhs[0], fp, fullread);
     
     /* If necessary, read the file data. */
     if(retval == 0 && (readtypes[0] || readtypes[1] || readtypes[2] || readtypes[3]))
@@ -1805,7 +1805,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         starttick = (int)(start*ADFrequency);
         stoptick = (int)(stop*ADFrequency);
 
-        retval = readPLXData(plhs[0], fp, readtypes, numchanin, channels, 
+        retval = readpl2Data(plhs[0], fp, readtypes, numchanin, channels, 
                 starttick, stoptick, first, last, switches);
     }
     
@@ -1817,103 +1817,103 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     switch(retval)
     {
         case 0: break;
-        case 1: mexErrMsgIdAndTxt("readPLXFile:fileerror:prematureEOF",
+        case 1: mexErrMsgIdAndTxt("readpl2File:fileerror:prematureEOF",
             "Error reading file: premature end of file (%d)",retval);
             break;
-        case 2: mexErrMsgIdAndTxt("readPLXFile:fileerror",
+        case 2: mexErrMsgIdAndTxt("readpl2File:fileerror",
             "Error reading file: error code %d", ferror(fp));
             break;
-        case 3: mexErrMsgIdAndTxt("readPLXFile:fileerror:errorReading",
+        case 3: mexErrMsgIdAndTxt("readpl2File:fileerror:errorReading",
             "Error reading file (%d)",retval);
             break;
-        case 4: mexErrMsgIdAndTxt("readPLXFile:invalidPLXfile",
-            "Invalid PLX file (%d)",retval);
+        case 4: mexErrMsgIdAndTxt("readpl2File:invalidpl2file",
+            "Invalid pl2 file (%d)",retval);
             break;
-        case 5: mexErrMsgIdAndTxt("readPLXFile:mxMalloc",
+        case 5: mexErrMsgIdAndTxt("readpl2File:mxMalloc",
             "\"mxMalloc\" failed to allocate the necessary memory (%d)",retval);
             break;
-        case 6: mexErrMsgIdAndTxt("readPLXFile:fileHeaders:channelHeader",
+        case 6: mexErrMsgIdAndTxt("readpl2File:fileHeaders:channelHeader",
             "Failed to create fields for channel headers (%d)",retval);
             break;
-        case 7: mexErrMsgIdAndTxt("readPLXFile:fileHeaders:fullread",
+        case 7: mexErrMsgIdAndTxt("readpl2File:fileHeaders:fullread",
             "Failed to create field to store full read status (%d)",retval);
             break;
-        case 8: mexErrMsgIdAndTxt("readPLXFile:fileHeaders:datastart",
+        case 8: mexErrMsgIdAndTxt("readpl2File:fileHeaders:datastart",
             "Failed to create field to store data start location (%d)",retval);
             break;
-        case 9: mexErrMsgIdAndTxt("readPLXFile:fileerror:errorSeeking",
+        case 9: mexErrMsgIdAndTxt("readpl2File:fileerror:errorSeeking",
             "Error seeking to data start location (%d)",retval);
             break;
-        case 10: mexErrMsgIdAndTxt("readPLXFile:readData:createDataField",
+        case 10: mexErrMsgIdAndTxt("readpl2File:readData:createDataField",
             "Failed to create field to store data (%d)",retval);
             break;
-        case 101: mexErrMsgIdAndTxt("readPLXFile:tally:invalidType",
+        case 101: mexErrMsgIdAndTxt("readpl2File:tally:invalidType",
             "Invalid data block header type (%d, offset: 0x%X)",retval, offset);
             break;
-        case 102: mexErrMsgIdAndTxt("readPLXFile:tally:invalidChannel",
+        case 102: mexErrMsgIdAndTxt("readpl2File:tally:invalidChannel",
             "Invalid channel number (%d, offset: 0x%X)",retval, offset);
             break;
-        case 103: mexErrMsgIdAndTxt("readPLXFile:tally:invalidNumWaves",
+        case 103: mexErrMsgIdAndTxt("readpl2File:tally:invalidNumWaves",
             "Invalid number of waveforms (%d, offset: 0x%X).",retval, offset);
             break;
-        case 104: mexErrMsgIdAndTxt("readPLXFile:tally:invalidUnit",
+        case 104: mexErrMsgIdAndTxt("readpl2File:tally:invalidUnit",
             "Invalid unit number (%d, offset: 0x%X)",retval, offset);
             break;
-        case 105: mexErrMsgIdAndTxt("readPLXFile:tally:incompleteDataBlock",
+        case 105: mexErrMsgIdAndTxt("readpl2File:tally:incompleteDataBlock",
             "Incomplete data block (%d, offset: 0x%X)",retval, offset);
             break;
-        case 106: mexErrMsgIdAndTxt("readPLXFile:tally:mxMalloc",
+        case 106: mexErrMsgIdAndTxt("readpl2File:tally:mxMalloc",
             "\"mxMalloc\" failed to allocate the necessary memory (%d)",retval);
             break;
-        case 201: mexErrMsgIdAndTxt("readPLXFile:fileHeader:createHeaderField",
+        case 201: mexErrMsgIdAndTxt("readpl2File:fileHeader:createHeaderField",
             "Failed to create field in file header (%d)",retval);
             break;
-        case 202: mexErrMsgIdAndTxt("readPLXFile:badPLXdate",
-            "Error converting PLX date using \"datenum\" (%d)",retval);
+        case 202: mexErrMsgIdAndTxt("readpl2File:badpl2date",
+            "Error converting pl2 date using \"datenum\" (%d)",retval);
             break;
-        case 203: mexErrMsgIdAndTxt("readPLXFile:spikeHeaders:createSpikeHeader",
+        case 203: mexErrMsgIdAndTxt("readpl2File:spikeHeaders:createSpikeHeader",
             "Failed to create field to store spike channel headers (%d)",retval);
             break;
-        case 204: mexErrMsgIdAndTxt("readPLXFile:spikeHeaders:createSpikeHeaderField",
+        case 204: mexErrMsgIdAndTxt("readpl2File:spikeHeaders:createSpikeHeaderField",
             "Failed to create field in spike channel header (%d)",retval);
             break;
-        case 205: mexErrMsgIdAndTxt("readPLXFile:eventHeaders:createEventHeader",
+        case 205: mexErrMsgIdAndTxt("readpl2File:eventHeaders:createEventHeader",
             "Failed to create field to store event channel headers (%d)",retval);
             break;
-        case 206: mexErrMsgIdAndTxt("readPLXFile:eventHeaders:createEventHeaderField",
+        case 206: mexErrMsgIdAndTxt("readpl2File:eventHeaders:createEventHeaderField",
             "Failed to create field in event channel header (%d)",retval);
             break;
-        case 207: mexErrMsgIdAndTxt("readPLXFile:continuousHeaders:createContHeader",
+        case 207: mexErrMsgIdAndTxt("readpl2File:continuousHeaders:createContHeader",
             "Failed to create field to store continuous channel headers (%d)",retval);
             break;
-        case 208: mexErrMsgIdAndTxt("readPLXFile:continuousHeaders:createContHeaderField",
+        case 208: mexErrMsgIdAndTxt("readpl2File:continuousHeaders:createContHeaderField",
             "Failed to create field in continuous channel header (%d)",retval);
             break;
-        case 510: mexErrMsgIdAndTxt("readPLXFile:readData:mxMalloc:spikeTimestamps",
+        case 510: mexErrMsgIdAndTxt("readpl2File:readData:mxMalloc:spikeTimestamps",
             "\"mxMalloc\" failed to allocate memory necessary for spike timestamps (%d)",retval);
             break;
-        case 511: mexErrMsgIdAndTxt("readPLXFile:readData:mxMalloc:spikeUnits",
+        case 511: mexErrMsgIdAndTxt("readpl2File:readData:mxMalloc:spikeUnits",
             "\"mxMalloc\" failed to allocate memory necessary for spike units (%d)",retval);
             break;
-        case 512: mexErrMsgIdAndTxt("readPLXFile:readData:mxMalloc:spikeWaves",
+        case 512: mexErrMsgIdAndTxt("readpl2File:readData:mxMalloc:spikeWaves",
             "\"mxMalloc\" failed to allocate memory necessary for spike waveforms (%d)",retval);
             break;
-        case 520: mexErrMsgIdAndTxt("readPLXFile:readData:mxMalloc:eventTimestamps",
+        case 520: mexErrMsgIdAndTxt("readpl2File:readData:mxMalloc:eventTimestamps",
             "\"mxMalloc\" failed to allocate memory necessary for event timestamps (%d)",retval);
             break;
-        case 521: mexErrMsgIdAndTxt("readPLXFile:readData:mxMalloc:eventValues",
+        case 521: mexErrMsgIdAndTxt("readpl2File:readData:mxMalloc:eventValues",
             "\"mxMalloc\" failed to allocate memory necessary for event values (%d)",retval);
             break;
-        case 530: mexErrMsgIdAndTxt("readPLXFile:readData:mxMalloc:continuousTimestamps",
+        case 530: mexErrMsgIdAndTxt("readpl2File:readData:mxMalloc:continuousTimestamps",
             "\"mxMalloc\" failed to allocate memory necessary for continuous timestamps (%d)",retval);
             break;
-        case 531: mexErrMsgIdAndTxt("readPLXFile:readData:mxMalloc:continuousFragments",
+        case 531: mexErrMsgIdAndTxt("readpl2File:readData:mxMalloc:continuousFragments",
             "\"mxMalloc\" failed to allocate memory necessary for continuous fragments (%d)",retval);
             break;
-        case 532: mexErrMsgIdAndTxt("readPLXFile:readData:mxMalloc:continuousValues",
+        case 532: mexErrMsgIdAndTxt("readpl2File:readData:mxMalloc:continuousValues",
             "\"mxMalloc\" failed to allocate memory necessary for continuous values (%d)",retval);
             break;
-        default: mexErrMsgIdAndTxt("readPLXFile:unrecognizedError",
+        default: mexErrMsgIdAndTxt("readpl2File:unrecognizedError",
             "Unrecognized error code: %d", retval);
     }
 }

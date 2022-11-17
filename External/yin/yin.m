@@ -1,4 +1,4 @@
-function r=yin(x,p)ConvertConvert
+function r=yin(x,p)%ConvertConvert
 % YIN - Fundamental frequency (F0) of file or vector
 %
 % YIN('FILE') estimates and plots the F0 of signal in FILE.	 

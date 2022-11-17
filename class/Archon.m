@@ -1,5 +1,5 @@
 classdef Archon
-    % batch processing the raw data( .plx, .txt, .wav files sorted within
+    % batch processing the raw data( .pl2, .txt, .wav files sorted within
     % folders
     % 批量对raw data进行操作 ， 用以生成 Neuron object
 
@@ -19,7 +19,7 @@ classdef Archon
 
             infocollect = {};
             for k = 1:length(a.bird_folders)
-                plxfiles = Extract.filename(a.bird_folders{k},'*.plx');
+                pl2files = Extract.filename(a.bird_folders{k},'*.pl2');
                 txtfiles = Extract.filename(a.bird_folders{k},'*.txt');
 
                 if exist(sprintf('%s\\Stimuli',a.bird_folders{k}), 'dir')
@@ -28,9 +28,9 @@ classdef Archon
                     stidirs = Extract.folder(sprintf('%s',a.bird_folders{k})).'
                 end
 
-                plxname = {}; % Extract .plx filenames
-                for m = 1: length(plxfiles)
-                    [~,plxname{m},~] = fileparts(plxfiles{m});
+                pl2name = {}; % Extract .pl2 filenames
+                for m = 1: length(pl2files)
+                    [~,pl2name{m},~] = fileparts(pl2files{m});
                 end
 
                 txtname = {};% Extract .txt filenames
@@ -44,35 +44,35 @@ classdef Archon
                     stiname{m} = temps{end};
                 end
 
-                % Based on .plx filenames, find the corresponding .txt and
+                % Based on .pl2 filenames, find the corresponding .txt and
                 % stimuli folder names
                 datainfo = struct;
-                for m = 1: length(plxname)
+                for m = 1: length(pl2name)
 
-                    txt_hit = find(~cellfun(@isempty, regexp([cellstr(txtname)].',plxname{m})));
+                    txt_hit = find(~cellfun(@isempty, regexp([cellstr(txtname)].',pl2name{m})));
 
                     sti_hit = find(~cellfun(@isempty,...
-                        regexp(cellfun(@Convert.fileid,[cellstr(stiname)].','Uni',0),Convert.fileid(plxname{m}) )));
+                        regexp(cellfun(@Convert.fileid,[cellstr(stiname)].','Uni',0),Convert.fileid(pl2name{m}) )));
 
                     % fill the struct
-                    sadtemp = regexp(plxname{m}, '[_-]', 'split');
+                    sadtemp = regexp(pl2name{m}, '[_-]', 'split');
                     datainfo(m).animal = sadtemp{end};
-                    datainfo(m).plxname = plxname{m};
-                    datainfo(m).keyword = regexp(plxname{m},'Con|Deg|Detail|Frag|Repla|Mir|Rev','match');
-                    datainfo(m).sectionname = regexp(plxname{m},'Z\d{2}|P\d{2}','match');
+                    datainfo(m).pl2name = pl2name{m};
+                    datainfo(m).keyword = regexp(pl2name{m},'Con|Deg|Detail|Frag|Repla|Mir|Rev','match');
+                    datainfo(m).sectionname = regexp(pl2name{m},'Z\d{2}|P\d{2}','match');
                     fuck = regexp(cellstr(datainfo(m).sectionname),'\d{2}','match');
                     datainfo(m).sectionid = str2num(fuck{1}{1});
-                    datainfo(m).subfilename = regexp(plxname{m},'F\d{1}','match');
+                    datainfo(m).subfilename = regexp(pl2name{m},'F\d{1}','match');
                     if ~isempty(datainfo(m).subfilename) %如果文件名里存在F标识subfile的id
                         fuck2 = regexp(datainfo(m).subfilename,'\d','match');
                         datainfo(m).subfileid = str2num(fuck{1}{1});
-                    elseif ~isempty(regexp(datainfo(m).plxname,'Mrg|mrg'))% 如果不存在F标识却存在‘Mrg|mrg’标识
+                    elseif ~isempty(regexp(datainfo(m).pl2name,'Mrg|mrg'))% 如果不存在F标识却存在‘Mrg|mrg’标识
                         datainfo(m).subfilename = "Mrg";
                     else % 如果不存在任何标识
                         datainfo(m).subfilename = [];
                     end
 
-                    datainfo(m).plxpath = plxfiles{m};
+                    datainfo(m).pl2path = pl2files{m};
                     if ~isempty(txt_hit)
                         datainfo(m).txtpath = txtfiles{txt_hit};
                     else
@@ -214,7 +214,7 @@ classdef Archon
         end
 
         function reorderNames(targetdir)
-            Convert.bid_first_AllLevel(targetdir, '*.plx');
+            Convert.bid_first_AllLevel(targetdir, '*.pl2');
             Convert.bid_first_AllLevel(targetdir, '*.txt');
             Convert.bid_first_AllLevel_dirVer(targetdir);
         end
@@ -293,8 +293,8 @@ classdef Archon
 
         function standardizeRawname(targetdir) % 标准化文件夹里所有raw data的名称
             Archon.padFilename(targetdir, '*.txt')
-            Archon.padFilename(targetdir, '*.plx')
-            Archon.reorderFilename(targetdir, '*.plx');
+            Archon.padFilename(targetdir, '*.pl2')
+            Archon.reorderFilename(targetdir, '*.pl2');
             Archon.reorderFilename(targetdir, '*.txt');
             Archon.reorderDirname(targetdir);
 
@@ -304,14 +304,14 @@ classdef Archon
 
         function genAnalysisFromSingleZPDir(datadir)
             % generate Neuron object from a single ZP-marked raw data folder
-            [neuroster,~,~,~,~] = Archon.extractAnalysisInfo(datadir);
+            [neuroster,~,~] = Archon.extractAnalysisInfo(datadir);
             Archon.batch_genAnalysisSameRecordingFile(neuroster);
 
         end
 
-        function error =  batch_genAnalysisSameRecordingFile(input_roster, start_from)
+        function [error,error2] =  batch_genAnalysisSameRecordingFile(input_roster, start_from)
             dbstop if error
-            % 从同一批原始plx数据中生成所有的analysis文件
+            % 从同一批原始pl2数据中生成所有的analysis文件
             %采用此方法的好处是不用一次又一次地调用plexon读取方法，可以节省非常多的时间
             tic
             D = parallel.pool.DataQueue;
@@ -329,9 +329,15 @@ classdef Archon
                 hit_subdir = neurondir{mm};
                 pl2files = Extract.filename(hit_subdir,'*.pl2');
                 pl2files = {pl2files{find(cellfun(@isempty, regexp(pl2files,'Mrg|mrg')))}}.'; % not include id with Mrg in text
-                plxdata = {};
-                for k = 1: length(pl2files)
-                    plxdata{k} = Trigger(pl2files{k});
+                pl2data = {};
+                try
+                    for k = 1: length(pl2files)
+                        pl2data{k} = Trigger(pl2files{k});
+                    end
+                catch ME
+                    error2(mm).num = mm;
+                    error2(mm).ME = ME;
+                    continue
                 end
 
                 for k = 1: length(ndir_id) % par
@@ -365,7 +371,7 @@ classdef Archon
                         stimuli_collect_dir = append(hit_subdir,'\Stimuli');
                         stimulidirs = Extract.folder(stimuli_collect_dir ).';
 
-                        Archon.genAnalysisDifferentInput(plxdata,txtfiles,stimulidirs,featuredir,channelname,unit);
+                        Archon.genAnalysisDifferentInput(pl2data,txtfiles,stimulidirs,featuredir,channelname,unit);
                         % Note we send only an "increment" for the waitbar.
 
                     catch ME
@@ -397,16 +403,15 @@ classdef Archon
 
         end
 
-        function [neuroster,malfunctions,cdrfroster,noSinChan_neuroster,nofeature_neuroster] = extractAnalysisInfo(datadir)
-
+        function [neuroster,malfunctions,cdrfroster] = extractAnalysisInfo(datadir)
+            %[neuroster,malfunctions,cdrfroster,noSinChan_neuroster,nofeature_neuroster] = extractAnalysisInfo(datadir)
             dbstop if error
             % 分析所包含的所有Z P folder,生成Analysis对象，并且对于那些不可分析的（某些信息不够），生成记录文件以便补充这些信息
-            %datadir = 'D:';
 
             allfolders = Extract.foldersAllLevel(datadir).';
             index = find(~cellfun(@isempty, regexp(allfolders,'[ZP]\d+$')));
             neurondir = {allfolders{index}}.';
-            neuroster = struct; % Experiment 花名册
+            neuroster = struct('fullname',{}); % Experiment 花名册
             malfunctions = struct; % malfunctions
             count = 0;
             malcount = 0;
@@ -415,145 +420,180 @@ classdef Archon
             wb2 = waitbar(0,'Experiment of this bird');
             set(wb2,'doublebuffer','on');
 
-
+            unpack = @(x) x{1};
             for kk = 1: length(neurondir) % iterate 对每一个 ZP folder
+
+                zpname = unpack(unpack(regexp(cellstr(neurondir{kk}),'[ZP]\d+','match')));
 
                 waitbar(kk/length(neurondir),wb2,sprintf('正处理 %u个神经元文件夹中的%u',length(neurondir) ,kk))
 
 
-                %判断 txt 文件是否完备
+                %判断 pl2文件是否完备
                 pl2files = Extract.filename(neurondir{kk},'*.pl2');
-                zpids = find(~cellfun(@isempty, regexp(cellstr(pl2files),'[ZP]\d+F\d+'))); % 剔除 merge 的 plx文件
-                pl2files = pl2files(zpids);
+                mergeids = find(~cellfun(@isempty, regexp(cellstr(pl2files),'merge')));
+                zpids = find(~cellfun(@isempty, regexp(cellstr(pl2files),'[ZP]\d+F\d+')));
 
-                txtfile = Extract.filename(neurondir{kk},'*.txt');
-                zpids = find(~cellfun(@isempty, regexp(cellstr(txtfile),'[ZP]\d+F\d+'))); %剔除额外的 plx文件
-                txtfile = txtfile(zpids);
+                if ~isempty(mergeids)
+                    valid_pl2files = pl2files(mergeids); % when there is a merged file
+                else
+                    valid_pl2files = pl2files(setdiff(zpids,mergeids)); % 剔除含有merge关键词的 pl2文件
+                end
+
 
                 stimuliparentdir = fullfile(neurondir{kk},'Stimuli');
                 stimulidir = Extract.folder(stimuliparentdir);
-                if isempty(stimulidir)
+                try
+                    stimuli_zpids = find(~cellfun(@isempty, regexp(cellstr(stimulidir),'[ZP]\d+F\d+'))); %剔除命名不合规范的stimuli文件夹
+                    valid_stimulidir = stimulidir(stimuli_zpids);
+                    sumtest = setdiff(zpids,mergeids) + stimuli_zpids; % if different length, cannot be summed
+                catch
                     malcount = malcount + 1;
                     malfunctions(malcount).birdname = regexp(neurondir{kk},'[BRGYOX]\d{3}','match','once');
                     malfunctions(malcount).neuronid = regexp(neurondir{kk},'[ZP]\d+','match');
-                    malfunctions(malcount).reason = 'stimuli_dir的数量不对';
-                    continue
-                end
-                zpids = find(~cellfun(@isempty, regexp(cellstr(stimulidir),'[ZP]\d+F\d+'))); %剔除额外的 plx文件
-                stimulidir = stimulidir(zpids);
-
-                if length(pl2files)~= length(stimulidir)
-                    malcount = malcount + 1;
-                    malfunctions(malcount).birdname = regexp(neurondir{kk},'[BRGYOX]\d{3}','match','once');
-                    malfunctions(malcount).neuronid = regexp(neurondir{kk},'[ZP]\d+','match');
-                    malfunctions(malcount).reason = 'stimuli_dir的数量不对';
+                    malfunctions(malcount).reason = 'stimuli_dir的数量或名称不对';
                     continue
                 end
 
-                if length(pl2files)>length(txtfile)
-                    malcount = malcount + 1;
-                    malfunctions(malcount).birdname = regexp(neurondir{kk},'[BRGYOX]\d{3}','match','once');
-                    malfunctions(malcount).neuronid = regexp(neurondir{kk},'[ZP]\d+','match');
-                    malfunctions(malcount).reason = 'txt文件不足';
-                    continue
-                end
 
-                %consistentunits = Archon.findConsistentNeurons(neurondir{kk});
-                consistentunits = Archon.findConExistNeurons(neurondir{kk});
-                % 判断是否存在每个文件都有的神经元
-                if isempty(consistentunits)
-                    malcount = malcount + 1;
-                    malfunctions(malcount).birdname = regexp(neurondir{kk},'[BRGYOX]\d{3}','match','once');
-                    malfunctions(malcount).neuronid = regexp(neurondir{kk},'[ZP]\d+','match');
-                    malfunctions(malcount).reason = '不存在每个文件都有的神经元';
-                    continue
-                end
 
-                for kkk = 1: length(consistentunits)  % iterate 对每一个 SPKC
-                    count = count + 1;
+                
+                for index = 1: length(valid_pl2files)  % iterate 对每一个stimulidir
 
-                    neuroster(count).birdname = regexp(neurondir{kk},'[BRGYOX]\d{3}','match','once');
-%                     if length(neuroster(count).birdname )> 1
-%                         neuroster(count).birdname = neuroster(count).birdname{1}; % 如果match到多于一项，则取第一项
-%                     end
-                    neuroster(count).neuronid = regexp(neurondir{kk},'[ZP]\d+','match');
-                    neuroster(count).birdneuron = strcat(neuroster(count).birdname,neuroster(count).neuronid);
-                    neuroster(count).howManyTxtFile = length(txtfile);
-                    neuroster(count).neurondir = neurondir{kk};
+                    
 
-                    temp = regexp(consistentunits{kkk},'SPKC\d+','match');neuroster(count).channelname = temp{1};
-                    temp = regexp(consistentunits{kkk},'(?<=_)\d+','match');neuroster(count).unit = str2num(temp{1});
-                    neuroster(count).fullid = [neuroster(count).birdname,neuroster(count).neuronid,neuroster(count).channelname,neuroster(count).unit];
-                    stimulidir = fullfile(neurondir{kk},'Stimuli');
-
-                    stimuli_filenames = Extract.filesAllLevel(stimulidir,'*.wav');
-
-                    neuroster(count).frag = 0;  % 判断是否有frag
-                    if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Frag')), 1))
-                        neuroster(count).frag = 1;
+                    if  ~isempty(regexp(valid_pl2files{index},'merge'))
+                        coresp_stimulidirs = valid_stimulidir;
+                    else
+                        coresp_stimulidirs = valid_stimulidir{find(~cellfun(@isempty, regexp(cellstr(valid_stimulidir),...
+                            unpack(regexp(valid_pl2files{index},'[ZP]\d+F\d+','match')) )  ))};
                     end
 
-                    neuroster(count).deg = 0;  % 判断是否有deg
-                    if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'deg')), 1))
-                        neuroster(count).deg = 1;
-                    end
+                    pl2info = PL2GetFileIndex(valid_pl2files{index});
 
-                    neuroster(count).repla = 0;  % 判断是否有repla
-                    if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Repla')), 1))
-                        neuroster(count).repla = 1;
-                    end
-
-                    neuroster(count).wns = 0;  % 判断是否有WNS
-                    if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'wns|WNS')), 1))
-                        neuroster(count).wns = 1;
-                    end
+                    cated_spikechannels = vertcat(pl2info.SpikeChannels{:});
 
 
-                    neuroster(count).allexist = 0;  % 判断是否同时存在 frag deg repla
-                    if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Frag')), 1)) &&...
-                            ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'deg')), 1)) &&...
-                            ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Repla')), 1))
-                        neuroster(count).allexist = 1;
-                    end
-
-                    neuroster(count).featureexist = 0;  % 是否存在 feature files
-                    feature_dir = fullfile(neurondir{kk},'Feature');
-                    if exist(feature_dir,'dir')
-                        feature_files = Extract.filename(feature_dir,'*.txt');
-
-                        if ~isempty(find(~cellfun(@isempty, regexp(cellstr(feature_files),'Info')))) &&...
-                                ~isempty(find(~cellfun(@isempty, regexp(cellstr(feature_files),'Data'))))
-                            neuroster(count).featureexist = 1;
+                    try
+                        num_unit = 0;
+                        names_spikechannels = {};
+                        for m = 1:length(cated_spikechannels)
+                            unitids = 1:1:length(find(cated_spikechannels(m).UnitCounts))-1;
+                            for n = 1:length(unitids)
+                                num_unit = num_unit + 1;
+                                names_spikechannels{num_unit} = sprintf('%s_%s_%s_%02u',...
+                                    regexp(neurondir{kk},'[BRGYOX]\d{3}','match','once'),...
+                                    zpname,...
+                                    unpack(unpack(regexp(cellstr({cated_spikechannels(m).Name}.'),'(?<=SPK_)SPKC\d+','match'))),...
+                                    unitids(n));
+                            end
                         end
+                    catch
+                        malcount = malcount + 1;
+                        malfunctions(malcount).birdname = regexp(neurondir{kk},'[BRGYOX]\d{3}','match','once');
+                        malfunctions(malcount).neuronid = regexp(neurondir{kk},'[ZP]\d+','match');
+                        malfunctions(malcount).reason = 'Spike sorting 未完成';
+                        continue
                     end
 
-                    neuroster(count).SCDexist = 0; % 是否存在SingleChannel_Merged_Stimuli文件夹
-                    subdirs = Extract.folder(neurondir{kk});
-                    if ~isempty(find(~cellfun(@isempty, regexp(cellstr(subdirs).','SingleChannel_Merged_Stimuli'))))
-                        neuroster(count).SCDexist = 1;
+
+
+                    for cat = 1:length(names_spikechannels)
+                        bird_channelunit = names_spikechannels{cat};
+                        %                         sprintf('%s_%s',regexp(neurondir{kk},'[BRGYOX]\d{3}','match','once'),...
+                        %                            names_spikechannels{cat} );
+
+                        if  any(ismember(bird_channelunit, {neuroster.fullname}.'))
+                            [~,where_it_is] = ismember(bird_channelunit, {neuroster.fullname}.');
+                            neuroster(where_it_is).pl2files  = {neuroster(count).pl2files,valid_pl2files};
+                            neuroster(where_it_is).stimulidirs =  {neuroster(count).stimulidirs,coresp_stimulidirs};
+                        else
+                            count = count + 1;
+                            neuroster(count).neurondir = neurondir{kk};
+                            neuroster(count).fullname = bird_channelunit;
+                            neuroster(count).pl2files = valid_pl2files;
+                            neuroster(count).stimulidirs =  coresp_stimulidirs;
+                        end
+
                     end
 
+                end
+
+
+            end
+
+            for k = 1:length(neuroster)
+                neuroster(k).birdname = regexp(neuroster(k).fullname,'[BRGYOX]\d{3}','match','once');
+                neuroster(k).neuronid = unpack(regexp(neuroster(k).neurondir,'[ZP]\d+','match'));
+                neuroster(k).zpid =  unpack(regexp(neuroster(k).neurondir,'[ZP]\d+','match'));
+                neuroster(k).birdneuron = strcat(neuroster(k).birdname,neuroster(k).neuronid);
+                neuroster(k).channelname = unpack(regexp(neuroster(k).fullname,'SPKC\d+','match'));
+                neuroster(k).unit = str2num(unpack(regexp(neuroster(k).fullname,'(?<=_)\d+','match')));
+                stimulidir = fullfile(neurondir{kk},'Stimuli');
+                stimuli_filenames = Extract.filesAllLevel(stimulidir,'*.wav');
+
+                neuroster(k).frag = 0;  % 判断是否有frag
+                if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Frag')), 1))
+                    neuroster(k).frag = 1;
+                end
+
+                neuroster(k).deg = 0;  % 判断是否有deg
+                if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'deg')), 1))
+                    neuroster(k).deg = 1;
+                end
+
+                neuroster(k).repla = 0;  % 判断是否有repla
+                if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Repla')), 1))
+                    neuroster(k).repla = 1;
+                end
+
+                neuroster(k).wns = 0;  % 判断是否有WNS
+                if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'wns|WNS')), 1))
+                    neuroster(k).wns = 1;
+                end
+
+
+                neuroster(k).allexist = 0;  % 判断是否同时存在 frag deg repla
+                if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Frag')), 1)) &&...
+                        ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'deg')), 1)) &&...
+                        ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Repla')), 1))
+                    neuroster(k).allexist = 1;
+                end
+
+                neuroster(k).featureexist = 0;  % 是否存在 feature files
+                feature_dir = fullfile(neurondir{kk},'Feature');
+                if exist(feature_dir,'dir')
+                    feature_files = Extract.filename(feature_dir,'*.txt');
+
+                    if ~isempty(find(~cellfun(@isempty, regexp(cellstr(feature_files),'Info')))) &&...
+                            ~isempty(find(~cellfun(@isempty, regexp(cellstr(feature_files),'Data'))))
+                        neuroster(k).featureexist = 1;
+                    end
+                end
+
+                neuroster(k).SCDexist = 0; % 是否存在SingleChannel_Merged_Stimuli文件夹
+                subdirs = Extract.folder(neurondir{kk});
+                if ~isempty(find(~cellfun(@isempty, regexp(cellstr(subdirs).','SingleChannel_Merged_Stimuli'))))
+                    neuroster(k).SCDexist = 1;
                 end
             end
 
             if isfield(neuroster,'allexist')
                 cdrfroster = neuroster([neuroster.allexist].' == 1);
-
             end
-            %not_cdrfroster = neuroster([neuroster.allexist].' == 0);
-            noSinChan_neuroster = neuroster([neuroster.SCDexist].' == 0);
 
-            nofeature_neuroster = neuroster([neuroster.featureexist].' == 0);
+            %             %not_cdrfroster = neuroster([neuroster.allexist].' == 0);
+            %             noSinChan_neuroster = neuroster([neuroster.SCDexist].' == 0);
+            %             nofeature_neuroster = neuroster([neuroster.featureexist].' == 0);
 
         end
 
-        function A = genAnalysisDifferentInput(plxdata,txtfiles,stimulidirs,featuredir,channelname,unit)
+        function A = genAnalysisDifferentInput(pl2data,txtfiles,stimulidirs,featuredir,channelname,unit)
             dbstop if error
 
             Ns = {};
 
-            for k = 1: length(plxdata)
-                fid = regexp(plxdata{k}.inputpath,'(?<=F)\d*','match'); % id for the file rank
+            for k = 1: length(pl2data)
+                fid = regexp(pl2data{k}.inputpath,'(?<=F)\d*','match'); % id for the file rank
 
                 % find corresponding txt file
                 followF = regexp(cellstr(txtfiles),'(?<=F)\d*','match');
@@ -570,7 +610,7 @@ classdef Archon
 
                 % Dangerous code here 取长度最短的文件名对应的txt file
                 [~,whichone_shorter] = min(cellfun(@length, {txtfiles{duiying_txt_id}}.'));
-                b = Chorus(txtfiles{duiying_txt_id(whichone_shorter)},plxdata{k}.inputpath,stimulidirs{duiying_stidir_id});
+                b = Chorus(txtfiles{duiying_txt_id(whichone_shorter)},pl2data{k}.inputpath,stimulidirs{duiying_stidir_id});
 
 
                 this_channel = channelname;
@@ -615,60 +655,55 @@ classdef Archon
 
         function A = genAnalysis(sourcedir,birdname,ZPid,channelname,unit) % generate Neuron
             arch = Archon(sourcedir);%Archon('D:/');
-            if ~isempty(find(~cellfun(@isempty, regexp(cellstr(Extract.filesAllLevel('./','*.mat')),...
-                    sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))))) % 如果当前folder已含有同名Analysis文件
-                disp('该Neuron的分析已经存在');
-                A = [];
-                return
-            end
+%             if ~isempty(find(~cellfun(@isempty, regexp(cellstr(Extract.filesAllLevel('./','*.mat')),...
+%                     sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))))) % 如果当前folder已含有同名Analysis文件
+%                 disp('该Neuron的分析已经存在,跳过');
+%                 A = [];
+%                 return
+%             end
             hitid = find(~cellfun(@isempty,regexp(cellstr(arch.bird_folders),birdname)));
-            hitbird_folder = arch.bird_folders{hitid};
+            hitbird_folders = arch.bird_folders(hitid);
 
 
             % 处理hit folder 内部的 subfolders
-            subdirs = Extract.folder(hitbird_folder);
-            hitZorP = find(~cellfun(@isempty,regexp(cellstr(subdirs.'),ZPid)));
-            hit_subdir = subdirs {hitZorP};
+%             subdirs = Extract.folder(hitbird_folder);
+            hitZorP = find(~cellfun(@isempty,regexp(cellstr(hitbird_folders),ZPid)));
+            hit_subdir = hitbird_folders{hitZorP};
 
-            plxfiles = Extract.filename(hit_subdir,'*.plx');
-            zpids = find(~cellfun(@isempty, regexp(cellstr(plxfiles),'[ZP]\d+F\d+')));
-            plxfiles = plxfiles(zpids);
-            txtfiles = Extract.filename(hit_subdir,'*.txt');
-            zpids = find(~cellfun(@isempty, regexp(cellstr(txtfiles),'[ZP]\d+F\d+'))); % same record
-            SPKCid = find(~cellfun(@isempty, regexp(cellstr(txtfiles),channelname))); % same channel
-            Uid = find(~cellfun(@isempty, regexp(cellstr(txtfiles),sprintf('U%d',unit)))); % same unit
-            if isempty(Uid)
-                txtfiles = txtfiles(zpids);
+            pl2files = Extract.filename(hit_subdir,'*.pl2');
+            mergeids = find(~cellfun(@isempty, regexp(cellstr(pl2files),'merge')));
+            zpids = find(~cellfun(@isempty, regexp(cellstr(pl2files),'[ZP]\d+F\d+')));
+            if ~isempty(mergeids)%判断 pl2文件是否完备
+                valid_pl2files = pl2files(mergeids); % when there is a merged file
             else
-                txtfiles = txtfiles(intersect(intersect(zpids,SPKCid),Uid));
+                valid_pl2files = pl2files(setdiff(zpids,mergeids)); % 剔除含有merge关键词的 pl2文件
             end
 
+%             zpids = find(~cellfun(@isempty, regexp(cellstr(txtfiles),'[ZP]\d+F\d+'))); % same record
+%             SPKCid = find(~cellfun(@isempty, regexp(cellstr(txtfiles),channelname))); % same channel
 
             stimuli_collect_dir = append(hit_subdir,'\Stimuli');
             stimuli_dirs = Extract.folder(stimuli_collect_dir ).';
 
             Ns = {};
 
-            parfor k = 1: length(plxfiles)
+            for k = 1: length(valid_pl2files) % parfor
 
-                fid = regexp(plxfiles{k},'(?<=F)\d*','match'); % id for the file rank
+                fid = regexp(valid_pl2files{k},'(?<=F)\d*','match'); % id for the file rank
 
                 % find corresponding txt file
-                followF = regexp(cellstr(txtfiles),'(?<=F)\d*','match');
-                duiying_txt_id = find(~cellfun(@isempty, regexp([followF{:}].', convertStringsToChars(fid))));
-
-                if isempty(duiying_txt_id)
-                    continue;
-                    % 如果对应的txt不存在，说明再后续记录中，此神经元有可能因为信号太差而失去价值
-                end
+%                 followF = regexp(cellstr(txtfiles),'(?<=F)\d*','match');
+%                 duiying_txt_id = find(~cellfun(@isempty, regexp([followF{:}].', convertStringsToChars(fid))));
                 followF = regexp(cellstr(stimuli_dirs),'(?<=F)\d*','match');
                 followF = cellfun(@str2num, [followF{:}].','Uni',0);
                 followF = [followF{:}].';
-                duiying_stidir_id = find(followF == str2num(fid));
-
-
-                b = Chorus(txtfiles{duiying_txt_id},plxfiles{k},stimuli_dirs{duiying_stidir_id});
-
+                duiying_stidir_id = find(followF == str2num(fid{1}));
+                if ~isempty(... % 一旦目标文件是merge
+                        find(~cellfun(@isempty, regexp(cellstr(valid_pl2files{k}),'merge'))))
+                    b = Chorus(valid_pl2files{k},stimuli_dirs);
+                else
+                    b = Chorus(valid_pl2files{k},stimuli_dirs{duiying_stidir_id});
+                end
 
                 this_channel = channelname;
                 this_unit = unit;
@@ -684,16 +719,17 @@ classdef Archon
                 end
                 N = b.getn{1};
                 % allocate sap-based feature information to each neuron
-                feature_dir = append(hit_subdir,'\Feature');
-
-                feature_files = Extract.filename(feature_dir,'*.txt');
-
-                datafile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Data')));
-                infofile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Info')));
-                % exist(feature_dir,'dir')
-                sorted_data = Experiment.extractFeaturesFromSapRawData(feature_files{datafile_id} , feature_files{infofile_id} );
-                N.setEachStimuliSapFeatures(sorted_data);
-                N.calMeanFeatures;
+%                 try
+%                     feature_dir = append(hit_subdir,'\Feature');
+%                     feature_files = Extract.filename(feature_dir,'*.txt');
+%                     datafile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Data')));
+%                     infofile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Info')));
+%                     % exist(feature_dir,'dir')
+%                     sorted_data = Experiment.extractFeaturesFromSapRawData(feature_files{datafile_id} , feature_files{infofile_id} );
+%                     N.setEachStimuliSapFeatures(sorted_data);
+%                     N.calMeanFeatures;
+%                 catch
+%                 end
 
                 %duiying_song_folder
                 Ns{k} = N;
@@ -709,55 +745,39 @@ classdef Archon
 
         end
 
-        function input_roster = batch_genAnalysis(input_roster)% 生成Analysis object
+        function input_roster = batch_genAnalysis(input_roster, from_where)% 生成Analysis object
+           dbstop if error     
 
+           if ~exist('from_where','var')
+               from_where = 1;
+           end
             %clear
             tic
             D = parallel.pool.DataQueue;
             h = waitbar(0, '开始生成 Neuron objects');
-            num_files = length(input_roster);
-            % Dummy call to nUpdateWaitbar to initialise
-            nUpdateWaitbar(num_files, h);
-            % Go back to simply calling nUpdateWaitbar with the data
-            afterEach(D, @nUpdateWaitbar);
+            Utl.UpdateParforWaitbar(length(input_roster), h);
+            afterEach(D, @Utl.UpdateParforWaitbar);
 
+            parfor k = from_where: length(input_roster) % par
+               try
+                    birdname = input_roster(k).birdname;
+                    ZPid = input_roster(k).neuronid;
+                    channelname = input_roster(k).channelname;
+                    unit = input_roster(k).unit;
 
-            parfor k = 1: length(input_roster) % par
+                    if ~isfile(sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))
+                        Archon.genAnalysis('D:/',birdname,ZPid,channelname,unit);
+                    end
+               catch ME
+                   input_roster(k).ME = ME;
+                   input_roster(k).identifier = ME.identifier;
+                   disp(ME);
+               end
 
-                % do stuff
-                %waitbar(k/length(input_roster),bb,sprintf('此为花名册中%u个神经元中的%u',length(input_roster),k))
-                birdname = input_roster(k).birdname;
-                ZPid = input_roster(k).neuronid;
-                channelname = input_roster(k).channelname;
-                unit = input_roster(k).unit;
-                try
-                    Archon.genAnalysis(birdname,ZPid,channelname,unit);
-                catch ME
-                    input_roster(k).ME = ME;
-                    disp(ME);
-                end
-
-                % Note we send only an "increment" for the waitbar.
                 send(D, 1);
-
             end
+
             toc
-
-            % subfunctiuon
-            function p = nUpdateWaitbar(data, h)
-                persistent TOTAL COUNT H
-                if nargin == 2
-                    % initialisation mode
-                    H = h;
-                    TOTAL = data;
-                    COUNT = 0;
-                else
-                    % afterEach call, increment COUNT
-                    COUNT = 1 + COUNT;
-                    p = COUNT / TOTAL;
-                    waitbar(p, H,sprintf('此为花名册中%u个Chorus中的%u',TOTAL,COUNT));
-                end
-            end
 
         end
 
@@ -858,28 +878,7 @@ classdef Archon
 
         end
 
-        function conexist = findConExistNeurons(dir_txt)% 找到有Cons的神经元,这里使用F1来寻找Cons文件，后期有可能有问题
-            % check which Fid is the Con session
-            %dir_txt = "D:\Piece-O709-W\P07"
-            txtfile = Extract.filename(dir_txt,'*.txt');
-            f1txtid = find(~cellfun(@isempty,regexp(cellstr(txtfile),'F1')));
-            subsetid = find(~cellfun(@isempty,regexp(cellstr(txtfile),'SPKC')));
-            try % if ~isempty(subsetid)
-                selected_txt = txtfile(intersect(f1txtid,subsetid));
-                conexist = {};
-                for k = 1: length(selected_txt)
-                    info = Archon.findSortedNeurons(selected_txt{k});
-                    conexist{k} = info.channel_unit;
-                end
-                conexist = cellfun(@(x)convertCharsToStrings(x),{info.channel_unit}.','UniformOutput',1);
 
-            catch %else
-                info = Archon.findSortedNeurons(txtfile{f1txtid});
-                conexist = {info.channel_unit}.';
-                conexist = cellfun(@(x)convertCharsToStrings(x),{info.channel_unit}.','UniformOutput',1);
-            end
-
-        end
 
         function [birddir,zpdir] = getDirpath(birdname,ZPid)
             arch = Archon('D:/');
@@ -942,7 +941,7 @@ classdef Archon
 
                 Ns = {};
                 for i = 1:length(ids_in_T)
-                    b = Chorus(T(ids_in_T(i)).MergedTxtPath,T(ids_in_T(i)).MergedPlxPath,T(ids_in_T(i)).StimuliPath);
+                    b = Chorus(T(ids_in_T(i)).MergedTxtPath,T(ids_in_T(i)).Mergedpl2Path,T(ids_in_T(i)).StimuliPath);
 
                     this_channel = T(ids_in_T(i)).ChannelName;
                     this_unit = T(ids_in_T(i)).UnitName;
@@ -1002,7 +1001,7 @@ classdef Archon
 
                 Ns = {};
                 for i = 1:length(ids_in_T)
-                    b = Chorus(T(ids_in_T(i)).TxtPath,T(ids_in_T(i)).PlxPath,T(ids_in_T(i)).StimuliPath);
+                    b = Chorus(T(ids_in_T(i)).TxtPath,T(ids_in_T(i)).pl2Path,T(ids_in_T(i)).StimuliPath);
 
                     this_channel = T(ids_in_T(i)).ChannelName;
                     this_unit = T(ids_in_T(i)).UnitName;
@@ -1041,7 +1040,7 @@ classdef Archon
         end
 
         function all_data_info = Deprecated_AnalyzeFormatedEphysData(dirpath)
-            % Automatically generate plx-txt-folder table based on
+            % Automatically generate pl2-txt-folder table based on
             % formated Piece folders
             % 202204211 11:44 pm paused here!
 
@@ -1063,7 +1062,7 @@ classdef Archon
 
             infocollect = {};
             for k = 1:length(bird_folders)
-                plxfiles = Extract.filename(bird_folders{k},'*.plx');
+                pl2files = Extract.filename(bird_folders{k},'*.pl2');
                 txtfiles = Extract.filename(bird_folders{k},'*.txt');
 
                 if exist(sprintf('%s\\Stimuli',bird_folders{k}), 'dir')
@@ -1072,9 +1071,9 @@ classdef Archon
                     stidirs = Extract.folder(sprintf('%s',bird_folders{k})).'
                 end
 
-                plxname = {}; % Extract .plx filenames
-                for m = 1: length(plxfiles)
-                    [~,plxname{m},~] = fileparts(plxfiles{m});
+                pl2name = {}; % Extract .pl2 filenames
+                for m = 1: length(pl2files)
+                    [~,pl2name{m},~] = fileparts(pl2files{m});
                 end
 
                 txtname = {};% Extract .txt filenames
@@ -1088,34 +1087,34 @@ classdef Archon
                     stiname{m} = temps{end};
                 end
 
-                % Based on .plx filenames, find the corresponding .txt and
+                % Based on .pl2 filenames, find the corresponding .txt and
                 % stimuli folder names
                 datainfo = struct;
-                for m = 1: length(plxname)
+                for m = 1: length(pl2name)
 
-                    txt_hit = find(~cellfun(@isempty, regexp([cellstr(txtname)].',plxname{m})));
+                    txt_hit = find(~cellfun(@isempty, regexp([cellstr(txtname)].',pl2name{m})));
 
-                    sti_hit = find(~cellfun(@isempty, regexp([cellstr(stiname)].',plxname{m})));
+                    sti_hit = find(~cellfun(@isempty, regexp([cellstr(stiname)].',pl2name{m})));
 
                     % fill the struct
-                    sadtemp = regexp(plxname{m}, '[_-]', 'split');
+                    sadtemp = regexp(pl2name{m}, '[_-]', 'split');
                     datainfo(m).animal = sadtemp{end};
-                    datainfo(m).plxname = plxname{m};
-                    datainfo(m).keyword = regexp(plxname{m},'Con|Deg|Detail|Frag|Repla|Mir|Rev','match');
-                    datainfo(m).sectionname = regexp(plxname{m},'Z\d{2}|P\d{2}','match');
+                    datainfo(m).pl2name = pl2name{m};
+                    datainfo(m).keyword = regexp(pl2name{m},'Con|Deg|Detail|Frag|Repla|Mir|Rev','match');
+                    datainfo(m).sectionname = regexp(pl2name{m},'Z\d{2}|P\d{2}','match');
                     just_a_temp = regexp(cellstr(datainfo(m).sectionname),'\d{2}','match');
                     datainfo(m).sectionid = str2num(just_a_temp{1}{1});
-                    datainfo(m).subfilename = regexp(plxname{m},'F\d{1}','match');
+                    datainfo(m).subfilename = regexp(pl2name{m},'F\d{1}','match');
                     if ~isempty(datainfo(m).subfilename) %如果文件名里存在F标识subfile的id
                         fuck2 = regexp(datainfo(m).subfilename,'\d','match');
                         datainfo(m).subfileid = str2num(just_a_temp{1}{1});
-                    elseif ~isempty(regexp(datainfo(m).plxname,'Mrg|mrg'))% 如果不存在F标识却存在‘Mrg|mrg’标识
+                    elseif ~isempty(regexp(datainfo(m).pl2name,'Mrg|mrg'))% 如果不存在F标识却存在‘Mrg|mrg’标识
                         datainfo(m).subfilename = "Mrg";
                     else % 如果不存在任何标识
                         datainfo(m).subfilename = [];
                     end
 
-                    datainfo(m).plxpath = plxfiles{m};
+                    datainfo(m).pl2path = pl2files{m};
                     if ~isempty(txt_hit)
                         datainfo(m).txtpath = txtfiles{txt_hit};
                     else
@@ -1140,9 +1139,9 @@ classdef Archon
 
         end
 
-        function As = Deprecated_writeSingleAnalysiFile(txt,plx, folder,feature_data,feature_info)
+        function As = Deprecated_writeSingleAnalysiFile(txt,pl2, folder,feature_data,feature_info)
 
-            b = Chorus(txt,plx,folder);
+            b = Chorus(txt,pl2,folder);
             b.select;
             Ns = b.getn;
 
@@ -1172,10 +1171,10 @@ classdef Archon
 
                 waitbar(m/length(all_data_info),wb,sprintf('%u of totally %u files',m,length(all_data_info)));
                 path_txt = all_data_info(m).txtpath;
-                path_plx = all_data_info(m).plxpath;
+                path_pl2 = all_data_info(m).pl2path;
                 path_folder = all_data_info(m).stidirpath;
 
-                if isempty(path_folder )&& ~isempty(regexp(path_plx,'Mrg|mrg'))
+                if isempty(path_folder )&& ~isempty(regexp(path_pl2,'Mrg|mrg'))
 
                     sameanimal = find(all_data_info(m).animal == [all_data_info.animal].');
                     sameZfile = find(ismember([all_data_info.sectionname].',all_data_info(m).sectionname));
@@ -1185,7 +1184,7 @@ classdef Archon
 
                 end
 
-                b = Chorus(path_txt,path_plx,path_folder);
+                b = Chorus(path_txt,path_pl2,path_folder);
                 b.select;
                 neuronlist = b.getn;
                 for k = 1: length(neuronlist)
@@ -1239,7 +1238,7 @@ classdef Archon
 
                         [~,idx] = ismember('Mrg',subfilename);
                         final_info(count).path_txt = this_section_struct(idx).txtpath;
-                        final_info(count).path_plx = this_section_struct(idx).plxpath;
+                        final_info(count).path_pl2 = this_section_struct(idx).pl2path;
                         final_info(count).path_folder = this_section_struct(idx).stidirpath;
                         final_info(count).path_pairs = [];
                     else
@@ -1247,10 +1246,10 @@ classdef Archon
                         for k = 1: length(this_section_struct)
 
                             final_info(count).path_txt = [];
-                            final_info(count).path_plx = [];
+                            final_info(count).path_pl2 = [];
                             final_info(count).path_folder =[];
                             final_info(count).path_pairs{k}{1} = this_section_struct(k).txtpath;
-                            final_info(count).path_pairs{k}{2} = this_section_struct(k).plxpath;
+                            final_info(count).path_pairs{k}{2} = this_section_struct(k).pl2path;
                             final_info(count).path_pairs{k}{3} = this_section_struct(k).stidirpath;
 
                         end

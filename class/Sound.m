@@ -82,7 +82,7 @@ classdef Sound < handle
             %  s.sapsegment;
             %  s.sapinitial = [s.sapfragment.initial].';
             %  s.sapterminal = [s.sapfragment.terminal].';
-            disp('Sound一回！');
+            %disp('Sound一回！');
         end
         
         function s = updateSeg(s) % update segmentation
@@ -286,7 +286,11 @@ classdef Sound < handle
             
             if iscell(folder_wav)&&length(folder_wav) == 1
                 % Judge how many subfolders exist
-                S = dir(folder_wav);
+                try
+                    S = dir(folder_wav);
+                catch
+                    S = dir(folder_wav{1});
+                end
                 N = nnz(~ismember({S.name},{'.','..'})&[S.isdir]);
                 if N == 0
                     files = Extract.filename(folder_wav,'*.wav');

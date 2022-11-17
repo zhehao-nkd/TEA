@@ -33,17 +33,17 @@
 #define MAX_WF_LENGTH_LONG      (120)
 
 /*
- * Plexon .plx File Structure Definitions
+ * Plexon .pl2 File Structure Definitions
  */
-#define LATEST_PLX_FILE_VERSION 107
+#define LATEST_pl2_FILE_VERSION 107
 
-#define PLX_HDR_LAST_SPIKE_CHAN     128     /* max spike channel number with counts in TSCounts and WFCounts arrays */
-#define PLX_HDR_LAST_UNIT           4       /* max unit number supported by PL_FileHeader information */
-#define PLX_HDR_LAST_EVENT_CHAN     299     /* max digital event number that will be counted in EVCounts */
-#define PLX_HDR_FIRST_CONT_CHAN_IDX 300     /* index in EVCounts for analog channel 0 */
-#define PLX_HDR_LAST_CONT_CHAN      211     /* max (0-based) analog channel number that has counts in EVCounts, starting at [300] */
+#define pl2_HDR_LAST_SPIKE_CHAN     128     /* max spike channel number with counts in TSCounts and WFCounts arrays */
+#define pl2_HDR_LAST_UNIT           4       /* max unit number supported by PL_FileHeader information */
+#define pl2_HDR_LAST_EVENT_CHAN     299     /* max digital event number that will be counted in EVCounts */
+#define pl2_HDR_FIRST_CONT_CHAN_IDX 300     /* index in EVCounts for analog channel 0 */
+#define pl2_HDR_LAST_CONT_CHAN      211     /* max (0-based) analog channel number that has counts in EVCounts, starting at [300] */
 
-/* plx file header (is followed by the DSP channel headers, then event channel headers, then slow channel headers) */
+/* pl2 file header (is followed by the DSP channel headers, then event channel headers, then slow channel headers) */
 struct PL_FileHeader
 {
     unsigned int MagicNumber;   /* = 0x58454c50 */
@@ -88,7 +88,7 @@ struct PL_FileHeader
      * Counters for the number of timestamps and waveforms in each channel and unit.
      * Note that even though there may be more than 4 units on any 
      * channel, these arrays only record the counts for the first 4 units in each channel.
-     * Likewise, starting with .plx file format version 107, there may be more than 128 
+     * Likewise, starting with .pl2 file format version 107, there may be more than 128 
      * spike channels, but these arrays only record the  
      * counts for the first 128 channels.
      * Channel and unit numbers are 1-based - channel entries at [0] and [129] are 
@@ -162,7 +162,7 @@ struct PL_SlowChannelHeader
     int     Padding[27];
 }; /* 296 bytes */
 
-/* The header for the data record used in the datafile (*.plx)
+/* The header for the data record used in the datafile (*.pl2)
  * This is followed by NumberOfWaveforms*NumberOfWordsInWaveform
  * short integers that represent the waveform(s)
  */

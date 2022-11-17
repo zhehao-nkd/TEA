@@ -1,9 +1,9 @@
 addpath(genpath("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA"))
 path_txt = "D:\New_Stimuli_after220901\R707_Ephys_New\P14\P14F001.txt"
-path_plx = "D:\New_Stimuli_after220901\R707_Ephys_New\P14\P14F001.plx"
+path_pl2 = "D:\New_Stimuli_after220901\R707_Ephys_New\P14\P14F001.pl2"
 path_folder = "D:\New_Stimuli_after220901\R707_Ephys_New\P14\P14F1_ConsSibs"
 
-cho = Chorus(path_txt,path_plx,path_folder);
+cho = Chorus(path_txt,path_pl2,path_folder);
 
 singleunits = cho.getn;
 
@@ -47,5 +47,5 @@ end
 finalimg = vertcat(specrow,finalimg);
 FINALIMG = cell2mat(finalimg);
 
-[~,plxname,~] = fileparts(path_plx);
-imwrite(FINALIMG,sprintf('SimuRecorded_Neurons_%s.tiff',plxname));
+[~,pl2name,~] = fileparts(path_pl2);
+imwrite(FINALIMG,sprintf('SimuRecorded_Neurons_%s.tiff',pl2name));

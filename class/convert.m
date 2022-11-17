@@ -62,7 +62,7 @@ classdef Convert
                 newid = sprintf('%s%s',birdname{1},zpid{1});
             catch
                 newid = rawid;
-                disp('Conversion failed');
+                disp('Convert@fileid :Conversion failed');
             end
         end
         function two2one(dir) % Convert 2 channel to 1 channel wav
@@ -134,7 +134,9 @@ classdef Convert
                 
                 targets = regexp(f,old);
                 
-                f(targets) = new;
+                if ~isempty(targets)
+                    f(targets) = new;
+                end
                 
                 newname = sprintf('%s%s',f,ext);
                 

@@ -1,7 +1,7 @@
-function build_readPLXFileC(debug)
-% BUILD_READPLXFILEC - Wrapper for building the readPLXFileC MEX function.
+function build_readpl2FileC(debug)
+% BUILD_READpl2FILEC - Wrapper for building the readpl2FileC MEX function.
 % 
-% This function can be used to compile readPLXFileC. It embeds into the
+% This function can be used to compile readpl2FileC. It embeds into the
 % resulting MEX file the date/time the source code was last modified, which
 % is useful for comparing and debugging different revisions of the code.
 %
@@ -12,13 +12,13 @@ function build_readPLXFileC(debug)
 % Author: Benjamin Kraus (bkraus@bu.edu, ben@benkraus.com)
 % Last Modified: $Date: 2013-06-09 19:58:09 -0400 (Sun, 09 Jun 2013) $
 % Copyright (c) 2012-2013, Benjamin Kraus
-% $Id: build_readPLXFileC.m 4905 2013-06-09 23:58:09Z bkraus $
+% $Id: build_readpl2FileC.m 4905 2013-06-09 23:58:09Z bkraus $
 
 % By default build a 'release' package, instead of a 'debugging' package.
 if(nargin < 1); debug = false; end
 
 % File name of the source code.
-f = 'readPLXFileC';
+f = 'readpl2FileC';
 
 % Get the date the file was last modified.
 finfo = dir([f '.c']);

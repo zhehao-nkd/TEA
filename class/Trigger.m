@@ -1,12 +1,12 @@
 % a class to Extract trigger info
 
 classdef Trigger < handle
-    % To Extract and process trigger signals from .plx files
+    % To Extract and process trigger signals from .pl2 files
     % Trigger signal用来标定stimuli出现的时间
     properties
         equipment
         info
-        plxname
+        pl2name
         raw
         trigger_fs
         inputpath
@@ -16,40 +16,38 @@ classdef Trigger < handle
     
     methods
         
-        function t = Trigger(path_plx)
+        function t = Trigger(path_pl2)
             
-            t.inputpath = path_plx;
-            [~,t.plxname,~] = fileparts(path_plx);
-            path_plx = convertStringsToChars(path_plx);
+            t.inputpath = path_pl2;
+            [~,t.pl2name,~] = fileparts(path_pl2);
+            path_pl2 = convertStringsToChars(path_pl2);
             try
-                pl2info = PL2GetFileIndex(path_plx);
+                pl2info = PL2GetFileIndex(path_pl2);
             catch
-                pl2info =  PL2GetFileIndex(strrep(path_plx,'F:','D:'));
+                pl2info =  PL2GetFileIndex(strrep(path_pl2,'F:','D:'));
             end
             %t.recording_time = datetime(plexonfile.Date,'ConvertFrom','datenum'); 
             PULSE_LOCATION = 0;
             % find the strat and stop field
             
-            if ~isempty(regexp(pl2info.CreatorSoftwareName,'Zeus'))
-                if  ~isempty(find(~cellfun(@isempty, regexp( {vertcat(pl2info.EventChannels{:}).Name}.','DIG01'))))
-                    code_method = 1;
-                else
+            if ~isempty(regexp(pl2info.CreatorSoftwareName,'Zeus|Version'))
+                if  isempty(vertcat(pl2info.EventChannels{:}))||isempty(find(~cellfun(@isempty, regexp( {vertcat(pl2info.EventChannels{:}).Name}.','DIG01'))))
                     code_method = 2;
+                else
+                    code_method = 1;
                 end
             elseif ~isempty(regexp(pl2info.CreatorSoftwareName,'OmniPlex'))
                 code_method = 3;
                 
-            else % Sarah's case
-                code_method = 3;
             end
             
             switch code_method
                 case 1
-                    t.coreTriggerZeusDig(path_plx);
+                    t.coreTriggerZeusDig(path_pl2);
                 case 2
-                    t.coreTriggerZeusAna(path_plx);
+                    t.coreTriggerZeusAna(path_pl2);
                 case 3
-                    t.coreTriggerPlexAna(path_plx);
+                    t.coreTriggerPlexAna(path_pl2);
             end
             
         end
@@ -65,7 +63,7 @@ classdef Trigger < handle
         function properties = getsingle(t, which)
             properties.equipment = t.equipment;
             properties.info = t.info(which);
-            properties.plxname = t.plxname;
+            properties.pl2name = t.pl2name;
         end
         
     end
@@ -93,7 +91,7 @@ classdef Trigger < handle
             % 07/11 2021 dynamic window
             intervals = pulse_initials(2:end) - pulse_initials(1:end-1);
             unique_intervals = unique(intervals,'sorted');
-            WINDOW = unique_intervals(1) + 100; %% 100 is the redundancy for possible error  !!!! 不知道对不对
+            WINDOW = unique_intervals(1) + 100/fs; %% 100 is the redundancy for possible error  !!!! 不知道对不对
             
             for n = 1: length(pulse_initials)
                 
@@ -109,7 +107,7 @@ classdef Trigger < handle
                             groups{m}=[ groups{m},pulse_initials(n)];
                         end
                         
-                    else
+                    else  % add one more group
                         if isempty(groups)
                             groups{m}= pulse_initials(n);
                             m = m+1;
@@ -120,9 +118,7 @@ classdef Trigger < handle
                             groups{m} =[];
                         end
                     end
-                    
-                    
-                    
+                     
                 end
                 
             end
@@ -140,7 +136,7 @@ classdef Trigger < handle
                 detection.name(o) = length(groups{o});
             end
             
-            detection.time = detection.samplepoint/fs;
+            detection.time = detection.samplepoint;
             
             
             name = unique(detection.name);
@@ -164,7 +160,21 @@ classdef Trigger < handle
             fs = t.raw.ADFreq; % avoid hard-coding;
             t.trigger_fs = fs;
             %dbstop if error
-            pulse_channel = t.raw.Values;
+%             if abs(min(t.raw.Values)) < abs(max(t.raw.Values))
+%                 pulse_channel = t.raw.Values;
+%             elseif abs(min(t.raw.Values)) > abs(max(t.raw.Values))
+%                 pulse_channel = - t.raw.Values;
+%             end
+
+            if mean(t.raw.Values) > 0
+                pulse_channel = t.raw.Values;
+            elseif mean(t.raw.Values) < 0
+                pulse_channel = - t.raw.Values;
+            end
+%             figure; plot(pulse_channel)
+
+% 
+%             length(find(t.raw.Values>1000)) length(find(t.raw.Values<-1000))
             %detecting triggers and recording their time
             
             % debug pulse_channel = trigger.Values;
@@ -173,8 +183,8 @@ classdef Trigger < handle
             MAX_THRESHOLD = 40000; % May vary in different situations
             
             if max(pulse_channel) < MIN_THRESHOLD % Sarah's case
-                MAX_THRESHOLD = 10000;
-                MIN_THRESHOLD = 3000;
+                MAX_THRESHOLD = max(pulse_channel)*1.3;
+                MIN_THRESHOLD = max(pulse_channel)*0.7;
             end
             
             pulse_channel(pulse_channel < MIN_THRESHOLD | pulse_channel > MAX_THRESHOLD) = 0; %Convert singals of pulse channel to 0 and 1
@@ -210,9 +220,9 @@ classdef Trigger < handle
             % 根据 diff的种类选择 decode 的 类型
             ini_diffs =  round(diff(pulse_initials),-1);
             
-            group_split_thres = 5000;
+            group_split_thres = 3000;
             
-            to_judge_decode_method = ini_diffs(ini_diffs < 5000);
+            to_judge_decode_method = ini_diffs(ini_diffs < group_split_thres);
             if length(unique(to_judge_decode_method)) == 1
                 % use the direct decode method
                 m = 1;
@@ -225,9 +235,6 @@ classdef Trigger < handle
                     
                     if n == length(pulse_initials)
                         groups{m}= [groups{m},pulse_initials(n)];
-                        
-                        
-                        
                     else
                         
                         if pulse_initials(n+1)-pulse_initials(n)<WINDOW
@@ -247,12 +254,8 @@ classdef Trigger < handle
                                 m = m+1;
                                 groups{m} =[];
                             end
-                        end
-                        
-                        
-                        
+                        end      
                     end
-                    
                 end
                 % For collecting .time and .number
                 detection.samplepoint = [];
@@ -324,28 +327,29 @@ classdef Trigger < handle
             fs = 30000;
             
             t.trigger_fs = fs;
-            group_split_thres = 5000; % 0.1667 seconds, to split dig timestmaps to different groups for different stimuli
+            group_split_thres = 0.1667; % 5000 samples,0.1667 seconds, to split dig timestmaps to different groups for different stimuli
             raws = t.raw.Timestamps;
             diff_between_pulse = diff(raws);
             
             split_ids = find( diff_between_pulse >  group_split_thres);
             
+%             diff_between_pulse ( diff_between_pulse >  group_split_thres)
             split_ids = [0; split_ids;length(raws)];
             
             groups = {};
-            for g = 1: length(split_ids)-1
+            for g = 1: length(split_ids)-1 % 把不同组的trigger分隔开
                 the_first =  split_ids(g)+ 1;
                 the_last = split_ids(g+ 1);
                 groups{g} = raws(the_first:the_last);
             end
             
             temp = cellfun(@diff,groups,'UniformOutput',0);
-            diff_collect_for_find_bi =arrayfun(@(x) round(x,-1), double(vertcat(temp{:})) );
+            diff_collect_for_find_bi =arrayfun(@(x) round(x,3), double(vertcat(temp{:})) );
             zero_value = min(  diff_collect_for_find_bi);
             one_value = max( diff_collect_for_find_bi);
             
             for u = 1: length(groups)
-                inner_group_diff = round(diff(double(groups{u})),-1);
+                inner_group_diff = round(diff(double(groups{u})),3);
                 inner_group_diff(inner_group_diff== zero_value) = 0;
                 inner_group_diff(inner_group_diff== one_value) = 1;
                 binary_code =  flip(inner_group_diff.'); % binary code
@@ -368,17 +372,17 @@ classdef Trigger < handle
                 for yy = 1: length(collects)
                     % important note here, here collects return int32, but what
                     % is necessary is double
-                    info(e).time(yy) = double(collects{yy}(1))/fs;   % fs equals to 30000
+                    info(e).time(yy) = double(collects{yy}(1))%/fs;   % fs equals to 30000
                 end
             end
             
         end
         
-        function coreTriggerZeusDig(t,path_plx)
+        function coreTriggerZeusDig(t,path_pl2)
             
             t.equipment = 'ZEUS';
            % t.raw = plexonfile.EventChannels(PULSE_LOCATION);
-            t.raw.Timestamps = PL2EventTs(path_plx,'DIG01').Ts;
+            t.raw.Timestamps = PL2EventTs(path_pl2,'DIG01').Ts;
             raw_to_analysis = t.raw.Timestamps;
             
             % to judge whether to use the binary-code decoder or
@@ -391,10 +395,10 @@ classdef Trigger < handle
             diffs = diff(raw_to_analysis);
             
             for mm = 1: length(diffs)
-                newdiffs(mm) = round( double(diffs(mm)),-2 );
+                newdiffs(mm) = round( double(diffs(mm)),3);
             end
             
-            method_choose_thres = 5000;
+            method_choose_thres = 0.3;
             newdiffs = newdiffs(newdiffs < method_choose_thres );
             
             if length(unique(newdiffs))== 1 % actually this is very dangerous !!!!!!!!!!!!!!!
@@ -403,13 +407,17 @@ classdef Trigger < handle
             elseif length(unique(newdiffs))== 2
                 t.info = t.digbidecode; % digital
                 clear plexonfile % if system is zeus, the function will return here
+            else
+
+                warning('Trigger signal failed to be detected!!!! 异常');
+                pause;
             end
             
         end
         
-        function coreTriggerZeusAna(t,path_plx)
+        function coreTriggerZeusAna(t,path_pl2)
             
-            %             plexonfile = readPLXFileC(path_plx,'continuous');
+            %             plexonfile = readpl2FileC(path_pl2,'continuous');
             %             PULSE_LOCATION = find(~cellfun(@isempty, regexp({plexonfile.ContinuousChannels.Name}.', 'AIN02')));
             %             t.equipment = 'ZEUS';
             %             t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
@@ -417,15 +425,18 @@ classdef Trigger < handle
             %             t.info = t.Extract; % not digital
             
             t.equipment = 'ZEUS';
-            t.raw = PL2Ad(path_plx,'AIN02');
+            t.raw = PL2Ad(path_pl2,'AI01');
+            if isempty(t.raw.Values)
+                t.raw = PL2Ad(path_pl2,'AIN02');
+            end
             t.raw.Values = -t.raw.Values;
             t.info = t.Extract; % not digital
         end
         
-        function coreTriggerPlexAna(t,path_plx)
+        function coreTriggerPlexAna(t,path_pl2)
             
             t.equipment = 'PLEXON';
-            t.raw = PL2Ad(path_plx,'AI01');
+            t.raw = PL2Ad(path_pl2,'AI01');
             %t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
             t.info = t.Extract; % not digital
             
@@ -690,15 +701,15 @@ classdef Trigger < handle
             
         end
         
-        function tobject = get_it(path_plx)
+        function tobject = get_it(path_pl2)
             
-            tobject = Trigger(path_plx);
+            tobject = Trigger(path_pl2);
             
         end
         
-        function t = shiftTrigger(path_plx,shift_value) % shift_value in seconds
+        function t = shiftTrigger(path_pl2,shift_value) % shift_value in seconds
             % 此函数移动trigger signal以纠偏
-            t = Trigger(path_plx)
+            t = Trigger(path_pl2)
             % Edit t.info
             for k = 1: length(t.info)
                 t.info(k).time = t.info(k).time + shift_value;
@@ -709,9 +720,9 @@ classdef Trigger < handle
             
         end
         
-        function drawContinuousChannel(plx_path)
+        function drawContinuousChannel(pl2_path)
             
-            plexonfile = readPLXFileC(convertStringsToChars(path_plx),'all');
+            plexonfile = readpl2FileC(convertStringsToChars(path_pl2),'all');
             
             SPKC16 = plexonfile.ContinuousChannels(32).Values;
             

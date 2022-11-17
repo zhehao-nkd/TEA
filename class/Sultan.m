@@ -579,683 +579,7 @@ classdef Sultan
             
         end
         
-        function Deprecated_drawCONSPEResponse(s)
-            
-            % Extract binarized neuron's responses to CONs
-            dbstop if error
-            con_info = struct;
-            counts = 0;
-            common_cons = {};
-            common_spes = {};
-            
-            for k = 1: length(s.anas)
-                load(s.anas{k});
-                this_neuron = A.neurons{A.song_id};
-                Conlist = Neuron(this_neuron).evaluateConResponse;
-                if length(Conlist) >= 18 % hard code here
-                    counts = counts + 1;
-                    con_match = regexp(cellstr({Conlist.stimuliname}.'),'[BGYRO]\d{3}','match');
-                    con_ids = find(~cellfun(@isempty,con_match));
-                    spe_match = regexp(cellstr({Conlist.stimuliname}.'),'TUT|BOS|Fcall|Mcall|WNS','match');
-                    spe_ids = find(~cellfun(@isempty,spe_match));
-                    spe_match = [spe_match{spe_ids}].';
-                    % remove TUT and BOS
-                    con_ids = setdiff(con_ids,spe_ids);
-                    con_match = [con_match{con_ids}].';
-                    
-                    
-                    % add TUT-BOS-Fcall-Mcall-WNS (Special)
-                    
-                    % Extract con_label
-                    con_info(counts).wav_len = A.calMeanWaveLength;
-                    con_info(counts).neuronname = A.formated_name;
-                    con_info(counts).con_match = con_match;
-                    con_info(counts).con_resp = [Conlist(con_ids).label].';
-                    con_info(counts).spe_match = spe_match;
-                    con_info(counts).spe_resp = [Conlist(spe_ids).label].';
-                    % find out Common Conspecific songs
-                    if counts == 1
-                        common_cons = con_info(counts).con_match;
-                        %common_spes = con_info(counts).spe_match;
-                    else
-                        temp = intersect(common_cons,con_info(counts).con_match);
-                        
-                        common_cons = temp; % weird bugs happened when temp was not used
-                        
-                        %
-                        %                         temp = intersect(common_spes,con_info(counts).spe_match);
-                        %                         common_spes = temp;
-                        
-                        if length(common_cons)< 18
-                            pause
-                        end
-                        
-                    end
-                end
-            end
-            
-            
-            % Extract binary con-resp map
-            respmap = [];
-            for m = 1: length(con_info)
-                [~,loc] = ismember (common_cons,con_info(m).con_match);
-                
-                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
-                respmap(m,:) = con_info(m).con_resp(loc);
-            end
-            
-            
-            % Extract spe-resp map
-            common_spes = {'TUT','BOS','Fcall','Mcall','WNS'};
-            spemap = [];
-            for m = 1: length(con_info)
-                
-                if ~isempty(con_info(m).spe_match)
-                    [~,loc] = ismember (common_spes,con_info(m).spe_match);
-                else
-                    [~,loc] = ismember (common_spes,{});
-                end
-                
-                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
-                for mm = 1: length(loc)
-                    if loc(mm) == 0
-                        spemap(m,mm) = nan;
-                    else
-                        spemap(m,mm) = con_info(m).spe_resp(loc(mm));
-                    end
-                end
-            end
-            
-            
-            % Sort the matrix
-            [~,new_rowids] = sort(sum(respmap,2),'descend');
-            [~,new_columnids] = sort(sum(respmap,1),2,'descend');
-            tempo =  respmap(new_rowids,:);
-            new_respmap = tempo(:,new_columnids);
-            new_cnames = {common_cons{new_columnids}}; %#ok<CCAT1>
-            tempo = {con_info.neuronname};
-            new_rnames = {tempo{new_rowids}};
-            
-            respT = array2table(respmap);
-            respT.Properties.VariableNames = new_cnames;
-            respT.Properties.RowNames = new_rnames;
-            
-            % sort spe-map
-            new_spemap = spemap(new_rowids,:);
-            
-            
-            % reordered waveforms length
-            
-            WLs = [con_info.wav_len].';
-            WLs = WLs(new_rowids);
-            
-            
-            for k = 1: size(new_respmap,1)
-                value_is_one_ids = find(new_respmap(k,:));
-                new_respmap(k,value_is_one_ids) = WLs(k);
-            end
-            
-            figure;
-            colormap('summer');
-            imagesc(new_respmap);
-            
-            colorbar;
-            
-            xticks(1:size(new_respmap,2));
-            xticklabels(new_cnames);
-            
-            
-            yticks(1:size(new_respmap,1));
-            yticklabels(new_rnames);
-            set(gca,'TickLabelInterpreter','none');
-            set(gca,'TickLength',[0.001, 0.001]);
-            
-        end
-        
-        function Deprecated_drawCONOnlyResponse_NSBS(s)
-            
-            % Extract binarized neuron's responses to CONs
-            dbstop if error
-            con_info = struct;
-            counts = 0;
-            common_cons = {};
-            common_spes = {};
-            
-            for k = 1: length(s.anas)
-                load(s.anas{k});
-                this_neuron = A.neurons{s.anas{k}.song_id};
-                Conlist = Neuron(this_neuron).evaluateConResponse;
-                if length(Conlist) >= 18 % hard code here
-                    counts = counts + 1;
-                    con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
-                    con_ids = find(~cellfun(@isempty,con_match));
-                    spe_match = regexp({Conlist.stimuliname}.','TUT|BOS|Fcall|Mcall|WNS','match');
-                    spe_ids = find(~cellfun(@isempty,spe_match));
-                    spe_match = [spe_match{spe_ids}].';
-                    % remove TUT and BOS
-                    con_ids = setdiff(con_ids,spe_ids);
-                    con_match = [con_match{con_ids}].';
-                    
-                    
-                    % add TUT-BOS-Fcall-Mcall-WNS (Special)
-                    
-                    % Extract con_label
-                    con_info(counts).wav_len = this_neuron.calMeanWaveLength;
-                    con_info(counts).neuronname = this_neuron.unique_neuronname;
-                    con_info(counts).con_match = con_match;
-                    con_info(counts).con_resp = [Conlist(con_ids).label].';
-                    con_info(counts).spe_match = spe_match;
-                    con_info(counts).spe_resp = [Conlist(spe_ids).label].';
-                    % find out Common Conspecific songs
-                    if counts == 1
-                        common_cons = con_info(counts).con_match;
-                        %common_spes = con_info(counts).spe_match;
-                    else
-                        temp = intersect(common_cons,con_info(counts).con_match);
-                        
-                        common_cons = temp; % weird bugs happened when temp was not used
-                        %                         temp = intersect(common_spes,con_info(counts).spe_match);
-                        %                         common_spes = temp;
-                        
-                        if length(common_cons)< 18
-                            pause
-                        end
-                    end
-                    
-                end
-            end
-            
-            
-            % Extract binary con-resp map
-            respmap = [];
-            for m = 1: length(con_info)
-                [~,loc] = ismember (common_cons,con_info(m).con_match);
-                
-                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
-                respmap(m,:) = con_info(m).con_resp(loc);
-            end
-            
-            
-            % Extract spe-resp map
-            common_spes = {'TUT','BOS','Fcall','Mcall','WNS'};
-            spemap = [];
-            for m = 1: length(con_info)
-                
-                if ~isempty(con_info(m).spe_match)
-                    [~,loc] = ismember (common_spes,con_info(m).spe_match);
-                else
-                    [~,loc] = ismember (common_spes,{});
-                end
-                
-                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
-                for mm = 1: length(loc)
-                    if loc(mm) == 0
-                        spemap(m,mm) = nan;
-                    else
-                        spemap(m,mm) = con_info(m).spe_resp(loc(mm));
-                    end
-                end
-            end
-            
-            
-            % Sort the matrix
-            [~,new_rowids] = sort(sum(respmap,2),'descend');
-            [~,new_columnids] = sort(sum(respmap,1),2,'descend');
-            tempo =  respmap(new_rowids,:);
-            new_respmap = tempo(:,new_columnids);
-            new_cnames = {common_cons{new_columnids}}; %#ok<CCAT1>
-            tempo = {con_info.neuronname};
-            new_rnames = {tempo{new_rowids}};
-            
-            respT = array2table(respmap);
-            respT.Properties.VariableNames = new_cnames;
-            respT.Properties.RowNames = new_rnames;
-            
-            % sort spe-map
-            new_spemap = spemap(new_rowids,:);
-            
-            
-            % reordered waveforms length
-            
-            WLs = [con_info.wav_len].';
-            WLs = WLs(new_rowids);
-            
-            wlfr_info = plotWavelengthVsFiringRate(s);
-            
-            names_in_wlfr = {wlfr_info.neuronname}.';
-            [~,ids_for_reorder] = ismember(new_rnames,names_in_wlfr);
-            new_wlfr_info = wlfr_info(ids_for_reorder);
-            
-            for k = 1: size(new_respmap,1)
-                value_is_one_ids = find(new_respmap(k,:));
-                if new_wlfr_info(k).isBS == 0
-                    new_respmap(k,value_is_one_ids) = 0.5;
-                elseif new_wlfr_info(k).isBS == 1
-                    new_respmap(k,value_is_one_ids) = 1;
-                end
-            end
-            
-            fig = figure;
-            % colormap('summer');
-            imagesc(new_respmap);
-            
-            map = [ 1 1 1
-                0 0.4470 0.7410
-                0.8500 0.3250 0.0980];
-            
-            colormap(fig,map);
-            
-            %colorbar;
-            
-            xticks(1:size(new_respmap,2));
-            xticklabels(new_cnames);
-            
-            
-            yticks(1:size(new_respmap,1));
-            yticklabels(new_rnames);
-            set(gca,'TickLabelInterpreter','none');
-            set(gca,'TickLength',[0.001, 0.001]);
-            
-        end
-        
-        function Deprecated_drawCONSPEResponse_NSBS(s)
-            
-            % Extract binarized neuron's responses to CONs
-            dbstop if error
-            con_info = struct;
-            counts = 0;
-            common_cons = {};
-            common_spes = {};
-            
-            for k = 1: length(s.anas)
-                this_neuron = s.anas{k}.neurons{s.anas{k}.song_id};
-                Conlist = Neuron(this_neuron).evaluateConResponse;
-                if length(Conlist) >= 18 % hard code here
-                    counts = counts + 1;
-                    con_match = regexp({Conlist.stimuliname}.','CON-[BGYRO]\d{3}|TUT|BOS|Fcall|Mcall|WNS|Het','match');
-                    con_ids = find(~cellfun(@isempty,con_match));
-                    spe_match = regexp({Conlist.stimuliname}.','TUT|BOS|Fcall|Mcall|WNS','match');
-                    spe_ids = find(~cellfun(@isempty,spe_match));
-                    spe_match = [spe_match{spe_ids}].';
-                    
-                    % add TUT-BOS-Fcall-Mcall-WNS (Special)
-                    
-                    % Extract con_label
-                    con_info(counts).wav_len = this_neuron.calMeanWaveLength;
-                    con_info(counts).neuronname = this_neuron.unique_neuronname;
-                    con_info(counts).con_match = con_match;
-                    con_info(counts).con_resp = [Conlist(con_ids).label].';
-                    con_info(counts).spe_match = spe_match;
-                    con_info(counts).spe_resp = [Conlist(spe_ids).label].';
-                    
-                end
-            end
-            
-            % Hard coded conspecific songs
-            common_cons = {'CON-B346','CON-B512','CON-B521','CON-B554','CON-B606','CON-G429','CON-G506','CON-G518','CON-G548',...
-                'CON-G573','CON-G578','CON-O331','CON-O507','CON-O509','CON-O540','CON-Y515','CON-Y606','CON-Y616',...
-                'Fcall','BOS','Het','Mcall','TUT','WNS'};
-            
-            % Extract binary con-resp map
-            respmap = [];
-            for m = 1: length(con_info)
-                [ism,loc] = ismember(common_cons,[con_info(m).con_match{:}]);
-                respmap(m, find(ism==0)) = nan; % 不存在的stimuli设定其resp值为nan
-                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
-                respmap(m,loc(loc>0)) = con_info(m).con_resp(loc(loc>0));
-            end
-            
-            % Sort the matrix
-            [~,new_rowids] = sort(sum(respmap,2),'descend');
-            [~,new_columnids] = sort(sum(respmap,1),2,'descend');
-            tempo =  respmap(new_rowids,:);
-            new_respmap = tempo(:,new_columnids);
-            new_cnames = {common_cons{new_columnids}}; %#ok<CCAT1>
-            tempo = {con_info.neuronname};
-            new_rnames = {tempo{new_rowids}};
-            
-            respT = array2table(respmap);
-            respT.Properties.VariableNames = new_cnames;
-            respT.Properties.RowNames = new_rnames;
-            
-            % reordered waveforms length
-            
-            WLs = [con_info.wav_len].';
-            WLs = WLs(new_rowids);
-            
-            wlfr_info = plotWavelengthVsFiringRate(s);
-            
-            names_in_wlfr = {wlfr_info.neuronname}.';
-            [~,ids_for_reorder] = ismember(new_rnames,names_in_wlfr);
-            new_wlfr_info = wlfr_info(ids_for_reorder);
-            
-            for k = 1: size(new_respmap,1)
-                value_is_one_ids = find(new_respmap(k,:));
-                if new_wlfr_info(k).isBS == 0
-                    new_respmap(k,value_is_one_ids) = 0.5;
-                elseif new_wlfr_info(k).isBS == 1
-                    new_respmap(k,value_is_one_ids) = 1;
-                end
-            end
-            
-            fig = figure;
-            % colormap('summer');
-            imagesc(new_respmap);
-            
-            map = [ 1 1 1
-                0 0.4470 0.7410
-                0.8500 0.3250 0.0980];
-            
-            colormap(fig,map);
-            
-            %colorbar;
-            
-            xticks(1:size(new_respmap,2));
-            xticklabels(new_cnames);
-            
-            
-            yticks(1:size(new_respmap,1));
-            yticklabels(new_rnames);
-            set(gca,'TickLabelInterpreter','none');
-            set(gca,'TickLength',[0.001, 0.001]);
-            
-        end
-        
-        function Deprecated_drawCONSPEResponse_NSBS_markFrag(s)
-            
-            % Extract binarized neuron's responses to CONs
-            dbstop if error
-            con_info = struct;
-            counts = 0;
-            common_cons = {};
-            common_spes = {};
-            
-            for k = 1: length(s.anas)
-                this_neuron = s.anas{k}.neurons{s.anas{k}.song_id};
-                Conlist = Neuron(this_neuron).evaluateConResponse;
-                if length(Conlist) >= 18 % hard code here
-                    counts = counts + 1;
-                    con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
-                    con_ids = find(~cellfun(@isempty,con_match));
-                    spe_match = regexp({Conlist.stimuliname}.','TUT|BOS|Fcall|Mcall|WNS','match');
-                    spe_ids = find(~cellfun(@isempty,spe_match));
-                    spe_match = [spe_match{spe_ids}].';
-                    % remove TUT and BOS
-                    con_ids = setdiff(con_ids,spe_ids);
-                    con_match = [con_match{con_ids}].';
-                    
-                    
-                    % add TUT-BOS-Fcall-Mcall-WNS (Special)
-                    
-                    % Extract con_label
-                    con_info(counts).wav_len = this_neuron.calMeanWaveLength;
-                    con_info(counts).neuronname = this_neuron.unique_neuronname;
-                    con_info(counts).con_match = con_match;
-                    con_info(counts).con_resp = [Conlist(con_ids).label].';
-                    con_info(counts).spe_match = spe_match;
-                    con_info(counts).spe_resp = [Conlist(spe_ids).label].';
-                    % find out Common Conspecific songs
-                    if counts == 1
-                        common_cons = con_info(counts).con_match;
-                        %common_spes = con_info(counts).spe_match;
-                    else
-                        temp = intersect(common_cons,con_info(counts).con_match);
-                        
-                        common_cons = temp; % weird bugs happened when temp was not used
-                        %                         temp = intersect(common_spes,con_info(counts).spe_match);
-                        %                         common_spes = temp;
-                        
-                        if length(common_cons)< 18
-                            pause
-                        end
-                    end
-                    
-                end
-            end
-            
-            
-            % Extract binary con-resp map
-            respmap = [];
-            for m = 1: length(con_info)
-                [~,loc] = ismember (common_cons,con_info(m).con_match);
-                
-                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
-                respmap(m,:) = con_info(m).con_resp(loc);
-            end
-            
-            % Sort the matrix
-            [~,new_rowids] = sort(sum(respmap,2),'descend');
-            [~,new_columnids] = sort(sum(respmap,1),2,'descend');
-            tempo =  respmap(new_rowids,:);
-            new_respmap = tempo(:,new_columnids);
-            new_cnames = {common_cons{new_columnids}}; %#ok<CCAT1>
-            tempo = {con_info.neuronname};
-            new_rnames = {tempo{new_rowids}};
-            
-            respT = array2table(respmap);
-            respT.Properties.VariableNames = new_cnames;
-            respT.Properties.RowNames = new_rnames;
-            
-            % sort spe-map
-            
-            
-            
-            % reordered waveforms length
-            
-            WLs = [con_info.wav_len].';
-            WLs = WLs(new_rowids);
-            
-            wlfr_info = plotWavelengthVsFiringRate(s);
-            
-            names_in_wlfr = {wlfr_info.neuronname}.';
-            [~,ids_for_reorder] = ismember(new_rnames,names_in_wlfr);
-            new_wlfr_info = wlfr_info(ids_for_reorder);
-            
-            for k = 1: size(new_respmap,1)
-                value_is_one_ids = find(new_respmap(k,:));
-                if new_wlfr_info(k).isBS == 0
-                    new_respmap(k,value_is_one_ids) = 1;
-                elseif new_wlfr_info(k).isBS == 1
-                    new_respmap(k,value_is_one_ids) = 3;
-                end
-            end
-            
-            frags_exist_names = s.markNeuronsWithFragsAsStimuli;
-            
-            for k = 1: size(new_respmap,1)
-                value_is_one_ids = find(new_respmap(k,:));
-                if ismember(new_wlfr_info(k).neuronname,frags_exist_names) && new_wlfr_info(k).isBS == 0
-                    new_respmap(k,value_is_one_ids) = 2;
-                elseif ismember(new_wlfr_info(k).neuronname,frags_exist_names) && new_wlfr_info(k).isBS == 1
-                    new_respmap(k,value_is_one_ids) = 4;
-                end
-            end
-            
-            
-            
-            fig = figure;
-            % colormap('summer');
-            imagesc(new_respmap);
-            
-            map = [ 1 1 1  % white for 0
-                0 0.4470 0.7410 % shallow blue for 1
-                0 0 1          % bright blue for 2
-                0.8500 0.3250 0.0980  % shallow red for 3
-                1 0 0];        % bright red for 4
-            % figure; viscircles([0,0],10,'Color',[0 0 1]);
-            colormap(fig,map);
-            caxis manual
-            caxis([0 4]);
-            % colorbar
-            
-            %colorbar;
-            
-            xticks(1:size(new_respmap,2));
-            xticklabels(new_cnames);
-            
-            
-            yticks(1:size(new_respmap,1));
-            yticklabels(new_rnames);
-            set(gca,'TickLabelInterpreter','none');
-            set(gca,'TickLength',[0.001, 0.001]);
-            
-        end
-        
-        function Deprecated_drawCONSPEResponse_NSBS_FragOnly(s)
-            
-            % Extract binarized neuron's responses to CONs
-            dbstop if error
-            con_info = struct;
-            counts = 0;
-            common_cons = {};
-            common_spes = {};
-            
-            for k = 1: length(s.anas)
-                this_neuron = s.anas{k}.neurons{s.anas{k}.song_id};
-                Conlist = Neuron(this_neuron).evaluateConResponse;
-                if length(Conlist) >= 18 % hard code here
-                    counts = counts + 1;
-                    con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
-                    con_ids = find(~cellfun(@isempty,con_match));
-                    spe_match = regexp({Conlist.stimuliname}.','TUT|BOS|Fcall|Mcall|WNS','match');
-                    spe_ids = find(~cellfun(@isempty,spe_match));
-                    spe_match = [spe_match{spe_ids}].';
-                    % remove TUT and BOS
-                    con_ids = setdiff(con_ids,spe_ids);
-                    con_match = [con_match{con_ids}].';
-                    
-                    
-                    % add TUT-BOS-Fcall-Mcall-WNS (Special)
-                    
-                    % Extract con_label
-                    con_info(counts).wav_len = this_neuron.calMeanWaveLength;
-                    con_info(counts).neuronname = this_neuron.unique_neuronname;
-                    con_info(counts).con_match = con_match;
-                    con_info(counts).con_resp = [Conlist(con_ids).label].';
-                    con_info(counts).spe_match = spe_match;
-                    con_info(counts).spe_resp = [Conlist(spe_ids).label].';
-                    % find out Common Conspecific songs
-                    if counts == 1
-                        common_cons = con_info(counts).con_match;
-                        %common_spes = con_info(counts).spe_match;
-                    else
-                        temp = intersect(common_cons,con_info(counts).con_match);
-                        
-                        common_cons = temp; % weird bugs happened when temp was not used
-                        %                         temp = intersect(common_spes,con_info(counts).spe_match);
-                        %                         common_spes = temp;
-                        
-                        if length(common_cons)< 18
-                            pause
-                        end
-                    end
-                    
-                end
-            end
-            
-            
-            % Extract binary con-resp map
-            respmap = [];
-            for m = 1: length(con_info)
-                [~,loc] = ismember (common_cons,con_info(m).con_match);
-                
-                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
-                respmap(m,:) = con_info(m).con_resp(loc);
-            end
-            
-            % Sort the matrix
-            [~,new_rowids] = sort(sum(respmap,2),'descend');
-            [~,new_columnids] = sort(sum(respmap,1),2,'descend');
-            tempo =  respmap(new_rowids,:);
-            new_respmap = tempo(:,new_columnids);
-            new_cnames = {common_cons{new_columnids}}; %#ok<CCAT1>
-            tempo = {con_info.neuronname};
-            new_rnames = {tempo{new_rowids}};
-            
-            respT = array2table(respmap);
-            respT.Properties.VariableNames = new_cnames;
-            respT.Properties.RowNames = new_rnames;
-            
-            
-            
-            % reordered waveforms length
-            
-            WLs = [con_info.wav_len].';
-            WLs = WLs(new_rowids);
-            
-            wlfr_info = plotWavelengthVsFiringRate(s);
-            
-            names_in_wlfr = {wlfr_info.neuronname}.';
-            [~,ids_for_reorder] = ismember(new_rnames,names_in_wlfr);
-            new_wlfr_info = wlfr_info(ids_for_reorder);
-            
-            for k = 1: size(new_respmap,1)
-                value_is_one_ids = find(new_respmap(k,:));
-                if new_wlfr_info(k).isBS == 0
-                    new_respmap(k,value_is_one_ids) = 1;
-                elseif new_wlfr_info(k).isBS == 1
-                    new_respmap(k,value_is_one_ids) = 3;
-                end
-            end
-            
-            frags_exist_names = s.markNeuronsWithFragsAsStimuli;
-            
-            for k = 1: size(new_respmap,1)
-                value_is_one_ids = find(new_respmap(k,:));
-                if ismember(new_wlfr_info(k).neuronname,frags_exist_names) && new_wlfr_info(k).isBS == 0
-                    new_respmap(k,value_is_one_ids) = 2;
-                elseif ismember(new_wlfr_info(k).neuronname,frags_exist_names) && new_wlfr_info(k).isBS == 1
-                    new_respmap(k,value_is_one_ids) = 4;
-                end
-            end
-            
-            labled_tokeep = [];
-            for k = 1: size(new_respmap,1)
-                if ismember(4,new_respmap(k,:))
-                    labled_tokeep = [labled_tokeep,k];
-                end
-            end
-            
-            labeled_respmap = new_respmap(labled_tokeep,:);
-            
-            
-            fig = figure;
-            % colormap('summer');
-            imagesc(labeled_respmap);
-            
-            map = [ 1 1 1  % white for 0
-                %                  0 0.4470 0.7410 % shallow blue for 1
-                %                  0 0 1          % bright blue for 2
-                %                  0.8500 0.3250 0.0980  % shallow red for 3
-                1 0 0];        % bright red for 4
-            % figure; viscircles([0,0],10,'Color',[0 0 1]);
-            colormap(fig,map);
-            caxis manual
-            caxis([0 4]);
-            % colorbar
-            
-            %colorbar;
-            
-            xticks(1:size(labeled_respmap,2));
-            xticklabels(new_cnames);
-            
-            
-            yticks(1:size(new_respmap,1));
-            yticklabels({new_rnames{labled_tokeep}});
-            set(gca,'TickLabelInterpreter','none');
-            set(gca,'TickLength',[0.001, 0.001]);
-            
-            
-            figure;
-            
-            summed_resps = sum(labeled_respmap,2)/4;
-            
-            histogram(summed_resps);
-            xlabel('Number of response-eliciting songs');
-            ylabel ('Number of BS neurons');
-            
-        end
-        
+       
         function wlfr_info = plotWavelengthVsFiringRate(s)
             
             wl_info = calWavelength(s);
@@ -1735,7 +1059,8 @@ classdef Sultan
 
             
         end
-              
+                
+        
         function arrangeThreePlotsByRespMapAndDraw_IncludeSPE(s)
             
             % Extract binarized neuron's responses to CONs
@@ -2816,6 +2141,150 @@ classdef Sultan
             
         end
         
+        function How_Do_NCM_Neurons_respond_to_Songs_FR(neuronfiles)
+            % Extract neuron's responses to CONs, but binary, but
+            % evaluatedby response strength
+            dbstop if error
+
+            conkeywords = {'B346','B512','B521','B554','B606','G429','G506','G518','G548','G573',...
+                'G578','O331','O507','O509','O540','Y515','Y606','Y616'};
+
+            wb = waitbar(0,'Start processing');
+            num_files = length(neuronfiles);
+            Utl.UpdateParforWaitbar(num_files, wb);
+            D = parallel.pool.DataQueue;
+            afterEach(D, @Utl.UpdateParforWaitbar);
+
+            conallneurons = struct;
+            ana_pathes = neuronfiles;
+            collect_frtable = {};
+            collect_sdftable = {};
+            error = struct;
+            parfor k = 1:length(neuronfiles) %  431% should be par-for
+%                 try
+                    loaded = load(ana_pathes{k});
+                    A = loaded.A;
+                    A.judgeConResp_FR;
+
+                    normlist = A.list(find(~cellfun(@isempty, regexp(cellstr({A.list.stimuliname}.'),'norm-CON'))));
+                    if isempty(normlist)
+                        normlist = A.list(setdiff( find(~cellfun(@isempty, regexp(cellstr({A.list.stimuliname}.'),'norm'))),...
+                            find(~cellfun(@isempty, regexp(cellstr({A.list.stimuliname}.'),'WNS|TUT|BOS|Fcall|Mcall|Het')) ) ));
+                    end
+
+                    findit = @(x) find(~cellfun(@isempty, regexp(cellstr({normlist.stimuliname}.'),x)));
+                    try
+                        list18 = normlist(cellfun(@(x) findit(x),conkeywords)) ;
+                    catch
+                        continue
+                    end
+
+                    for li = 1:length(list18)
+                        [list18(li).sdf,~] = histcounts( vertcat(list18(li).sptimes{:}), 0:0.2:round(length(list18(li).y)/list18(li).fs-0.5)+0.5);
+                        %list18(li).sdf = Cal.sdf(list18(li).sptimes,list18(li).y,list18(li).fs,0.1,0.4);
+                    end
+                    atable = struct2table(list18);
+
+                    atable.Properties.RowNames = cellstr(regexp(atable.stimuliname,'[ORGBY]\d+','match'));
+                    frtable =  rows2vars( normalize(atable(:,'sti_frs'),'range',[0,1]));
+                    %frtable =  rows2vars( atable(:,'sti_frs'));
+                    frtable.OriginalVariableNames = A.formated_name;
+                    collect_frtable{k}= frtable;
+
+
+                    %sdf collection
+                    sdftable =  rows2vars( atable(:,{'sdf'}));
+                    sdftable.OriginalVariableNames = A.formated_name;
+                    collect_sdftable{k}= sdftable;
+
+                    send(D, 1);
+%                 catch ME
+% 
+%                     error(k).ME = ME;
+%                     error(k).identifier = ME.identifier;
+%                     error(k).num = k;
+%                 end
+
+            end
+
+            responsemap = vertcat(collect_frtable{:});
+            responsemap.Properties.RowNames = cellstr(responsemap.OriginalVariableNames);
+            responsemap =  removevars(responsemap,{'OriginalVariableNames'});
+
+            % group by best stimuli
+            [~,which_song_best] = max(responsemap{:,:},[],2);
+            [best_stimuli_name, best_stimuli_rank] = sort(which_song_best,'ascend');
+            responsemap =responsemap(best_stimuli_rank,:)
+
+            % In each group, sort by mean FR of best stimuli
+            uniques = unique(best_stimuli_name);
+            collectsubmap = {};
+            for k = 1:length(uniques)
+                submap = responsemap(find(uniques(k) == best_stimuli_name),:);
+                submap = sortrows(submap,uniques(k));
+                collectsubmap{k} = submap;
+            end
+
+            responsemap = vertcat(collectsubmap{:});
+            figure('Position',[2056 523 853 542],'Color','w');
+%             imagesc(responsemap{:,:});
+            toshow = responsemap{:,:};
+            toshow(toshow < 0.5) = 0;
+            imagesc(toshow); % temporary trick
+            colormap('hot');
+            colorbar;
+            xlabel('18 Songs')
+            ylabel('Neurons')
+            %             hugeunpack = @(x) x{1}{1};
+            %             title(unique(  cellfun(@hugeunpack,regexp(responsemap.Properties.RowNames,'[OBYRG]\d{3}','match'),'Uni',0 )  ))
+            title(sprintf('Bird:%s',regexp(convertCharsToStrings(responsemap.Properties.RowNames{1}),'[OBYRG]\d{3}','match')));
+
+            %close(wb);
+
+            sdfmap = vertcat(collect_sdftable{:});
+            sdfmap.Properties.RowNames = cellstr(sdfmap.OriginalVariableNames);
+            sdfmap =  removevars(sdfmap,{'OriginalVariableNames'});
+
+            % group by best stimuli
+            %             customizedMax = @(x)
+            maxvaluemap = cellfun(@max,sdfmap{:,:});
+
+            [~,which_song_best] = max(maxvaluemap,[],2);
+            [best_stimuli_name, best_stimuli_rank] = sort(which_song_best,'ascend');
+            maxvaluemap =maxvaluemap(best_stimuli_rank,:);
+            sdfmap =sdfmap(best_stimuli_rank,:)
+            % In each group, sort by mean FR of best stimuli
+            uniques = unique(best_stimuli_name);
+            collectsubmap = {};
+            for k = 1:length(uniques)
+                submap = sdfmap(find(uniques(k) == best_stimuli_name),:);
+                wheremaxmap = cellfun(@wheremax,submap{:,:});
+                [~,sorted_index] = sortrows(wheremaxmap,uniques(k));
+                submap = submap(sorted_index,:);
+                collectsubmap{k} = submap;
+            end
+
+            sdfmap = vertcat(collectsubmap{:});
+
+            figure; imagesc(cell2mat(sdfmap{:,:}));
+            colormap('hot');
+            colorbar;
+            xlabel('18 Songs');
+            ylabel('Neurons');
+            %             title( unique( regexp(responsemap.Properties.RowNames,'[OBYRG]\d{3}','match') ) )
+            title(sprintf('Bird:%s',regexp(convertCharsToStrings(responsemap.Properties.RowNames{1}),'[OBYRG]\d{3}','match')));
+
+
+
+
+            function idx = wheremax(input)
+                [~,idx] = max(input);
+            end
+
+
+        end
+
+
     end
     
     methods % 弃用方法
@@ -3083,6 +2552,684 @@ classdef Sultan
             
         end
         
+         function Deprecated_drawCONSPEResponse(s)
+            
+            % Extract binarized neuron's responses to CONs
+            dbstop if error
+            con_info = struct;
+            counts = 0;
+            common_cons = {};
+            common_spes = {};
+            
+            for k = 1: length(s.anas)
+                load(s.anas{k});
+                this_neuron = A.neurons{A.song_id};
+                Conlist = Neuron(this_neuron).evaluateConResponse;
+                if length(Conlist) >= 18 % hard code here
+                    counts = counts + 1;
+                    con_match = regexp(cellstr({Conlist.stimuliname}.'),'[BGYRO]\d{3}','match');
+                    con_ids = find(~cellfun(@isempty,con_match));
+                    spe_match = regexp(cellstr({Conlist.stimuliname}.'),'TUT|BOS|Fcall|Mcall|WNS','match');
+                    spe_ids = find(~cellfun(@isempty,spe_match));
+                    spe_match = [spe_match{spe_ids}].';
+                    % remove TUT and BOS
+                    con_ids = setdiff(con_ids,spe_ids);
+                    con_match = [con_match{con_ids}].';
+                    
+                    
+                    % add TUT-BOS-Fcall-Mcall-WNS (Special)
+                    
+                    % Extract con_label
+                    con_info(counts).wav_len = A.calMeanWaveLength;
+                    con_info(counts).neuronname = A.formated_name;
+                    con_info(counts).con_match = con_match;
+                    con_info(counts).con_resp = [Conlist(con_ids).label].';
+                    con_info(counts).spe_match = spe_match;
+                    con_info(counts).spe_resp = [Conlist(spe_ids).label].';
+                    % find out Common Conspecific songs
+                    if counts == 1
+                        common_cons = con_info(counts).con_match;
+                        %common_spes = con_info(counts).spe_match;
+                    else
+                        temp = intersect(common_cons,con_info(counts).con_match);
+                        
+                        common_cons = temp; % weird bugs happened when temp was not used
+                        
+                        %
+                        %                         temp = intersect(common_spes,con_info(counts).spe_match);
+                        %                         common_spes = temp;
+                        
+                        if length(common_cons)< 18
+                            pause
+                        end
+                        
+                    end
+                end
+            end
+            
+            
+            % Extract binary con-resp map
+            respmap = [];
+            for m = 1: length(con_info)
+                [~,loc] = ismember (common_cons,con_info(m).con_match);
+                
+                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
+                respmap(m,:) = con_info(m).con_resp(loc);
+            end
+            
+            
+            % Extract spe-resp map
+            common_spes = {'TUT','BOS','Fcall','Mcall','WNS'};
+            spemap = [];
+            for m = 1: length(con_info)
+                
+                if ~isempty(con_info(m).spe_match)
+                    [~,loc] = ismember (common_spes,con_info(m).spe_match);
+                else
+                    [~,loc] = ismember (common_spes,{});
+                end
+                
+                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
+                for mm = 1: length(loc)
+                    if loc(mm) == 0
+                        spemap(m,mm) = nan;
+                    else
+                        spemap(m,mm) = con_info(m).spe_resp(loc(mm));
+                    end
+                end
+            end
+            
+            
+            % Sort the matrix
+            [~,new_rowids] = sort(sum(respmap,2),'descend');
+            [~,new_columnids] = sort(sum(respmap,1),2,'descend');
+            tempo =  respmap(new_rowids,:);
+            new_respmap = tempo(:,new_columnids);
+            new_cnames = {common_cons{new_columnids}}; %#ok<CCAT1>
+            tempo = {con_info.neuronname};
+            new_rnames = {tempo{new_rowids}};
+            
+            respT = array2table(respmap);
+            respT.Properties.VariableNames = new_cnames;
+            respT.Properties.RowNames = new_rnames;
+            
+            % sort spe-map
+            new_spemap = spemap(new_rowids,:);
+            
+            
+            % reordered waveforms length
+            
+            WLs = [con_info.wav_len].';
+            WLs = WLs(new_rowids);
+            
+            
+            for k = 1: size(new_respmap,1)
+                value_is_one_ids = find(new_respmap(k,:));
+                new_respmap(k,value_is_one_ids) = WLs(k);
+            end
+            
+            figure;
+            colormap('summer');
+            imagesc(new_respmap);
+            
+            colorbar;
+            
+            xticks(1:size(new_respmap,2));
+            xticklabels(new_cnames);
+            
+            
+            yticks(1:size(new_respmap,1));
+            yticklabels(new_rnames);
+            set(gca,'TickLabelInterpreter','none');
+            set(gca,'TickLength',[0.001, 0.001]);
+            
+        end
+        
+        function Deprecated_drawCONOnlyResponse_NSBS(s)
+            
+            % Extract binarized neuron's responses to CONs
+            dbstop if error
+            con_info = struct;
+            counts = 0;
+            common_cons = {};
+            common_spes = {};
+            
+            for k = 1: length(s.anas)
+                load(s.anas{k});
+                this_neuron = A.neurons{s.anas{k}.song_id};
+                Conlist = Neuron(this_neuron).evaluateConResponse;
+                if length(Conlist) >= 18 % hard code here
+                    counts = counts + 1;
+                    con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
+                    con_ids = find(~cellfun(@isempty,con_match));
+                    spe_match = regexp({Conlist.stimuliname}.','TUT|BOS|Fcall|Mcall|WNS','match');
+                    spe_ids = find(~cellfun(@isempty,spe_match));
+                    spe_match = [spe_match{spe_ids}].';
+                    % remove TUT and BOS
+                    con_ids = setdiff(con_ids,spe_ids);
+                    con_match = [con_match{con_ids}].';
+                    
+                    
+                    % add TUT-BOS-Fcall-Mcall-WNS (Special)
+                    
+                    % Extract con_label
+                    con_info(counts).wav_len = this_neuron.calMeanWaveLength;
+                    con_info(counts).neuronname = this_neuron.unique_neuronname;
+                    con_info(counts).con_match = con_match;
+                    con_info(counts).con_resp = [Conlist(con_ids).label].';
+                    con_info(counts).spe_match = spe_match;
+                    con_info(counts).spe_resp = [Conlist(spe_ids).label].';
+                    % find out Common Conspecific songs
+                    if counts == 1
+                        common_cons = con_info(counts).con_match;
+                        %common_spes = con_info(counts).spe_match;
+                    else
+                        temp = intersect(common_cons,con_info(counts).con_match);
+                        
+                        common_cons = temp; % weird bugs happened when temp was not used
+                        %                         temp = intersect(common_spes,con_info(counts).spe_match);
+                        %                         common_spes = temp;
+                        
+                        if length(common_cons)< 18
+                            pause
+                        end
+                    end
+                    
+                end
+            end
+            
+            
+            % Extract binary con-resp map
+            respmap = [];
+            for m = 1: length(con_info)
+                [~,loc] = ismember (common_cons,con_info(m).con_match);
+                
+                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
+                respmap(m,:) = con_info(m).con_resp(loc);
+            end
+            
+            
+            % Extract spe-resp map
+            common_spes = {'TUT','BOS','Fcall','Mcall','WNS'};
+            spemap = [];
+            for m = 1: length(con_info)
+                
+                if ~isempty(con_info(m).spe_match)
+                    [~,loc] = ismember (common_spes,con_info(m).spe_match);
+                else
+                    [~,loc] = ismember (common_spes,{});
+                end
+                
+                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
+                for mm = 1: length(loc)
+                    if loc(mm) == 0
+                        spemap(m,mm) = nan;
+                    else
+                        spemap(m,mm) = con_info(m).spe_resp(loc(mm));
+                    end
+                end
+            end
+            
+            
+            % Sort the matrix
+            [~,new_rowids] = sort(sum(respmap,2),'descend');
+            [~,new_columnids] = sort(sum(respmap,1),2,'descend');
+            tempo =  respmap(new_rowids,:);
+            new_respmap = tempo(:,new_columnids);
+            new_cnames = {common_cons{new_columnids}}; %#ok<CCAT1>
+            tempo = {con_info.neuronname};
+            new_rnames = {tempo{new_rowids}};
+            
+            respT = array2table(respmap);
+            respT.Properties.VariableNames = new_cnames;
+            respT.Properties.RowNames = new_rnames;
+            
+            % sort spe-map
+            new_spemap = spemap(new_rowids,:);
+            
+            
+            % reordered waveforms length
+            
+            WLs = [con_info.wav_len].';
+            WLs = WLs(new_rowids);
+            
+            wlfr_info = plotWavelengthVsFiringRate(s);
+            
+            names_in_wlfr = {wlfr_info.neuronname}.';
+            [~,ids_for_reorder] = ismember(new_rnames,names_in_wlfr);
+            new_wlfr_info = wlfr_info(ids_for_reorder);
+            
+            for k = 1: size(new_respmap,1)
+                value_is_one_ids = find(new_respmap(k,:));
+                if new_wlfr_info(k).isBS == 0
+                    new_respmap(k,value_is_one_ids) = 0.5;
+                elseif new_wlfr_info(k).isBS == 1
+                    new_respmap(k,value_is_one_ids) = 1;
+                end
+            end
+            
+            fig = figure;
+            % colormap('summer');
+            imagesc(new_respmap);
+            
+            map = [ 1 1 1
+                0 0.4470 0.7410
+                0.8500 0.3250 0.0980];
+            
+            colormap(fig,map);
+            
+            %colorbar;
+            
+            xticks(1:size(new_respmap,2));
+            xticklabels(new_cnames);
+            
+            
+            yticks(1:size(new_respmap,1));
+            yticklabels(new_rnames);
+            set(gca,'TickLabelInterpreter','none');
+            set(gca,'TickLength',[0.001, 0.001]);
+            
+        end
+        
+        function Deprecated_drawCONSPEResponse_NSBS(s)
+            
+            % Extract binarized neuron's responses to CONs
+            dbstop if error
+            con_info = struct;
+            counts = 0;
+            common_cons = {};
+            common_spes = {};
+            
+            for k = 1: length(s.anas)
+                this_neuron = s.anas{k}.neurons{s.anas{k}.song_id};
+                Conlist = Neuron(this_neuron).evaluateConResponse;
+                if length(Conlist) >= 18 % hard code here
+                    counts = counts + 1;
+                    con_match = regexp({Conlist.stimuliname}.','CON-[BGYRO]\d{3}|TUT|BOS|Fcall|Mcall|WNS|Het','match');
+                    con_ids = find(~cellfun(@isempty,con_match));
+                    spe_match = regexp({Conlist.stimuliname}.','TUT|BOS|Fcall|Mcall|WNS','match');
+                    spe_ids = find(~cellfun(@isempty,spe_match));
+                    spe_match = [spe_match{spe_ids}].';
+                    
+                    % add TUT-BOS-Fcall-Mcall-WNS (Special)
+                    
+                    % Extract con_label
+                    con_info(counts).wav_len = this_neuron.calMeanWaveLength;
+                    con_info(counts).neuronname = this_neuron.unique_neuronname;
+                    con_info(counts).con_match = con_match;
+                    con_info(counts).con_resp = [Conlist(con_ids).label].';
+                    con_info(counts).spe_match = spe_match;
+                    con_info(counts).spe_resp = [Conlist(spe_ids).label].';
+                    
+                end
+            end
+            
+            % Hard coded conspecific songs
+            common_cons = {'CON-B346','CON-B512','CON-B521','CON-B554','CON-B606','CON-G429','CON-G506','CON-G518','CON-G548',...
+                'CON-G573','CON-G578','CON-O331','CON-O507','CON-O509','CON-O540','CON-Y515','CON-Y606','CON-Y616',...
+                'Fcall','BOS','Het','Mcall','TUT','WNS'};
+            
+            % Extract binary con-resp map
+            respmap = [];
+            for m = 1: length(con_info)
+                [ism,loc] = ismember(common_cons,[con_info(m).con_match{:}]);
+                respmap(m, find(ism==0)) = nan; % 不存在的stimuli设定其resp值为nan
+                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
+                respmap(m,loc(loc>0)) = con_info(m).con_resp(loc(loc>0));
+            end
+            
+            % Sort the matrix
+            [~,new_rowids] = sort(sum(respmap,2),'descend');
+            [~,new_columnids] = sort(sum(respmap,1),2,'descend');
+            tempo =  respmap(new_rowids,:);
+            new_respmap = tempo(:,new_columnids);
+            new_cnames = {common_cons{new_columnids}}; %#ok<CCAT1>
+            tempo = {con_info.neuronname};
+            new_rnames = {tempo{new_rowids}};
+            
+            respT = array2table(respmap);
+            respT.Properties.VariableNames = new_cnames;
+            respT.Properties.RowNames = new_rnames;
+            
+            % reordered waveforms length
+            
+            WLs = [con_info.wav_len].';
+            WLs = WLs(new_rowids);
+            
+            wlfr_info = plotWavelengthVsFiringRate(s);
+            
+            names_in_wlfr = {wlfr_info.neuronname}.';
+            [~,ids_for_reorder] = ismember(new_rnames,names_in_wlfr);
+            new_wlfr_info = wlfr_info(ids_for_reorder);
+            
+            for k = 1: size(new_respmap,1)
+                value_is_one_ids = find(new_respmap(k,:));
+                if new_wlfr_info(k).isBS == 0
+                    new_respmap(k,value_is_one_ids) = 0.5;
+                elseif new_wlfr_info(k).isBS == 1
+                    new_respmap(k,value_is_one_ids) = 1;
+                end
+            end
+            
+            fig = figure;
+            % colormap('summer');
+            imagesc(new_respmap);
+            
+            map = [ 1 1 1
+                0 0.4470 0.7410
+                0.8500 0.3250 0.0980];
+            
+            colormap(fig,map);
+            
+            %colorbar;
+            
+            xticks(1:size(new_respmap,2));
+            xticklabels(new_cnames);
+            
+            
+            yticks(1:size(new_respmap,1));
+            yticklabels(new_rnames);
+            set(gca,'TickLabelInterpreter','none');
+            set(gca,'TickLength',[0.001, 0.001]);
+            
+        end
+        
+        function Deprecated_drawCONSPEResponse_NSBS_markFrag(s)
+            
+            % Extract binarized neuron's responses to CONs
+            dbstop if error
+            con_info = struct;
+            counts = 0;
+            common_cons = {};
+            common_spes = {};
+            
+            for k = 1: length(s.anas)
+                this_neuron = s.anas{k}.neurons{s.anas{k}.song_id};
+                Conlist = Neuron(this_neuron).evaluateConResponse;
+                if length(Conlist) >= 18 % hard code here
+                    counts = counts + 1;
+                    con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
+                    con_ids = find(~cellfun(@isempty,con_match));
+                    spe_match = regexp({Conlist.stimuliname}.','TUT|BOS|Fcall|Mcall|WNS','match');
+                    spe_ids = find(~cellfun(@isempty,spe_match));
+                    spe_match = [spe_match{spe_ids}].';
+                    % remove TUT and BOS
+                    con_ids = setdiff(con_ids,spe_ids);
+                    con_match = [con_match{con_ids}].';
+                    
+                    
+                    % add TUT-BOS-Fcall-Mcall-WNS (Special)
+                    
+                    % Extract con_label
+                    con_info(counts).wav_len = this_neuron.calMeanWaveLength;
+                    con_info(counts).neuronname = this_neuron.unique_neuronname;
+                    con_info(counts).con_match = con_match;
+                    con_info(counts).con_resp = [Conlist(con_ids).label].';
+                    con_info(counts).spe_match = spe_match;
+                    con_info(counts).spe_resp = [Conlist(spe_ids).label].';
+                    % find out Common Conspecific songs
+                    if counts == 1
+                        common_cons = con_info(counts).con_match;
+                        %common_spes = con_info(counts).spe_match;
+                    else
+                        temp = intersect(common_cons,con_info(counts).con_match);
+                        
+                        common_cons = temp; % weird bugs happened when temp was not used
+                        %                         temp = intersect(common_spes,con_info(counts).spe_match);
+                        %                         common_spes = temp;
+                        
+                        if length(common_cons)< 18
+                            pause
+                        end
+                    end
+                    
+                end
+            end
+            
+            
+            % Extract binary con-resp map
+            respmap = [];
+            for m = 1: length(con_info)
+                [~,loc] = ismember (common_cons,con_info(m).con_match);
+                
+                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
+                respmap(m,:) = con_info(m).con_resp(loc);
+            end
+            
+            % Sort the matrix
+            [~,new_rowids] = sort(sum(respmap,2),'descend');
+            [~,new_columnids] = sort(sum(respmap,1),2,'descend');
+            tempo =  respmap(new_rowids,:);
+            new_respmap = tempo(:,new_columnids);
+            new_cnames = {common_cons{new_columnids}}; %#ok<CCAT1>
+            tempo = {con_info.neuronname};
+            new_rnames = {tempo{new_rowids}};
+            
+            respT = array2table(respmap);
+            respT.Properties.VariableNames = new_cnames;
+            respT.Properties.RowNames = new_rnames;
+            
+            % sort spe-map
+            
+            
+            
+            % reordered waveforms length
+            
+            WLs = [con_info.wav_len].';
+            WLs = WLs(new_rowids);
+            
+            wlfr_info = plotWavelengthVsFiringRate(s);
+            
+            names_in_wlfr = {wlfr_info.neuronname}.';
+            [~,ids_for_reorder] = ismember(new_rnames,names_in_wlfr);
+            new_wlfr_info = wlfr_info(ids_for_reorder);
+            
+            for k = 1: size(new_respmap,1)
+                value_is_one_ids = find(new_respmap(k,:));
+                if new_wlfr_info(k).isBS == 0
+                    new_respmap(k,value_is_one_ids) = 1;
+                elseif new_wlfr_info(k).isBS == 1
+                    new_respmap(k,value_is_one_ids) = 3;
+                end
+            end
+            
+            frags_exist_names = s.markNeuronsWithFragsAsStimuli;
+            
+            for k = 1: size(new_respmap,1)
+                value_is_one_ids = find(new_respmap(k,:));
+                if ismember(new_wlfr_info(k).neuronname,frags_exist_names) && new_wlfr_info(k).isBS == 0
+                    new_respmap(k,value_is_one_ids) = 2;
+                elseif ismember(new_wlfr_info(k).neuronname,frags_exist_names) && new_wlfr_info(k).isBS == 1
+                    new_respmap(k,value_is_one_ids) = 4;
+                end
+            end
+            
+            
+            
+            fig = figure;
+            % colormap('summer');
+            imagesc(new_respmap);
+            
+            map = [ 1 1 1  % white for 0
+                0 0.4470 0.7410 % shallow blue for 1
+                0 0 1          % bright blue for 2
+                0.8500 0.3250 0.0980  % shallow red for 3
+                1 0 0];        % bright red for 4
+            % figure; viscircles([0,0],10,'Color',[0 0 1]);
+            colormap(fig,map);
+            caxis manual
+            caxis([0 4]);
+            % colorbar
+            
+            %colorbar;
+            
+            xticks(1:size(new_respmap,2));
+            xticklabels(new_cnames);
+            
+            
+            yticks(1:size(new_respmap,1));
+            yticklabels(new_rnames);
+            set(gca,'TickLabelInterpreter','none');
+            set(gca,'TickLength',[0.001, 0.001]);
+            
+        end
+        
+        function Deprecated_drawCONSPEResponse_NSBS_FragOnly(s)
+            
+            % Extract binarized neuron's responses to CONs
+            dbstop if error
+            con_info = struct;
+            counts = 0;
+            common_cons = {};
+            common_spes = {};
+            
+            for k = 1: length(s.anas)
+                this_neuron = s.anas{k}.neurons{s.anas{k}.song_id};
+                Conlist = Neuron(this_neuron).evaluateConResponse;
+                if length(Conlist) >= 18 % hard code here
+                    counts = counts + 1;
+                    con_match = regexp({Conlist.stimuliname}.','[BGYRO]\d{3}','match');
+                    con_ids = find(~cellfun(@isempty,con_match));
+                    spe_match = regexp({Conlist.stimuliname}.','TUT|BOS|Fcall|Mcall|WNS','match');
+                    spe_ids = find(~cellfun(@isempty,spe_match));
+                    spe_match = [spe_match{spe_ids}].';
+                    % remove TUT and BOS
+                    con_ids = setdiff(con_ids,spe_ids);
+                    con_match = [con_match{con_ids}].';
+                    
+                    
+                    % add TUT-BOS-Fcall-Mcall-WNS (Special)
+                    
+                    % Extract con_label
+                    con_info(counts).wav_len = this_neuron.calMeanWaveLength;
+                    con_info(counts).neuronname = this_neuron.unique_neuronname;
+                    con_info(counts).con_match = con_match;
+                    con_info(counts).con_resp = [Conlist(con_ids).label].';
+                    con_info(counts).spe_match = spe_match;
+                    con_info(counts).spe_resp = [Conlist(spe_ids).label].';
+                    % find out Common Conspecific songs
+                    if counts == 1
+                        common_cons = con_info(counts).con_match;
+                        %common_spes = con_info(counts).spe_match;
+                    else
+                        temp = intersect(common_cons,con_info(counts).con_match);
+                        
+                        common_cons = temp; % weird bugs happened when temp was not used
+                        %                         temp = intersect(common_spes,con_info(counts).spe_match);
+                        %                         common_spes = temp;
+                        
+                        if length(common_cons)< 18
+                            pause
+                        end
+                    end
+                    
+                end
+            end
+            
+            
+            % Extract binary con-resp map
+            respmap = [];
+            for m = 1: length(con_info)
+                [~,loc] = ismember (common_cons,con_info(m).con_match);
+                
+                % new_con_info(m).name = {con_info(m).con_match{loc}}.';
+                respmap(m,:) = con_info(m).con_resp(loc);
+            end
+            
+            % Sort the matrix
+            [~,new_rowids] = sort(sum(respmap,2),'descend');
+            [~,new_columnids] = sort(sum(respmap,1),2,'descend');
+            tempo =  respmap(new_rowids,:);
+            new_respmap = tempo(:,new_columnids);
+            new_cnames = {common_cons{new_columnids}}; %#ok<CCAT1>
+            tempo = {con_info.neuronname};
+            new_rnames = {tempo{new_rowids}};
+            
+            respT = array2table(respmap);
+            respT.Properties.VariableNames = new_cnames;
+            respT.Properties.RowNames = new_rnames;
+            
+            
+            
+            % reordered waveforms length
+            
+            WLs = [con_info.wav_len].';
+            WLs = WLs(new_rowids);
+            
+            wlfr_info = plotWavelengthVsFiringRate(s);
+            
+            names_in_wlfr = {wlfr_info.neuronname}.';
+            [~,ids_for_reorder] = ismember(new_rnames,names_in_wlfr);
+            new_wlfr_info = wlfr_info(ids_for_reorder);
+            
+            for k = 1: size(new_respmap,1)
+                value_is_one_ids = find(new_respmap(k,:));
+                if new_wlfr_info(k).isBS == 0
+                    new_respmap(k,value_is_one_ids) = 1;
+                elseif new_wlfr_info(k).isBS == 1
+                    new_respmap(k,value_is_one_ids) = 3;
+                end
+            end
+            
+            frags_exist_names = s.markNeuronsWithFragsAsStimuli;
+            
+            for k = 1: size(new_respmap,1)
+                value_is_one_ids = find(new_respmap(k,:));
+                if ismember(new_wlfr_info(k).neuronname,frags_exist_names) && new_wlfr_info(k).isBS == 0
+                    new_respmap(k,value_is_one_ids) = 2;
+                elseif ismember(new_wlfr_info(k).neuronname,frags_exist_names) && new_wlfr_info(k).isBS == 1
+                    new_respmap(k,value_is_one_ids) = 4;
+                end
+            end
+            
+            labled_tokeep = [];
+            for k = 1: size(new_respmap,1)
+                if ismember(4,new_respmap(k,:))
+                    labled_tokeep = [labled_tokeep,k];
+                end
+            end
+            
+            labeled_respmap = new_respmap(labled_tokeep,:);
+            
+            
+            fig = figure;
+            % colormap('summer');
+            imagesc(labeled_respmap);
+            
+            map = [ 1 1 1  % white for 0
+                %                  0 0.4470 0.7410 % shallow blue for 1
+                %                  0 0 1          % bright blue for 2
+                %                  0.8500 0.3250 0.0980  % shallow red for 3
+                1 0 0];        % bright red for 4
+            % figure; viscircles([0,0],10,'Color',[0 0 1]);
+            colormap(fig,map);
+            caxis manual
+            caxis([0 4]);
+            % colorbar
+            
+            %colorbar;
+            
+            xticks(1:size(labeled_respmap,2));
+            xticklabels(new_cnames);
+            
+            
+            yticks(1:size(new_respmap,1));
+            yticklabels({new_rnames{labled_tokeep}});
+            set(gca,'TickLabelInterpreter','none');
+            set(gca,'TickLength',[0.001, 0.001]);
+            
+            
+            figure;
+            
+            summed_resps = sum(labeled_respmap,2)/4;
+            
+            histogram(summed_resps);
+            xlabel('Number of response-eliciting songs');
+            ylabel ('Number of BS neurons');
+            
+        end
+        
+
     end
     
     methods(Static) %弃用的静态方法

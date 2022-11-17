@@ -1,5 +1,5 @@
 classdef autoseg
-    %UNTITLED3 Summary of this class goes here
+    % This class is for automatic segmentation of wav files
     %   Detailed explanation goes here
     
     properties

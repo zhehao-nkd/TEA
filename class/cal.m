@@ -19,7 +19,7 @@ classdef Cal
             diffs = concat(:,1)-concat(:,2);
             
         end
-        function msdf = sdf(sptimes,y,fs,resolution,gausswidth)
+        function msdf = sdf(sptimes,y_or_length,fs,resolution,gausswidth)
             
             %idx = find(y,1);
             
@@ -39,7 +39,12 @@ classdef Cal
                 sigma = .005; % Width of gaussian/window [s]
             end
             
-            time = 0:tstep:length(y)/fs;
+            if length(y_or_length)==1
+                thelength = y_or_length;
+            else
+                thelength = length(y_or_length);
+            end
+            time = 0:tstep:thelength/fs;
             %time     	= tstep-.25:tstep:.25;
             % Time vector
             

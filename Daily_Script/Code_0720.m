@@ -113,9 +113,9 @@ sulo706.How_Do_NCM_Neurons_respond_to_Songs; % Version: judgeConResp_FR
 % 
 %  
 %  b = Chorus("C:\Users\Zhehao\Downloads\O709_P07F3.txt",...
-%      "D:\Piece-O709-W\P07\O709_P07F3.plx","D:\Piece-O709-W\P07\Stimuli\O709-ReplasB51203-P7F3");
+%      "D:\Piece-O709-W\P07\O709_P07F3.pl2","D:\Piece-O709-W\P07\Stimuli\O709-ReplasB51203-P7F3");
 %  b = Chorus("C:\Users\Zhehao\Downloads\O709_P07F5.txt",...
-%      "D:\Piece-O709-W\P07\O709_P07F5.plx","D:\Piece-O709-W\P07\Stimuli\O709-DegsB512-P7F5");
+%      "D:\Piece-O709-W\P07\O709_P07F5.pl2","D:\Piece-O709-W\P07\Stimuli\O709-DegsB512-P7F5");
 %  
 %   
 

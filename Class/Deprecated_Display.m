@@ -505,7 +505,7 @@ classdef Display
             normrank = length(syls) + 1;
             syls(normrank).stimuliname  = pre(idxnorm).stimuliname;
             syls(normrank).fs  = pre(idxnorm).fs;
-            syls(normrank).plxname  = pre(idxnorm).plxname;
+            syls(normrank).pl2name  = pre(idxnorm).pl2name;
             syls(normrank).unitname  = pre(idxnorm).unitname ;
             syls(normrank).y  = pre(idxnorm).y;
             syls(normrank).rawy  = pre(idxnorm).rawy;
@@ -626,9 +626,9 @@ classdef Display
             imshow(IMG);
             nowtime = datestr(datetime('now'),'yyyy-mmm-dd-HH-MM-SS');
             channelname = syl(1).channelname;
-            plxname = syl(1).plxname;
+            pl2name = syl(1).pl2name;
             unitname = syl(1).unitname;
-            imwrite(IMG,sprintf('%s-%s-%u-%s.png',plxname,channelname,unitname,nowtime))
+            imwrite(IMG,sprintf('%s-%s-%u-%s.png',pl2name,channelname,unitname,nowtime))
             
             %             figure;
             %             bx = tight_subplot(column,row,0,0,0);

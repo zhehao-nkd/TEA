@@ -7,11 +7,11 @@ classdef Piece < handle & EphysAnalysis
     %     end
     % Explanation
     % Ephys相关数据被我储存在三种数据文件中
-    % .plx 文件是原始文件，External中的 readPLXFileC 是用来读取 .plx文件的,可以在 matlab file exchange上找到
+    % .pl2 文件是原始文件，External中的 readpl2FileC 是用来读取 .pl2文件的,可以在 matlab file exchange上找到
     % .txt文件储存spikes的时间和波形
     % .wav文件其中一个通道是声刺激，另一个通道是用来标定声刺激播放时间的trigger signal
     %文件储存结构
-    % plxpath = "D:\Ephys-O706-W\P01\O706_P01F1_5sCons.plx"
+    % pl2path = "D:\Ephys-O706-W\P01\O706_P01F1_5sCons.pl2"
     % txtpath = "D:\Ephys-O706-W\P01\O706_P01F1_5sCons.txt"
     % stimulidir = "D:\Ephys-O706-W\P01\Stimuli\O706-P01F1-5sCons"
     % Bird---O706   P01----Plexon system Recording01 P01F1---对这批神经元进行的第一种刺激
@@ -64,12 +64,13 @@ classdef Piece < handle & EphysAnalysis
         % this Paramter are calculated outside the Piece class
         trigger_onset % onset of trigger stimuli
         pltext
+        judgelaten
         
         fsize
     end
     
     
-    methods(Access=private)
+    methods
         
         function e = setExtAndAllocate(e)
             
@@ -82,11 +83,12 @@ classdef Piece < handle & EphysAnalysis
                 e.pltext = 2; % Sarah's case
             end
             
-            laten = 0.1; % 100ms的latency
+            judgelaten = 0.20; % 200ms的latency
+            e.judgelaten = judgelaten;
             
             %Part2 Allocation here the response is the collection of response
             e.plty = [zeros(e.pltext*e.fs,1);e.y;zeros(e.pltext*e.fs,1)];
-            e.judgerespy = [e.y;zeros(laten*e.fs,1)];
+            e.judgerespy = [e.y;zeros(judgelaten*e.fs,1)];
             n = e.sound.trigger;
             index = find([e.trigger.info.name].'== n);
             initials = e.trigger.info(index).time; % initials of all the repeats
@@ -104,10 +106,10 @@ classdef Piece < handle & EphysAnalysis
                 presptimes{k} = e.spike.time( initials(k)- ylength<e.spike.time & e.spike.time<initials(k))- double((initials(k)-ylength));%??
                 pltsptimes{k} = e.spike.time( initials(k)- e.pltext<e.spike.time& e.spike.time<initials(k) + ylength + e.pltext)...
                     - (initials(k)- e.pltext);
-                judgerespsptimes{k} = e.spike.time( initials(k)<e.spike.time& e.spike.time<initials(k) + ylength + laten)...
+                judgerespsptimes{k} = e.spike.time( initials(k)<e.spike.time& e.spike.time<initials(k) + ylength + judgelaten)...
                     - initials(k);
-                prejudgerespsptimes{k} = e.spike.time( initials(k)- (ylength + laten)<e.spike.time& e.spike.time< initials(k))...
-                    - double(initials(k)-(ylength + laten));
+                prejudgerespsptimes{k} = e.spike.time( initials(k)- (ylength + judgelaten)<e.spike.time& e.spike.time< initials(k))...
+                    - double(initials(k)-(ylength + judgelaten));
                 
                 rawsptimes{k} = e.spike.time( initials(k)- e.zpt<e.spike.time& e.spike.time<initials(k) + ylength + length(e.rawy)/e.fs- e.npt)...
                     - (initials(k)- e.zpt);  % 这里可能有一个巨大的bug
@@ -328,7 +330,7 @@ classdef Piece < handle & EphysAnalysis
                 
                 syl(n).sound = convertStringsToChars(e.sound.name);
                 syl(n).number = n;
-                syl(n).plx = convertStringsToChars(e.trigger.plxname);
+                syl(n).pl2 = convertStringsToChars(e.trigger.pl2name);
                 syl(n).channel = e.spike.channel;
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.fragment(n).y;
@@ -372,7 +374,7 @@ classdef Piece < handle & EphysAnalysis
                 
                 syl(n).sound = convertStringsToChars(e.sound.name);
                 syl(n).number = n;
-                syl(n).plx = convertStringsToChars(e.trigger.plxname);
+                syl(n).pl2 = convertStringsToChars(e.trigger.pl2name);
                 syl(n).channel = e.spike.channel;
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.sapfragment(n).y;
@@ -422,7 +424,7 @@ classdef Piece < handle & EphysAnalysis
                 
                 syl(n).sound = convertStringsToChars(e.sound.name);
                 syl(n).number = n;
-                syl(n).plx = convertStringsToChars(e.trigger.plxname);
+                syl(n).pl2 = convertStringsToChars(e.trigger.pl2name);
                 syl(n).channel = e.spike.channel;
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.fragment(n).y;
@@ -455,7 +457,7 @@ classdef Piece < handle & EphysAnalysis
                 syl(n).birdid = Convert.bid(convertStringsToChars(e.sound.name));
                 syl(n).filename = convertStringsToChars(e.sound.name);
                 syl(n).number = n;
-                syl(n).plx = convertStringsToChars(e.trigger.plxname);
+                syl(n).pl2 = convertStringsToChars(e.trigger.pl2name);
                 syl(n).channel = e.spike.channel;
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.fragment(n).y;
@@ -494,7 +496,7 @@ classdef Piece < handle & EphysAnalysis
                     pre(n).entropy = temp.entropy;
                     pre(n).pitch = temp.pitch;
                     pre(n).am = temp.AM;
-                    pre(n).plx = e.trigger.plxname;
+                    pre(n).pl2 = e.trigger.pl2name;
                     pre(n).channel = e.spike.channel{1};
                     pre(n).unit = e.spike.unit;
                     pre(n).sound = e.sound.name;
