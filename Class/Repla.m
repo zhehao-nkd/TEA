@@ -37,7 +37,7 @@ classdef Repla < handle
             dbstop if error
             
             % evaluate the responsiveness of song replacements
-            replaids = find( ~cellfun(@isempty, regexp([rp.list.stimuliname].','Repla') ));
+            replaids = find( ~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),'Repla') ));
             
             if isempty(replaids)
                 return
@@ -58,7 +58,7 @@ classdef Repla < handle
                     nid = nid(1);
                     disp('Dangerous Code: @Neuron.judgeReplaResp');
                 end
-                rids = findCorrespReplaID(bnames{k});
+                rids = findCorrespReplaID(sprintf('(?<=before\\S+%s)',bnames{k}));
                 
                 for kk = 1:length(rids)
                     [Ini_y,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla(...

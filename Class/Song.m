@@ -37,7 +37,7 @@ classdef Song < handle
             dbstop if error
             
             % evaluate the responsiveness of song replacements
-            replaids = find( ~cellfun(@isempty, regexp([rp.list.stimuliname].','Repla') ));
+            replaids = find( ~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),'Repla') ));
             
             if isempty(replaids)
                 return
@@ -50,20 +50,36 @@ classdef Song < handle
             
             findCorrespReplaID = @(x) intersect(find( ~cellfun(@isempty, regexp([rp.list.stimuliname].','Repla') )),...
                 find( ~cellfun(@isempty, regexp([rp.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
-            
+
             for k = 1:length(bnames)
+             
+                rids = findCorrespReplaID( sprintf('(?<=before)\\S+%s',bnames{k} ) );
+
                 nid = findCorrespConID(bnames{k}); % 有可能得到多个nid
                 % 如果有多个nid
                 if length(nid) > 1
-                    nid = nid(1);
+                    minlength = [];
+                    for bb = 1:length(nid)
+                        minlength(bb) = min(rids - nid(bb));
+                    end
+                    [~,mindex] = min(abs(minlength)); % 找到和repla stimuli同一组的cons，也就是编号最接近的
+                    nid = nid(mindex);
                     disp('Dangerous Code: @Neuron.judgeReplaResp');
                 end
-                rids = findCorrespReplaID(bnames{k});
+
                 
+         
                 for kk = 1:length(rids)
                     [Ini_y,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla(...
                         rp.list(nid).y,...
-                        rp.list(rids(kk)).y );
+                        rp.list(rids(kk)).y);
+%                     figure; subplot(211);Draw.spec(rp.list(nid).y,32000);subplot(212); Draw.spec(rp.list(rids(kk)).y,32000);
+                    if Ini_y == 0
+                        Ini_y = 1; % dangerous code
+                    end
+                    if isempty(Ini_y)|| Ini_y>length(rp.list(nid).y)
+                        continue  % another dangerous code
+                    end
 
                     num_of_zeros = find(rp.list(nid).y(Ini_y:end),1)-1; % 在分歧点后多长一段是0
                     Ini_y = Ini_y + num_of_zeros;

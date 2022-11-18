@@ -579,6 +579,8 @@ classdef Archon
 
             if isfield(neuroster,'allexist')
                 cdrfroster = neuroster([neuroster.allexist].' == 1);
+            else
+                cdrfroster = [];
             end
 
             %             %not_cdrfroster = neuroster([neuroster.allexist].' == 0);
@@ -745,34 +747,58 @@ classdef Archon
 
         end
 
-        function input_roster = batch_genAnalysis(input_roster, from_where)% 生成Analysis object
-           dbstop if error     
+        function rest_roster = batch_genAnalysis(input_roster, from_where)% 生成Analysis object
 
-           if ~exist('from_where','var')
-               from_where = 1;
-           end
-            %clear
+            dbstop if error
             tic
+            if ~exist('from_where','var')
+                from_where = 1;
+            end
+            not_exist = {};
+            count = 0;
+
+
+            for k = from_where: length(input_roster) % par
+                %                 try
+                birdname = input_roster(k).birdname;
+                ZPid = input_roster(k).neuronid;
+                channelname = input_roster(k).channelname;
+                unit = input_roster(k).unit;
+                diskname = regexp(input_roster(k).neurondir,'[A-Z]:','match');
+                diskname = diskname{1};
+
+                if ~isfile(sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))
+                    count = count + 1;
+                    not_exist{count} = input_roster(k);
+                    %                         Archon.genAnalysis(diskname,birdname,ZPid,channelname,unit);
+                end
+            end
+
+            rest_roster = vertcat(not_exist{:});
+
             D = parallel.pool.DataQueue;
             h = waitbar(0, '开始生成 Neuron objects');
-            Utl.UpdateParforWaitbar(length(input_roster), h);
+            Utl.UpdateParforWaitbar(length(rest_roster), h);
             afterEach(D, @Utl.UpdateParforWaitbar);
 
-            parfor k = from_where: length(input_roster) % par
-               try
-                    birdname = input_roster(k).birdname;
-                    ZPid = input_roster(k).neuronid;
-                    channelname = input_roster(k).channelname;
-                    unit = input_roster(k).unit;
+          
+            for k = from_where: length(rest_roster) % par
+%                 try
+                    birdname = rest_roster(k).birdname;
+                    ZPid = rest_roster(k).neuronid;
+                    channelname = rest_roster(k).channelname;
+                    unit = rest_roster(k).unit;
+                    diskname = regexp(rest_roster(k).neurondir,'[A-Z]:','match');
+                    diskname = diskname{1};
 
                     if ~isfile(sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))
-                        Archon.genAnalysis('D:/',birdname,ZPid,channelname,unit);
+                        Archon.genAnalysis(diskname,birdname,ZPid,channelname,unit);
                     end
-               catch ME
-                   input_roster(k).ME = ME;
-                   input_roster(k).identifier = ME.identifier;
-                   disp(ME);
-               end
+%                 catch ME
+%                     rest_roster(k).ME = ME;
+%                     rest_roster(k).identifier = ME.identifier;
+%                     disp(ME);
+%                 end
 
                 send(D, 1);
             end
@@ -781,20 +807,21 @@ classdef Archon
 
         end
 
-        function createSinChFolder(birdname,ZPid)
-            arch = Archon('D:/');
-            hitid = find(~cellfun(@isempty,regexp(cellstr(arch.bird_folders),birdname)));
-            hitbird_folder = arch.bird_folders{hitid};
+        function createSinChFolder(zpdir)
+%             arch = Archon('D:/');
+%             hitbname = find(~cellfun(@isempty,regexp(cellstr(arch.bird_folders),birdname)));
+%             hitzpid = find(~cellfun(@isempty,regexp(cellstr(arch.bird_folders),ZPid)));
+%             hitbird_folder = arch.bird_folders{intersect(hitbname,hitzpid)};
 
 
             % 处理hit folder 内部的 subfolders
-            subdirs = Extract.folder(hitbird_folder);
-            hitZorP = find(~cellfun(@isempty,regexp(cellstr(subdirs.'),ZPid)));
-            hit_subdir = subdirs {hitZorP};
+     
 
-            destineydir = Convert.mergeSubfolders(fullfile(hit_subdir,'Stimuli'),'*.wav'); % 合并所有声文件
+            destineydir = Convert.mergeSubfolders(fullfile(zpdir,'Stimuli'),'*.wav'); % 合并所有声文件
 
             Convert.two2one(destineydir); % 生成单通道声文件
+            pause(0.1);
+            status = rmdir(destineydir,'s');
 
 
         end

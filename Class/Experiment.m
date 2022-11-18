@@ -96,11 +96,18 @@
                 end
                 
                 sub_e = {};
+%                 judger = [];
                 for k = 1: length(songpath)   %%% should be parfor!!!!!!!!!!
                     sound = Sound(songpath{k},folder_coding_method);
                     sub_e{k} = Piece(sp,t,sound);
+%                     if isempty(sub_e{k})
+%                         judger(k) = 0;
+%                     else
+%                         judger(k) = 1;
+%                     end
+
                 end
-                e_collector{fd} = sub_e; % 收集此song folder所对应的ephys object
+                e_collector{fd} = sub_e;%(find(judger)); % 收集此song folder所对应的ephys object
             end
             
             exp.e = horzcat(e_collector{:}); % merge所有的e together

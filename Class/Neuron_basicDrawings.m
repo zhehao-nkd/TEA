@@ -76,7 +76,7 @@ classdef Neuron_basicDrawings <handle
             
             % temporialriy a.neurons{1}
             waveforms = a.neurons{1}.waveform;
-            figure('Color','w','Position',PM.size1);
+
             hold on
             plot(waveforms.',':','Color',[.5,.5,.5]);
             plot(max(waveforms),'--','Color','blue');

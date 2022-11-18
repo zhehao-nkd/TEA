@@ -14,9 +14,11 @@ classdef AutoSap
         end
         
         function [birdorder,zporder,sinchorder,bmax,zpmax,sinmax] = getDirOrder(birdname,ZPid)
-            arch = Archon('D:/');
+%             arch = Archon('D:/');
             % bird level
-            birddirs = sortrows(cellstr(arch.bird_folders));
+            alldirnames = cellstr(Extract.folder('D:/').');
+            not_hidden = alldirnames(find(cellfun(@isempty, regexp(alldirnames,'\$'))));
+            birddirs = sortrows(not_hidden);
             bmax = length(birddirs);
             birdorder = find(~cellfun(@isempty,regexp(birddirs,birdname)));
             
@@ -45,10 +47,14 @@ classdef AutoSap
         end
         
         function uni_roster = script_autorun_scp(input_roster)
+            %对input roster
+            %里的每一个神经元，用自动点击器运行计算提取features,提取后的features会被储存在sap2011 mysql
+            %数据库中
+
             dbstop if error
             tic
             
-            [~,ia,~] = unique([input_roster.birdneuron].');
+            [~,ia,~] = unique({input_roster.birdneuron}.');
             uni_roster = input_roster(ia);
             for k = 1: length(uni_roster) % k was 227
                 
@@ -63,14 +69,17 @@ classdef AutoSap
                 au.click(188,108,0.1);
                 
                 
-                au.click(565,100,0.1);
-                au.typewrite(char(uni_roster(k).birdneuron));
-                au.click(513,197,0.1); % 注意输入法必须是英文
-                au.click(514,261,0.1);
+                au.click(565,100,0.1); % 输入batch name
+                au.typewrite(char(uni_roster(k).birdneuron));% 注意输入法必须是英文
+
+
+                au.click(513,197,0.1); 
+                au.click(514,261,0.1); %点击进入 SAP settings 页面
                 au.click(243,95,0.1);
                 au.click(112,114,0.1);
                 au.click(520,433,0.1);
-                au.click(505,121,0.1);
+                au.click(505,121,0.1);%点击进入 sound files 页面
+                au.click(243,95,0.1);
                 
                 au.click(735,85,0.1); % click Drive icon
                 au.click(684,110,0.1);
@@ -150,6 +159,7 @@ classdef AutoSap
         end
         
         function export_infofiles(overwrite)
+            %把数据库中储存的feature写成feature文件，存在对应的subfolder中
             if overwrite == 1
                 disp('覆写模式');
             else
@@ -205,6 +215,7 @@ classdef AutoSap
         end
         
         function export_datafiles(overwrite)
+              %把数据库中储存的feature写成feature文件，存在对应的subfolder中
             if overwrite == 1
                 disp('覆写模式');
             else

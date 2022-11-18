@@ -2,9 +2,6 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
     % The class to do all the analysis for neu single neuron
     %   Detailed explanation goes here
    
-    properties(Dependent)
-        
-    end
     properties % 必须
         neurons % raw features
         % Class
@@ -252,49 +249,72 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
                         && maxsdf>13
                     neu.list(thisi).label = 1;
                 end
-                disp([h,p,neu.list(thisi).label])
+%                 disp([h,p,neu.list(thisi).label])
                 fig1 = figure('Position',[2407 186 529 403]); Draw.two(neu.list(thisi).judgerespy,32000,neu.list(thisi).judgerespsptimes);
                 fig2 = figure('Position',[1898 205 529 403]); Draw.two(zeros(length(neu.list(thisi).judgerespy),1),32000,neu.list(thisi).prejudgerespsptimes);
                 close(fig1); close(fig2);
             end
 
             fraglist = neu.list(ids);
-            fraglist = table2struct( sortrows(struct2table(fraglist),'maxsdf','descend') );
+            fraglist = table2struct( sortrows(struct2table(fraglist),'maxsdf','descend') ); % order fraglist by maximum sdf
             beststimuli = SAT_sound(fraglist(1).y,fraglist(1).fs);
+%             [mfcc_beststimuli,~,~,~]  = mfcc(fraglist(1).y,fraglist(1).fs);
             for k = 1:length(fraglist)
                 sim = SAT_similarity(beststimuli,SAT_sound(fraglist(k).y,fraglist(k).fs),0);
                 sim.calculate_similarity;
                 fraglist(k).accuracy = sim.score.accuracy;
                 fraglist(k).similarity = sim.score.similarity; % or accuracy
+%                 try
+%                     [mfcc_specific_stimuli,~,~,~] = mfcc(fraglist(k).y,fraglist(k).fs);
+%                 catch % 如果fraglist y 太短的话，在后面补零试一试，补零之后再去掉补零部分的mfcc,但因为只有一帧所以没办法补
+%                     [mfcc_specific_stimuli,~,~,~] = mfcc([fraglist(k).y;zeros(fraglist(k).fs*0.03 -length(fraglist(k).y),1)],fraglist(k).fs);
+%                 end
+
+%                 mfcc_matrix = [];
+%                 for a = 1:size(mfcc_beststimuli,1)
+%                     vec1 = mfcc_beststimuli(a,:);
+%                     for aa = 1:size(mfcc_specific_stimuli,1)
+%                         vec2 = mfcc_specific_stimuli(aa,:);
+%                         mfcc_matrix(a,aa) =  norm(vec1-vec2);
+%                     end
+%                 end
+%                 mfcc_matrix = 1 - rescale(mfcc_matrix); % transfer dissimilarity matrix to similarity matrix
+%                 fraglist(k).mfcc_meansim = mean(mean(mfcc_matrix));
+%                 fraglist(k).perc_highsim = length(find(mfcc_matrix > 0.78))/(size(mfcc_matrix,1)*size(mfcc_matrix,2));
+
+%                 figure; imagesc(mfcc_matrix);
+
+                
             end
 
            % fraglist = table2struct( sortrows(struct2table(fraglist),'accuracy') );
             fraglist = table2struct( sortrows(struct2table(fraglist),'similarity') );
+%             fraglist = table2struct( sortrows(struct2table(fraglist),'mfcc_meansim') );
             ordered_labels = [fraglist.label].';
             pers_ordered = getPercentageOfResponse(ordered_labels);
 
             %%%% Need to draw the list figures of song fragments response
-
-             figure('Position',[2214 -21 523 696],'Color','w');
-            
-
-             num_of_random = 100;
-             for ww = 1:num_of_random
-                 reordered = ordered_labels(randperm(length(ordered_labels)));
-                 pers = getPercentageOfResponse(reordered);
-                 hold on
-                 plot(pers,'Color',[0.5,0.5,0.5]);
-               
-             end
-              hold on
-             plot (pers_ordered,'Color','r');
-
-             positivecontrol = sort(ordered_labels, 'descend' ) ;
-             pers_pcontrol = getPercentageOfResponse(positivecontrol);
-             plot (pers_pcontrol,'Color','k') ;
-             hold off
-             title(sprintf('%s.png',neu.formated_name));
-             saveas(gcf,sprintf('PercenExplained_%s.png',neu.formated_name));
+% 
+%              figure('Position',[2214 -21 523 696],'Color','w');
+%             
+% 
+%              num_of_random = 100;
+%              for ww = 1:num_of_random
+%                  reordered = ordered_labels(randperm(length(ordered_labels)));
+%                  pers = getPercentageOfResponse(reordered);
+%                  hold on
+%                  plot(pers,'Color',[0.5,0.5,0.5]);
+%                
+%              end
+%               hold on
+%              plot (pers_ordered,'Color','r');
+% 
+%              positivecontrol = sort(ordered_labels, 'descend' ) ;
+%              pers_pcontrol = getPercentageOfResponse(positivecontrol);
+%              plot (pers_pcontrol,'Color','k') ;
+%              hold off
+%              title(sprintf('%s.png',neu.formated_name));
+%              saveas(gcf,sprintf('PercenExplained_%s.png',neu.formated_name));
 
 
             function pers = getPercentageOfResponse(labels)
@@ -692,7 +712,6 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
             formated_name = sprintf('%s_%u',neu.birdid,neu.uniqueid);
         end
         
-    
         function meanWL = calMeanWaveLength(neu)
             % 计算 meanWL，需要考虑到仪器的fs
             wavecollect = {};
@@ -771,8 +790,7 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
             [h,p]= ttest2(localSFR{1},localSFR{2});
             
         end
-        
-        
+          
         function sponFrInfo = getSponFR_Sarah(neu,range)
             % calculate spontaneous firing rate
             sponFrInfo = struct;
@@ -825,7 +843,6 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
             
         end
         
-        
         function fraglist = to2ndAcousticSpace(neu)
             % 2nd acoustic space？
             ids = find(~cellfun(@isempty, regexp({neu.list.stimuliname}.','repla'))); % find all frags
@@ -852,7 +869,6 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
             
         end
         
-     
         function insonglist = getInsongFragRespList(neu)
             % get In-songFrag Response List
             cons_neuron = neu.neurons{neu.song_id};
@@ -1071,6 +1087,41 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
         
      
         % 作图并导出
+        function drawNorms(neu)
+             normids = find(~cellfun(@isempty,regexp(cellstr({neu.list.stimuliname}.'),'norm')));
+             I = {};
+             for idx = 1: length(normids)
+                 figure('Color','w','Position', [1933 672 673 497]);
+                 Draw.three(neu.list(normids(idx)).plty,neu.list(normids(idx)).fs,neu.list(normids(idx)).pltsptimes);
+                 frame = getframe(gcf);
+                 I{idx} = frame.cdata;
+                 close(gcf);
+             end
+
+             figure('Color','w','Position', [1933 672 673 497]);
+             neu.drawFirstWaveform;     % draw waveform
+             frame = getframe(gcf);
+             I{length(I)+ 1} = frame.cdata;
+             close(gcf);
+
+             % draw blank white
+             lieshu = 9;
+             hangshu = ceil(length(I)/lieshu);
+             rest = lieshu*hangshu - length(I);
+             white = uint8(255*ones(size(I{1})));
+
+             if rest > 0
+                 for k = 1:rest
+                     I = [I,white];
+                 end
+             end
+
+             reshapedI = reshape(I, lieshu,[])';
+             clear I
+             img = cell2mat(reshapedI);
+             imwrite(img,sprintf('NormThree_%s.png',neu.formated_name));
+
+        end
         
         function img = exportConRevMir(neu)
             dbstop if error
@@ -1104,7 +1155,13 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
                     sb_reverse_ids =   sb_reverse_ids(1); % 如果多项，暂时的对策是取第一项
                 end
                 sb_mirror_ids = intersect(mirrorids,samebirdids);
+                 if length(sb_mirror_ids) > 1
+                    sb_mirror_ids = sb_mirror_ids(1); % 如果多项，暂时的对策是取第一项
+                end
                 sb_norm_ids = intersect(normids,samebirdids);
+                 if length(sb_norm_ids) > 1
+                    sb_norm_ids =sb_norm_ids(1); % 如果多项，暂时的对策是取第一项
+                end
                 
                 samefileids  = find(~cellfun(@isempty,regexp(cellstr({neu.list.Fid}.'),neu.list(sb_reverse_ids).Fid)));
                 sameFile_norm_ids = intersect(samefileids,sb_norm_ids);
@@ -1145,8 +1202,8 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
             %非常难以找到这个function
             
             neu.judgeFragResp_FR;
-            finalfig = getframe(gcf).cdata;
-            close(gcf)
+%             finalfig = getframe(gcf).cdata;
+%             close(gcf)
             ids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'Frag|frag|syl|ele')));
             fraglist = neu.list(ids);
             if isempty(fraglist)
@@ -1175,7 +1232,7 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
                 close(h)
             end
 
-            I{k+1} = finalfig; % performance figure
+%             I{k+1} = finalfig; % performance figure
             
             %             figure;
             %             n.draw_waveform;     % draw waveform
@@ -1192,9 +1249,6 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
             if rest > 0
                 for k = 1:rest
                     I = [I,white];
-                    %                     ax = gcf;
-                    %                     ax.Position(3) = 560;
-                    %                     ax.Position(4) = 420;
                 end
             end
             
@@ -2139,8 +2193,18 @@ classdef Neuron < handle & Neuron_basicDrawings %& Analysis_acousticFeatures  & 
             elseif maxid==2 % ru-guo-yrepla-bi-jiao-chang
                 y =  [zeros(length(yrepla)-length(y),1);y];
             end
+
+            %figure; subplot(311); plot(y);subplot(312); plot(yrepla);subplot(313); plot(yrepla-y);
             
             temp_convergentpoint = find(flip(y-yrepla), 1 ); % 找到第一个非零元素
+            % 如果把y和yrepla倒过来之后第一个非零元素是第一位，说明y和yrepla不同，这stimuli有问题
+%             [coeffsy,~,~,~] = mfcc(flip(y),32000);
+%             [coeffsyrepla,~,~,~] = mfcc(flip(yrepla),32000);
+%             figure; plot(sum(coeffsy,2) - sum(coeffsyrepla,2));
+%             figure; subplot(311); Draw.spec(y,32000);subplot(312); Draw.spec(yrepla,32000);subplot(313);Draw.spec(yrepla-y,32000);
+%            figure; plot( flip(round(y,3)) - flip(round(yrepla,3)) )
+
+            %figure; plot(flip(y-yrepla))
             convergentpoint = maxlength - temp_convergentpoint + 2;
             
             if maxid == 1 % y更长

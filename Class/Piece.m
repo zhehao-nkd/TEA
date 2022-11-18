@@ -19,13 +19,6 @@ classdef Piece < handle & EphysAnalysis
     % Trigger signal用方波间距来编码stimuli代号，从右向左读，长为1，短为0，二转十进制后得到stimuli代号
     % 两个系统摄入Trigger signal的方式也不同,P系统通过Analog Input通道接收，Z系统通过digital Input接收
 
- 
-
-    
-    properties % essential properties
-%         names
-%         dataset % output
-    end
     properties
         spike
         trigger
@@ -67,6 +60,7 @@ classdef Piece < handle & EphysAnalysis
         judgelaten
         
         fsize
+       % notexist_identifier
     end
     
     
@@ -91,6 +85,10 @@ classdef Piece < handle & EphysAnalysis
             e.judgerespy = [e.y;zeros(judgelaten*e.fs,1)];
             n = e.sound.trigger;
             index = find([e.trigger.info.name].'== n);
+%             if isempty(index)
+%                 e.notexist_identifier = 1;
+%                 return
+%             end
             initials = e.trigger.info(index).time; % initials of all the repeats
             e.trigger_onset = initials;
             ylength = length(e.y)/e.sound.fs;
