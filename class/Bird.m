@@ -5,291 +5,247 @@ classdef Bird < handle
 
     properties
         folders
-        selected
+        adultfolders % 有正常的adult song的folders
     end
     % from the targeted folder to Extract syllables
     methods
-        
+
         function b = Bird(~) % dirpath must be a char
-            b.folders = Extract.folder(convertStringsToChars("Z:\Yazaki-SugiyamaU\Bird-song"));
-            
-            if isequal(exist('isoid.mat','file'),2) % 2 means it's a file.
-                display('iso exists!');
-                load('isoid.mat');
-            else
-                display('iso mat do not exists!');
-                pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx"
-                pathlist = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx"
-                isoid = Bird.extriso(pathlog, pathlist);
-            end
-            
-            b.rmbad(isoid); % remove bad folder
-            b.rand; % randomize
-            
+
+            b.folders = Bird.birdsong;
+
+            pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx"
+            pathlist = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx"
+
+            isoid = Bird.getIso(pathlog, pathlist); % 获取 isolated birdids  
+            temp = arrayfun(@(x) find(~cellfun(@isempty, regexpi({b.folders.bnames}.', x))), isoid,'UniformOutput',0);
+            iso_index = vertcat(temp{:});
+            morethan1bird_index = find(  cellfun(@length, regexp({b.folders.bnames}.', '[A-Za-z]+\d{3}'))~=1 );
+            wierd_index = find(cellfun(@isempty, regexp({b.folders.bnames}.', '[OGBYR][a-zA-Z]*\d{3}')));
+            juvonly_index = find(~[b.folders.adultsong].'); % 找到没有adult song的id
+            all_badindex = unique([iso_index;morethan1bird_index;wierd_index;juvonly_index]);
+
+            b.adultfolders = b.folders(setdiff(1:length(b.folders),all_badindex));
+% 
+%             b.rand; % randomize
+
         end
-        
-        
+
         function b = rand(b)
-            rng(1,'twister'); % repeatable random number
+            %把source文件夹的顺序打乱，但每次随机产生的顺序是一致的
+            rng(1,'twister'); % 控制随机数生成器 repeatable random number
             b.folders = b.folders(randperm(numel(b.folders)));
         end
-        
-        function b = select(b,idx)
-            if exist('idx','var')
-                b.selected = b.folders(idx);
-            else
-                b.selected = b.folders;
-            end
-        end
-        
-        function collectsyllables(b,file_per_folder) % generate .mat file for avgn analysis
-            
-            dbstop if error
-            outdir = 'E:\automaticallyCollectedsyllables\bucket_avgn'
-            mkdir(outdir);
-            tic;
-            if isempty(b.selected)
-                disp('Specify folders to use!!!');
-                pause;
-            else
-                for n = 1: length(b.selected)
-                    %for n = 1: length(folders)
-                    fprintf('Current Folder:%s, %n out of %n ',b.selected{n}, n, length(b.selected));
-                    % for each folder
-                    [~,inputid,~] = fileparts(b.selected{n});
-                    filenames = Extract.filename(b.selected{1,n},'*.wav');
-                    %filenames = extractAdult(filenames,inputid,pathlist);
-                    %filenames = restrictCentroid(filenames); % restricit filenames by its centroid
-                    filenames = filenames(randperm(numel(filenames))); % randomize filenames
-                    
-                    if isempty(filenames)
-                        disp('This folder contain only juvenile songs');
-                        newline;
-                        continue
-                    end
-                    
-                    if exist('file_per_folder','var')
-                        minlen = min(file_per_folder, length(filenames));
-                    else
-                        minlen = length(filenames);
-                    end
-                    
-                    filenames = filenames(1:minlen);
-                    
-                    
-                    %collect = cellfun(@(file) Raw(file).avgn, filenames,'UniformOutput',false);
-                    % cellfun is slow!!!!!!!!!!!!!!!
-                    
-                    parfor idx = 1: length(filenames)
-                        collect{idx} = Raw(filenames{idx}).avgn;
-                    end
-                    
-                    syllables =  horzcat(collect{:});
-                    parts = strsplit(b.selected{n},'\');
-                    save(sprintf('%s/%s.mat',outdir,Convert.bid(parts{end})),'syllables');
-                    
-                    
-                    
-                    toc;
-                    newline;
-                end
-                
-                
-                
-            end
-            
-            
-        end
-        
-        
+
+
     end
-    
-    
+
+
     methods(Static) % 是Bird的重要底层方法，通常被其他方法调用而不会被直接使用
-        
-        function b = rmbad(input_dirs) % iso is a cell consists of isolated id
+
+        function b = Deprecated_rmbad(input_dirs) % iso is a cell consists of isolated id
             input_dirs = Extract.folder("Z:\Yazaki-SugiyamaU\Bird-song").';
-            
+
             numVars = 5;
             varNames = {'BirdID','Hatchdate','Gender','father','mother','isolate'} ;
             varTypes = {'string','string','string','string','string','string'} ;
             dataStartLoc = 'A2';
-            
+
             opts = spreadsheetImportOptions('Sheet',1,'NumVariables',numVars,...
                 'VariableNames',varNames,...
                 'VariableTypes',varTypes,...
                 'DataRange', dataStartLoc);
-            
+
             % preview('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts)
             birdlist = readtable('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts);
-            
-            
-            
+
+
+
             dbstop if error
             [~,fnames,~] = cellfun(@fileparts,b.folders,'UniformOutput',false);
-            
+
             for n = 1: length(fnames)
-                
+
                 alphabets = regexp(fnames{n},'[A-Za-z]');
                 initial = fnames{n}(alphabets(1));
-                
+
                 number = fnames{n}(regexp(fnames{n},'\d'));
-                
+
                 new_fnames{n} = [initial,number];
-                
+
             end
-            
+
             % remove isolated birds
             for m = 1:length(iso)
-                
+
                 idxes = find (~cellfun(@isempty, regexpi(new_fnames, iso(m))));
-                
+
                 if ~isempty(idxes)
                     for bad = 1:length (idxes) % this is a bad code
                         b.folders{idxes(bad)} = NaN;
                     end
                 end
-                
+
             end
-            
+
             % remove G123B234 like mixed marks
             not1Idx = find(  cellfun(@length, regexp(new_fnames, '[A-Za-z]+\d{3}'))~=1 );
-            
+
             if ~isempty(not1Idx)
-                
+
                 for worst = 1:length(not1Idx)
                     b.folders{not1Idx(worst)} = NaN;
                 end
-                
+
             end
-            
-            
+
+
             % remove wierd folders, e.g. channel, test B345346 etc.
-            
+
             wierdIdx = find (cellfun(@isempty, regexp(new_fnames, '[A-Za-z]+\d{3}')));
-            
+
             if ~isempty(wierdIdx)
-                
+
                 for worse = 1:length(wierdIdx)
                     b.folders{wierdIdx(worse)} = NaN;
                 end
-                
+
             end
-            
+
             b.folders(cellfun(@(x) any(isnan(x)),b.folders)) = [];
-            
+
         end
-        
-        function isofromlog = extriso(pathlog, pathlist) % Extract id of isolated bird
+
+        function all_isoids = getIso(pathlog, pathlist)
+            % 获取被隔离鸟的id
+            % 被隔离的birdid可以从两个部分得到，一部分是birdlog，另一个是birdlist
+            
             dbstop if error
-            % a function for Extract id of isolated birds from birdlog
-            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%% 第一部分
             pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx"
-      
-            
-            %path = 'C:\Users\Zhehao\Desktop\Bird log2018 _ver_2.xlsx'
-            
             [~,sheets] = xlsfinfo(pathlog);
             sheetnum = length(sheets); % number of sheet in one xls file
-            
-            isofromlog = {};
-            for n = 1: sheetnum
-                tempT = readtable(pathlog,'Sheet',n);
-                vname = tempT.Properties.VariableNames; % variable names
-                
-                Racks = find (~cellfun(@isempty, regexp(vname, 'Rack'))); % column# of racks
-                
-                Annos =  find (~cellfun(@isempty, regexp(vname, 'Var4'))); % column# of var
-                
-                
-                idxRack = find (~cellfun(@isempty, regexp(table2cell(tempT(:,Racks))...
-                    ,'iso'))); % find rows contain 'iso'
-                
-                
-                
-                isoC =table2cell(tempT(idxRack, Annos)); % collection of annotations with 'iso'
-                
-                
-                %%%%%%%%%%%%%%%%%%%%%%%%% for each sheet
-                
-                for d = 1: length(isoC)
-                    
-                    % For each element in isoC
-                    
-                    birds = regexp(isoC{d}, '[A-Z]\d\d\d') ;
-                    
-                    isolated = birds(3:end); % remove parents
-                    
-                    
-                    temp = isoC{d}(sort([isolated,isolated+1,isolated+2,isolated+3]))';
-                    
-                    thesebirds =   cellstr(reshape (temp ,4 ,[])');
-                    
-                    
-                    
-                    isofromlog = [isofromlog;thesebirds];
-                    
-                end
-                
-            end
-            
-            isofromlog(cellfun(@isempty, isofromlog)) = [];
-            
-            isofromlog = unique(isofromlog);
-            
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
-            % ISO FROM LIST
-            %pathlist = 'C:\Users\Zhehao\Dropbox (OIST)\My_TestData\BirdListMatlab.xlsx';
-            
-            listT = readtable(pathlist)
-            
-            
-            idxiso = find (cellfun(@length,listT.isolate) > 1)
-            
-            isofromlist = listT.BirdID(idxiso)
-            
-            
-            ISOCELL = unique(vertcat(isofromlog, isofromlist));
-            
-            %{
-                    No hard coding!!
 
-                    Test = readtable('E:\0904_R612\R612_Z1_SPKC03.xlsx')
-                    Test.Properties.VariableNames
-                    VN = Test.Properties.VariableNames;
-                    regexp(VN, '^Var\d+$')
-                    ~cellfun(@isempty, regexp(VN, '^Var\d+$'))
-                    idxWaveform =  ~cellfun(@isempty, regexp(VN, '^Var\d+$'));
-                    unique(Test.Unit)
-            %}
-            
+            isofromlog = {};
+            isocollect = {};
+            isocount = 0;
+            for n = 1: sheetnum % birdlog按不同的日期被分成了一个个sheet，所以要对每一个单独的sheet做循环
+                tempT = readtable(pathlog,'Sheet',n,'VariableNamingRule','preserve');
+                vname = tempT.Properties.VariableNames; % 表格的variable names
+                Racks = find (~cellfun(@isempty, regexp(vname, 'Rack'))); % 笼子的描述，即是否是isolated
+                Annos =  find (~cellfun(@isempty, regexp(vname, 'Var4'))); % 找到包含Var4的那一列
+
+                idxRack = find(~cellfun(@isempty, regexp(table2cell(tempT(:,Racks)),'iso'))); % 找到被描述为"隔离"的笼子，find rows contain 'iso'
+                isoC =table2cell(tempT(idxRack, Annos)); % collection of annotations with 'iso'
+
+                for d = 1: length(isoC) %对每一个隔离笼进行循环
+                    isocount = isocount + 1;
+                    candidatebids = regexp(isoC{d}, '[OGBYR]\d{3}','match');
+                    isolated = candidatebids(3:end); %去掉父母鸟,这里的前提是表格的前两者总是父母鸟
+                    isocount = isocount + 1;
+                    isocollect{isocount} = candidatebids;
+                end
+
+            end
+            isofromlog = horzcat(isocollect{:});
+            isofromlog = unique(isofromlog).';
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%% 第二部分
+            %pathlist = 'C:\Users\Zhehao\Dropbox (OIST)\My_TestData\BirdListMatlab.xlsx';
+            listT = readtable(pathlist);
+            idxiso = find(cellfun(@length,listT.isolate) > 1);
+            isofromlist = listT.BirdID(idxiso);
+
+
+           all_isoids = unique(vertcat(isofromlog, isofromlist));
+
         end
-        
+
         function birdlist = readBirdlist(~)
             numVars = 5;
             varNames = {'BirdID','Hatchdate','Gender','father','mother','isolate'} ;
             varTypes = {'string','string','string','string','string','string'} ;
             dataStartLoc = 'A2';
-            
+
             opts = spreadsheetImportOptions('Sheet',1,'NumVariables',numVars,...
                 'VariableNames',varNames,...
                 'VariableTypes',varTypes,...
                 'DataRange', dataStartLoc);
-            
+
             bucketDriveletter = Utl.bucketletter;
-            
+
             birdlist = readtable(strcat(bucketDriveletter,...
                 ":\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx"),opts);
         end
-        
+
+        function collectsyllables(targetfolders,file_per_folder) % generate .mat file for avgn analysis
+
+            dbstop if error
+            outdir = 'E:\automaticallyCollectedsyllables\bucket_avgn'
+            mkdir(outdir);
+            tic;
+            if isempty(targetfolders)
+                disp('Specify folders to use!!!');
+                pause;
+            else
+                for n = 1: length(targetfolders)
+                    %for n = 1: length(folders)
+                    fprintf('Current Folder:%s, %n out of %n ',targetfolders{n}, n, length(targetfolders));
+                    % for each folder
+                    [~,inputid,~] = fileparts(targetfolders{n});
+                    filenames = Extract.filename(targetfolders{1,n},'*.wav');
+                    %filenames = extractAdult(filenames,inputid,pathlist);
+                    %filenames = restrictCentroid(filenames); % restricit filenames by its centroid
+                    filenames = filenames(randperm(numel(filenames))); % randomize filenames
+
+                    if isempty(filenames)
+                        disp('This folder contain only juvenile songs');
+                        newline;
+                        continue
+                    end
+
+                    if exist('file_per_folder','var')
+                        minlen = min(file_per_folder, length(filenames));
+                    else
+                        minlen = length(filenames);
+                    end
+
+                    filenames = filenames(1:minlen);
+
+
+                    %collect = cellfun(@(file) Raw(file).avgn, filenames,'UniformOutput',false);
+                    % cellfun is slow!!!!!!!!!!!!!!!
+
+                    parfor idx = 1: length(filenames)
+                        collect{idx} = Raw(filenames{idx}).avgn;
+                    end
+
+                    syllables =  horzcat(collect{:});
+                    parts = strsplit(targetfolders{n},'\');
+                    save(sprintf('%s/%s.mat',outdir,Convert.bid(parts{end})),'syllables');
+
+
+
+                    toc;
+                    newline;
+                end
+
+
+
+            end
+
+
+        end
+
+
+
     end
-    
+
     methods(Static) % 有实用价值的方法
+        
         function songstruct = birdsong(~)
             % To Extract the information about each song recording folders from bucket
-           
+
             dbstop if error
             %Step-1 read birdlist
             bucketDriveletter = Utl.bucketletter;
@@ -302,9 +258,9 @@ classdef Bird < handle
             getDateString = @(x) regexp(x,'\d{4}-\d{2}-\d{2}','match');
             datestring2Date = @(x) datetime(x,'InputFormat','yyyy-MM-dd');
             pw = PoolWaitbar(length(folders), 'Checking bucket folders');
-            
+
             parfor k = 1: length(folders)
-                
+
                 try
                     songstruct(k).raw_foldernames = Utl.fileparts(folders{k});
                     songstruct(k).bnames = Convert.bid(songstruct(k).raw_foldernames);
@@ -313,7 +269,7 @@ classdef Bird < handle
                     songstruct(k).gender = birdlist.Gender(corresp_index);
                     songstruct(k).father = birdlist.father(corresp_index);
                     if ismissing(songstruct(k).father)||isempty(songstruct(k).father)
-                      songstruct(k).father = '0'; % 0 means unknown 
+                        songstruct(k).father = '0'; % 0 means unknown
                     end
                     corresp_log = readtable(fullfile(...
                         folders{k},sprintf('%s.log',songstruct(k).raw_foldernames)));
@@ -354,43 +310,43 @@ classdef Bird < handle
                     end
                     continue
                 end
-                
+
                 increment(pw)
             end
-            
+
             % get the corresponding index, set fathername
             disp('ALl DONE')
-            
-            
+
+
         end
-        
+
         function [fem,songstruct] = femalesong(~)
             songstruct = Bird.birdsong;
             gender = {info.gender}.';
             idx = find(cellfun(@isempty,gender)); % Find the indexes of empty cell
             gender(idx) = {'No'};
-            
+
             fidx = find( ~cellfun(@isempty, regexp(cellstr(gender),'♀') ));
-            
-            
+
+
             fem = songstruct(fidx);
-            
+
             % Replace the empty cells with '0000'
         end
-        
+
         function findCandidates
             % A script to find out candidate birds for Piece experiments
             pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx";
             pathlist = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx";
             birdlog = table2struct(readtable(pathlog, 'Sheet','today'));
-            
+
             birdlog = birdlog(1:30); % 只取前30行
             hidx = find(strcmp({birdlog(:).B_H}.', 'H')); % 只取 holding cages （H）or juveniles
             juvidx = find(strcmp({birdlog(:).B_H}.', 'juv'));
             h_and_juv_idx = [hidx;juvidx];
             birdlog = birdlog(h_and_juv_idx);
             birds = horzcat(birdlog(:).Var4);
-            
+
             % anno means annotation
             tokens = regexp(birds,'(?<name>[OBRGY]\d{3})♂\((?<anno>\d+/\d+)(?<name2>, ?(ZC|BC|Big|BB|BF))?\)','tokens');  % find male birds with birthday wrote
             tokens = tokens';
@@ -400,7 +356,7 @@ classdef Bird < handle
                 candi(idx).birthdate = tokens{idx}{2};
                 candi(idx).reserve = tokens{idx}{3};
             end
-            
+
             birdlist = table2struct(readtable(pathlist));
             s = 0; % shortlisted number
             shortlist = struct;
@@ -409,7 +365,7 @@ classdef Bird < handle
                 birthdate = datetime( num2str(birdlist(thisbird).HatchDate),'InputFormat','yyMMdd');
                 currentdate = datetime('today');
                 dph = days(currentdate - birthdate);
-                
+
                 s = s + 1; % 此前限制了dph < 90,现在取消该限制
                 shortlist(s).id = candi(trump).id;
                 shortlist(s).age = dph;
@@ -419,12 +375,12 @@ classdef Bird < handle
                 shortlist(s).cage =  birdlog(idvar4).Cage_;
                 shortlist(s).father =  birdlist(thisbird).father;
             end
-            
+
             %remove those do not have recording folders
             fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
             folders = cellstr(Extract.folder(fdir).');
             %tokens = regexp(folders,'(?<color>[OBRGY][A-Za-z]+)(?<number>\d{3})','tokens');
-            
+
             for b = 1: length(shortlist)
                 letter = regexp(shortlist(b).id,'[OBRGY]','match');
                 letter = letter{1};
@@ -439,43 +395,43 @@ classdef Bird < handle
                     shortlist(b).recordingState = 'No adult';
                 end
             end
-            
+
             for b = 1:length(shortlist)
                 fprintf('Candidate%u----%s-----%u dph----Father: %s-------Cage%u--------%s---——-备注：%s\n',...
                     b,shortlist(b).id,shortlist(b).age,Bird.findFather(shortlist(b).id),shortlist(b).cage,shortlist(b).recordingState,shortlist(b).annotation);
             end
 
         end
-        
+
         function siblings_names = findSiblings(birdname)
             % configs for reading the table
             birdlist = Bird.readBirdlist;
-            
+
             % get the corresponding index, set fathername
             index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
             fathername = birdlist.father(index);
-            
+
             if isempty(fathername)
                 fathername = string(missing);
             end
-            
+
             children_index = find(~cellfun(@isempty, regexp(birdlist.father,fathername)));
             siblings_index = setdiff(children_index, index);
             siblings_names = birdlist.BirdID(siblings_index);
             hatch_dates =birdlist.Hatchdate(siblings_index);
-            
+
             for k = 1: length(siblings_names)
                 disp(sprintf('sibling is:  %s, hatching date: %s, recording state: %s',siblings_names{k},hatch_dates{k},Bird.recording_state(siblings_names{k})));
                 newline;
             end
-            
+
         end
-        
+
         function fathername = findFather(birdname)
-            
+
             % configs for reading the table
             birdlist = Bird.readBirdlist;
-            
+
             % get the corresponding index, set fathername
             index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
             fathername = birdlist.father(index);
@@ -485,30 +441,30 @@ classdef Bird < handle
             if length(fathername)==2
                 fathername = fathername{1};
             end
-            
-            
+
+
         end
-        
+
         function answer = recording_state(birdname,mode)
-            
+
             fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
-            
+
             folders = cellstr(Extract.folder(fdir).');
             folernames = {};
             for k = 1: length(folders)
                 temp = split(folders{k},'\');
                 foldernames{k} = temp{length(temp)};
-                
+
             end
-            
+
             color = regexp(birdname,'[A-Z]','match');
             number = regexp(birdname,'\d+','match');
-            
+
             colorids = find(~cellfun(@isempty, regexp(foldernames,color{1})));
             numberids = find(~cellfun(@isempty, regexp(foldernames,number{1})));
-            
+
             sharedids = intersect(colorids,numberids);
-            
+
             if isempty(sharedids)
                 answer = 'No';
             elseif length(sharedids) == 1
@@ -516,12 +472,12 @@ classdef Bird < handle
             elseif length(sharedids) >1
                 answer = 'More than one hits';
             end
-            
-            if exist('mode','var')&& mode == 1 % Mode1: care about whether the recorded song is adult or juvenile song 
-                
+
+            if exist('mode','var')&& mode == 1 % Mode1: care about whether the recorded song is adult or juvenile song
+
             end
         end
-        
+
         function adultfilenames = getAdultSongs(input_birdname_or_dir)
             % Step-1 : Extract hacth date from the BIRDLIST
             birdlist = Bird.readBirdlist;
@@ -582,7 +538,7 @@ classdef Bird < handle
         end
 
         function answer = adultsongexist(input_birdname)
-            
+
             % Step-1 : Extract hacth date from the BIRDLIST
             birdlist = Bird.readBirdlist;
             corresp_list_index = find(~cellfun(@isempty, regexp([birdlist.BirdID].',input_birdname)));
@@ -593,19 +549,19 @@ classdef Bird < handle
                 return
             end
             thehatchdate = datetime(hatchdate,'InputFormat','yyMMdd');
-            
+
             % Step-2 :get the earlist and the latest recording date from buckect dir storage
             fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
-            folders = cellstr(Extract.folder(fdir).');     
-            corresp_bnames = cellfun( @Convert.bid, Utl.fileparts(folders),'Uni',0);  
+            folders = cellstr(Extract.folder(fdir).');
+            corresp_bnames = cellfun( @Convert.bid, Utl.fileparts(folders),'Uni',0);
             corresp_dir_index = find(~cellfun(@isempty, regexp(input_birdname,corresp_bnames)));
-            
+
             if isempty(corresp_dir_index)
                 disp('Warning@Bird.adultsongexist: Not recorded!');
-                answer = 0; % If dir not found, return 
+                answer = 0; % If dir not found, return
                 return
             end
-            
+
             getDateString = @(x) regexp(x,'\d{4}-\d{2}-\d{2}','match');
             datestring2Date = @(x) datetime(x,'InputFormat','yyyy-MM-dd');
             if length(corresp_dir_index) > 1
@@ -618,25 +574,25 @@ classdef Bird < handle
             trick = corresp_log.Var3([1,2,height(corresp_log)-2,height(corresp_log)-1]); % trick to reduce time
             filedates = cellfun (@(x) datestring2Date(getDateString(char(x))),trick,'Uni',0);
             filedates =  sortrows( cell2table(filedates(~cellfun(@isempty,filedates))) ,'Var1','ascend');
-            
+
             if length(thehatchdate) > 1
                 thehatchdate = thehatchdate(1);
             end
-            % Step-3 :Answer the question 
+            % Step-3 :Answer the question
             if  days(filedates.Var1(1) - thehatchdate) <90
                 disp('Warning@Bird.adultsongexist: Juvenile song exist !')
             end
-            
+
             if  days(filedates.Var1(height(filedates))-thehatchdate) >= 90 ||isnat(thehatchdate)
                 answer = 1; % Juvenile song exist
             else
                 answer = 0;
             end
-            
+
         end
-        
+
         function answer = areTheySiblings(birdname1,birdname2)
-            
+
             %判断两只鸟是否是siblings
             siblings_names = Bird.findSiblings(birdname1);
             if ismember(birdname2,siblings_names)
@@ -645,8 +601,9 @@ classdef Bird < handle
                 answer = 0;
             end
         end
-        
+
         function date = getHatchdate(birdname)
+            %找到鸟的破壳日
             % the function to get hatch date
             birdlist = Bird.readBirdlist;
             % get the corresponding index, set fathername
@@ -654,43 +611,45 @@ classdef Bird < handle
             date = birdlist.Hatchdate(index);
             disp(date);
         end
-        
+
 
         function sonnames = findSons(fathername)
-               % configs for reading the table
+            %找到父鸟所有的子鸟
+            % configs for reading the table
             birdlist = Bird.readBirdlist;
-            
-%             % get the corresponding index, set fathername
-%             index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
-%             fathername = birdlist.father(index);
-            
-%             if isempty(fathername)
-%                 fathername = string(missing);
-%             end
-            
+
+            %             % get the corresponding index, set fathername
+            %             index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
+            %             fathername = birdlist.father(index);
+
+            %             if isempty(fathername)
+            %                 fathername = string(missing);
+            %             end
+
             children_index = find(~cellfun(@isempty, regexp(birdlist.father,fathername)));
             male_index = find(~cellfun(@isempty, regexp(birdlist.Gender,"♂")));
             sons_index = intersect(children_index, male_index);
             sons_names = birdlist.BirdID(sons_index);
             hatch_dates =birdlist.Hatchdate(sons_index);
-            
+
             for k = 1: length(sons_names)
                 disp(sprintf('His song is:  %s, hatching date: %s, recording state: %s',sons_names{k},hatch_dates{k},Bird.recording_state(sons_names{k})));
                 newline;
             end
-            
+
 
 
         end
-   
+
         function allnames = allFathers(~)
+            %找到birdlist里所有曾经产生过后代的雄鸟
 
             birdlist = Bird.readBirdlist;
             father = birdlist.father;
             allnames = unique(rmmissing(father));
 
         end
-    
+
     end
 end
 
