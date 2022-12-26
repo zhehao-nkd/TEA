@@ -3,7 +3,7 @@
 
 % Open a plx file
 % this will bring up the file-open dialog
-pl2files = 'D:\Old_stimuli_before220901\O686_Ephys_W\Z10\O686_Z10F1_Cons_plx-01.pl2';
+pl2files = "D:\R690_Ephys_W\Z13\R690_Z13F1_Cons_plx_merged-01.pl2";
 StartingFileName = pl2files;%'';
 %StartingFileName = 'c:\plexondata\NSSample.plx';
 %StartingFileName = 'c:\plexondata\au101602a.plx';

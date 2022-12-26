@@ -74,31 +74,29 @@ classdef Extract
             filenames = filenames.'; % Trasnpose only for convinient checking variables
         end
         
-        function [SubFolders] = folder(ParentFolder)
+        function subDirsNames = folder(parentDir)
             %GetFolders
             % 函数功能为获取父文件夹下所有子文件夹的路径
             % 函数的输入为ParentFolder：父文件夹路径。eg: 'D:\Program Files'
             % 函数的输出为SubFolders：子文件夹路径。为一个元胞数组，eg: {'D:\Program Files\FileZilla FTP Client\docs'}
-            
-            ParentFolder = convertCharsToStrings(ParentFolder);
-            SubFolderNames = dir(ParentFolder);
-            for i=1:length(SubFolderNames)
-                if( isequal( SubFolderNames( i ).name, '.' )||...
-                        isequal( SubFolderNames( i ).name, '..')||...
-                        ~SubFolderNames( i ).isdir) % 如果不是目录则跳过
-                    continue;
-                end
-                SubFolder(i).SubFolderName = fullfile( ParentFolder, SubFolderNames( i ).name );
+            if ~strcmp(parentDir(end),'\')
+                parentDir = strcat(parentDir,'\');
             end
-            
-            if ~exist('SubFolder','var')
-                SubFolders = []; %#ok<NASGU>
-                return
+            files = dir(parentDir);
+            % Get a logical vector that tells which is a directory.
+            dirFlags = [files.isdir];
+            % Extract only those that are directories.
+            subDirs = files(dirFlags); % A structure with extra info.
+            % Get only the folder names into a cell array.
+            subDirsNames = {subDirs(3:end).name}.';
+            subDirsNames(ismember(subDirsNames ,'..')) = [];
+            subDirsNames(ismember(subDirsNames ,'.')) = [];
+            for k = 1:length(subDirsNames)
+                subDirsNames{k} = strcat(parentDir,subDirsNames{k});
             end
-            temp = {SubFolder.SubFolderName};
-            idx = cellfun(@(x)~isempty(x),temp,'UniformOutput',true); % 利用cellfun函数得到元胞数组中所有非空元素的下标
-            SubFolders = temp(idx);
-            
+
+            subDirsNames = cellstr(subDirsNames);
+
         end
         
         function newspt = cutspt(sptimes,zpt,ylen)

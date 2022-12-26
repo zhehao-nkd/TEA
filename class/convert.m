@@ -6,7 +6,7 @@ classdef Convert
     methods(Static)
         
         function  c2mex()
-            %UNTITLED2 Construct an instance of this class
+    
             %   Detailed explanation goes here
             dir = uigetdir("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\NewMatlab\SAT")
             cfiles = getFilenames(dir,'*.c');
@@ -54,6 +54,15 @@ classdef Convert
             
         end
         
+        function result = fragid(input)
+            temp = regexp(input,'(?<=Frag\S*[OGBYR]\d{3}-)\d+(?=-\d+Pulses)','match');
+            if isempty(temp)
+                result = nan;
+            else
+                result = str2num(temp{1});
+            end
+        end
+
         function newid = fileid(rawid)
             [~,rawid,~] = fileparts(rawid); 'D:\Old_stimuli_before220901\O686_Ephys_W\Z06\O686_Z06F1_Cons.txt';
             birdname = regexp(rawid,'[OGBYR]\d{3}','match');
@@ -115,6 +124,7 @@ classdef Convert
         end
           
         function new_sptimes = sptimesOnset2Zero(sptimes, onset_time)
+            %以输入的onset time为参考点重新计算 sptimes的时间点
             % Convert the onset of sptimes to zeros
             for k = 1: length(sptimes)
                 new_sptimes{k} = sptimes{k} - onset_time;
@@ -123,7 +133,8 @@ classdef Convert
         end
         
         function rename(dirpath,ext,old,new)
-            
+            % 重命名文件
+            % 注意使用中的危险，一旦出现错误的命名就很难恢复，需要先拷贝一两个文件测试一下
             
             files = dir(sprintf('%s%s%s',dirpath,'\',ext));
             % Loop through each
@@ -140,8 +151,6 @@ classdef Convert
                 
                 newname = sprintf('%s%s',f,ext);
                 
-                
-                
                 % If not the same, rename
                 if ~strcmp(fullfile(files(id).folder,files(id).name), fullfile(files(id).folder,newname))
                     movefile(fullfile(files(id).folder,files(id).name), fullfile(files(id).folder,newname));
@@ -153,7 +162,7 @@ classdef Convert
         end
         
         function cutwav(dir,initial,terminal)  % in order to cut off silence in wavs
-            
+            %批量对wav file进行截断，比如去掉前后的silent duration
             % read wav and remove the emptys  
          %dir = "C:\Users\Zhehao\3D Objects\wavs";initial = 2.99; terminal = 3.09;
           
@@ -175,7 +184,7 @@ classdef Convert
         end
         
         function destineydir = mergeSubfolders(complexfolder,ext)
-            
+            %整合一个复杂（多个，多层级）文件夹里所有的文件
             % "C:\Users\Zhehao\Desktop\ComplexFolder"
             
             FS = filesep;
@@ -227,6 +236,7 @@ classdef Convert
         end   
         
         function newpath = path(oldpath,handle)
+            % 转换windows系统和unix系统的路径
             switch handle
                 case 'win' % 非常简陋，不一定是对的
                     newpath = strrep(oldpath,'/','\');
@@ -275,6 +285,7 @@ classdef Convert
         end
         
         function originalImage = colorEdge(originalImage,color)
+            % 在一个图片矩阵的边缘加一层颜色圈
             
             switch color
                 case 'r'
@@ -330,7 +341,8 @@ classdef Convert
             
         end
         
-        function breakdownEphysTxt(txtfile)
+        function Frozen_breakdownEphysTxt(txtfile)
+            % txt data不再使用了，所以此方法被冻结
             
             [pathstr, oldname, ext] = fileparts(txtfile);
             
@@ -373,8 +385,7 @@ classdef Convert
             end
               
         end
-        
-        
+       
         
         function cated = catStruct(struct1, struct2)
             

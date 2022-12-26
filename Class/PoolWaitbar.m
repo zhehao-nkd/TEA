@@ -2,6 +2,7 @@ classdef PoolWaitbar < handle
     properties (SetAccess = immutable, GetAccess = private)
         Queue
         N
+        message
     end
     properties (Access = private, Transient)
         ClientHandle = []
@@ -13,13 +14,15 @@ classdef PoolWaitbar < handle
     methods (Access = private)
         function localIncrement(obj)
             obj.Count = 1 + obj.Count;
-            waitbar(obj.Count / obj.N, obj.ClientHandle);
+            waitbar(obj.Count / obj.N, obj.ClientHandle,sprintf('%s...%u/%u',obj.message,obj.Count,obj.N));
         end
     end
     methods
         function obj = PoolWaitbar(N, message)
             if nargin < 2
-                message = 'PoolWaitbar';
+                obj.message = 'PoolWaitbar';
+            else
+                obj.message = 'message';
             end
             obj.N = N;
             obj.ClientHandle = waitbar(0, message);

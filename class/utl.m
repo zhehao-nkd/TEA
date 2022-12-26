@@ -22,7 +22,38 @@ classdef Utl
             
         end
         
-        function merged = mergestruct(dir,rows) % put the need to merge mat files into the same folder
+   
+        function s = deblankl(x)
+            % 去除字符串里的空白字符
+            if ~isempty(x)
+                s = lower(x);
+                s = s(find(s~=32));
+            else
+                s = [];
+                
+            end
+        end
+        
+
+        function filename = fileparts(absolute_path)
+            % to use the fileparts function in cellfun
+            [~,filename,~] = fileparts(absolute_path);
+        end
+        
+        
+        function bucketDriveletter = bucketletter(~)
+            % get the drive letter of bucket server
+            driveletters = cellfun( @(x) char(regexp(x,'[A-Za-z]','match')), getdrives );
+            disknames = arrayfun(@DriveName,driveletters,'Uni',0);
+            bucketDriveletter = driveletters(find( ~cellfun(@isempty, regexp(disknames,'bucket'))));
+        end
+         
+    end
+    
+
+    methods(Static) % 已经冻结的方法
+
+        function merged = Frozen_mergestruct(dir,rows) % put the need to merge mat files into the same folder
             % rows specificy how many rows to merge
             files = Extract.filename(dir,'*.mat');
             summer = {};
@@ -34,16 +65,15 @@ classdef Utl
                     summer{idx} = syllables;
                 end
                 merged = horzcat(summer{:});
-                
+
             end
         end
-        
-        
-        function coreThree(path_txt,path_pl2,path_folder)
+
+        function Frozen_coreThree(path_txt,path_pl2,path_folder)
             b = Chorus(path_txt,path_pl2,path_folder);
             b.select;
             neuronlist = b.getn;
-            
+
             for k = 1: length(neuronlist)
                 thisn = neuronlist{k};
                 thisn.three;
@@ -51,24 +81,14 @@ classdef Utl
                 %thisn.ResponseBasedOrderedThreePlots;
             end
         end
-        
-        function s = deblankl(x)
-            if ~isempty(x)
-                s = lower(x);
-                s = s(find(s~=32));
-            else
-                s = [];
-                
-            end
-        end
-        
-        function p = UpdateParforWaitbar(data, h)
-%             D = parallel.pool.DataQueue;
-%             h = waitbar(0, '开始生成 Neuron objects');
-%             Utl.UpdateParforWaitbar(num_files, h);
-%             afterEach(D, @Utl.UpdateParforWaitbar);
-%             send(D, 1);
-            
+
+        function p = Frozen_UpdateParforWaitbar(data, h)
+            %             D = parallel.pool.DataQueue;
+            %             h = waitbar(0, '开始生成 Neuron objects');
+            %             Utl.UpdateParforWaitbar(num_files, h);
+            %             afterEach(D, @Utl.UpdateParforWaitbar);
+            %             send(D, 1);
+
             persistent TOTAL COUNT H
             if nargin == 2
                 % initialisation mode
@@ -83,26 +103,13 @@ classdef Utl
             end
         end
         
-        function filename = fileparts(absolute_path)
-            % to use the fileparts function in cellfun
-            [~,filename,~] = fileparts(absolute_path);
-        end
-        
-        function renamed = load(path)
+        function renamed = Frozen_load(path)
             % load variable from path and rename
             loaded = load(path);
             renamed = loaded.(subsref(fieldnames(loaded),substruct('{}',{1})));
         end
-        
-        function bucketDriveletter = bucketletter(~)
-            % get the drive letter of bucket server
-            driveletters = cellfun( @(x) char(regexp(x,'[A-Za-z]','match')), getdrives );
-            disknames = arrayfun(@DriveName,driveletters,'Uni',0);
-            bucketDriveletter = driveletters(find( ~cellfun(@isempty, regexp(disknames,'bucket'))));
-        end
-         
-    end
     
+    end
     
     
     

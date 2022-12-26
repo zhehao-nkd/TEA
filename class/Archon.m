@@ -95,9 +95,6 @@ classdef Archon
 
         end
 
-        function Three(a)
-
-        end
     end
 
 
@@ -291,6 +288,80 @@ classdef Archon
 
         % 把源数据的命名格式统一
 
+        function uncompleted_folders = verifyIfFeatureFilesAreCompleted(parentdir)
+            % 在使用sap生成acoustic feature
+            % files的时候，会出现随机的数据丢失，似乎多集中于以repla命名的数据里面，
+            %这个function的作用就是找出有数据丢失的zpfolders
+            uncompleted_folders = struct;
+            count = 0;
+
+            temp = Extract.foldersAllLevel(parentdir);
+            temp = temp(find(cellfun(@isempty,regexp(cellstr(temp),'\$')))); %去除被隐藏的文件夹
+            zp_folders = {temp{find(~cellfun(@isempty,regexp(temp,'[ZP]\d+$')))}}.'; % folders ended with ZP and number
+
+            for k = 1:length(zp_folders)
+
+                num_wav = length(Extract.filename(fullfile(zp_folders{k},'SingleChannel_Merged_Stimuli'),'*.wav'));
+
+                txtfiles = Extract.filename(fullfile(zp_folders{k},'Feature'),'*.txt');
+                infopath = txtfiles{find(~cellfun(@isempty,regexp(txtfiles,'Info')))};
+                fid = fopen(infopath);
+                lines =  textscan(fid,'%s','delimiter','\n');
+                lines = lines{1};
+                num_records = length(lines) - 1;
+
+                if num_records < num_wav
+                    count = count + 1;
+                    uncompleted_folders(count).foldername = zp_folders{k};
+                    uncompleted_folders(count).numfile = num_wav;
+                    uncompleted_folders(count).numrecord = num_records;
+                end
+
+            end
+
+            uncompleted_folders = uncompleted_folders.';
+
+
+        end
+ 
+
+        function error = reCreate(targetdir)
+            % 在原位置重新生成AnalysisObject，当Analysis的生成代码发生重要变化的时候
+            error = struct;
+            matfiles = Extract.filesAllLevel(targetdir, '*.mat');
+            unpack = @(x) x{1};
+            wb = PoolWaitbar(length(matfiles),'重新生成Neurons');
+            parfor k = 1:length(matfiles) % parfor
+                try
+                    birdname = unpack(regexp(matfiles{k},'[OGBYR]\d{3}','match'));
+                    zpid = unpack(regexp(matfiles{k},'[ZP]\d{2}','match'));
+                    SPKC = unpack(regexp(matfiles{k},'SPKC\d{2}','match'));
+                    channel = str2num(unpack(regexp(matfiles{k},'(?<=SPKC\d{2}_)\d','match')));
+
+                    A = Archon.genAnalysis('D:',birdname,zpid,SPKC,channel,0);
+                    INF = A.getNinfo;
+                    Archon.parsave_reCreate(A,INF,matfiles{k});
+                    %                     save(matfiles{k},'A','INF','-v7.3'); % 保存的路径上不能存在中文
+                catch ME
+                    error(k).num = k;
+                    error(k).ME = ME;
+                    error(k).identifier = ME.identifier;
+                    error(k).matfile = matfiles{k};
+                end
+
+                increment(wb);
+
+            end
+
+  
+        end
+
+        function parsave_reCreate(A,INF,filename)
+
+            save(filename,'A','INF','-v7.3');
+
+        end
+
         function standardizeRawname(targetdir) % 标准化文件夹里所有raw data的名称
             Archon.padFilename(targetdir, '*.txt')
             Archon.padFilename(targetdir, '*.pl2')
@@ -427,7 +498,6 @@ classdef Archon
 
                 waitbar(kk/length(neurondir),wb2,sprintf('正处理 %u个神经元文件夹中的%u',length(neurondir) ,kk))
 
-
                 %判断 pl2文件是否完备
                 pl2files = Extract.filename(neurondir{kk},'*.pl2');
                 mergeids = find(~cellfun(@isempty, regexp(cellstr(pl2files),'merge')));
@@ -445,7 +515,7 @@ classdef Archon
                 try
                     stimuli_zpids = find(~cellfun(@isempty, regexp(cellstr(stimulidir),'[ZP]\d+F\d+'))); %剔除命名不合规范的stimuli文件夹
                     valid_stimulidir = stimulidir(stimuli_zpids);
-                    sumtest = setdiff(zpids,mergeids) + stimuli_zpids; % if different length, cannot be summed
+                    sumtest = setdiff(zpids,mergeids) + stimuli_zpids.'; % if different length, cannot be summed
                 catch
                     malcount = malcount + 1;
                     malfunctions(malcount).birdname = regexp(neurondir{kk},'[BRGYOX]\d{3}','match','once');
@@ -459,8 +529,6 @@ classdef Archon
                 
                 for index = 1: length(valid_pl2files)  % iterate 对每一个stimulidir
 
-                    
-
                     if  ~isempty(regexp(valid_pl2files{index},'merge'))
                         coresp_stimulidirs = valid_stimulidir;
                     else
@@ -471,7 +539,6 @@ classdef Archon
                     pl2info = PL2GetFileIndex(valid_pl2files{index});
 
                     cated_spikechannels = vertcat(pl2info.SpikeChannels{:});
-
 
                     try
                         num_unit = 0;
@@ -507,6 +574,7 @@ classdef Archon
                             neuroster(where_it_is).pl2files  = {neuroster(count).pl2files,valid_pl2files};
                             neuroster(where_it_is).stimulidirs =  {neuroster(count).stimulidirs,coresp_stimulidirs};
                         else
+                            disp(kk)
                             count = count + 1;
                             neuroster(count).neurondir = neurondir{kk};
                             neuroster(count).fullname = bird_channelunit;
@@ -655,20 +723,20 @@ classdef Archon
             save(A.formated_name,'A','-v7.3');
         end
 
-        function A = genAnalysis(sourcedir,birdname,ZPid,channelname,unit) % generate Neuron
-            arch = Archon(sourcedir);%Archon('D:/');
-%             if ~isempty(find(~cellfun(@isempty, regexp(cellstr(Extract.filesAllLevel('./','*.mat')),...
-%                     sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))))) % 如果当前folder已含有同名Analysis文件
-%                 disp('该Neuron的分析已经存在,跳过');
-%                 A = [];
-%                 return
-%             end
-            hitid = find(~cellfun(@isempty,regexp(cellstr(arch.bird_folders),birdname)));
-            hitbird_folders = arch.bird_folders(hitid);
+        function  genAnalysis(sourcedir,birdname,ZPid,channelname,unit,whether_to_save) % generate Neuron
+            %  arch = Archon(sourcedir);%Archon('D:/');
+            temp = Extract.folder(sourcedir); % Extract.foldersAllLevel
+            bird_folders  = {temp{find(~cellfun(@isempty,regexp(temp,'[ZP]\d+$')))}}.'; % folders ended with ZP and number
+            if isempty(bird_folders)
+                temp = Extract.foldersAllLevel(sourcedir);
+                bird_folders  = {temp{find(~cellfun(@isempty,regexp(temp,'[ZP]\d+$')))}}.';
+            end
+            hitid = find(~cellfun(@isempty,regexp(cellstr(bird_folders ),birdname)));
+            hitbird_folders = bird_folders(hitid);
 
 
             % 处理hit folder 内部的 subfolders
-%             subdirs = Extract.folder(hitbird_folder);
+            %             subdirs = Extract.folder(hitbird_folder);
             hitZorP = find(~cellfun(@isempty,regexp(cellstr(hitbird_folders),ZPid)));
             hit_subdir = hitbird_folders{hitZorP};
 
@@ -681,8 +749,8 @@ classdef Archon
                 valid_pl2files = pl2files(setdiff(zpids,mergeids)); % 剔除含有merge关键词的 pl2文件
             end
 
-%             zpids = find(~cellfun(@isempty, regexp(cellstr(txtfiles),'[ZP]\d+F\d+'))); % same record
-%             SPKCid = find(~cellfun(@isempty, regexp(cellstr(txtfiles),channelname))); % same channel
+            %             zpids = find(~cellfun(@isempty, regexp(cellstr(txtfiles),'[ZP]\d+F\d+'))); % same record
+            %             SPKCid = find(~cellfun(@isempty, regexp(cellstr(txtfiles),channelname))); % same channel
 
             stimuli_collect_dir = append(hit_subdir,'\Stimuli');
             stimuli_dirs = Extract.folder(stimuli_collect_dir ).';
@@ -694,8 +762,8 @@ classdef Archon
                 fid = regexp(valid_pl2files{k},'(?<=F)\d*','match'); % id for the file rank
 
                 % find corresponding txt file
-%                 followF = regexp(cellstr(txtfiles),'(?<=F)\d*','match');
-%                 duiying_txt_id = find(~cellfun(@isempty, regexp([followF{:}].', convertStringsToChars(fid))));
+                %                 followF = regexp(cellstr(txtfiles),'(?<=F)\d*','match');
+                %                 duiying_txt_id = find(~cellfun(@isempty, regexp([followF{:}].', convertStringsToChars(fid))));
                 followF = regexp(cellstr(stimuli_dirs),'(?<=F)\d*','match');
                 followF = cellfun(@str2num, [followF{:}].','Uni',0);
                 followF = [followF{:}].';
@@ -719,35 +787,36 @@ classdef Archon
                 if isempty(b.sneu)
                     continue;
                 end
-                N = b.getn{1};
+                Exp = b.getExperiments{1};
                 % allocate sap-based feature information to each neuron
-%                 try
-%                     feature_dir = append(hit_subdir,'\Feature');
-%                     feature_files = Extract.filename(feature_dir,'*.txt');
-%                     datafile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Data')));
-%                     infofile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Info')));
-%                     % exist(feature_dir,'dir')
-%                     sorted_data = Experiment.extractFeaturesFromSapRawData(feature_files{datafile_id} , feature_files{infofile_id} );
-%                     N.setEachStimuliSapFeatures(sorted_data);
-%                     N.calMeanFeatures;
-%                 catch
-%                 end
-
-                %duiying_song_folder
-                Ns{k} = N;
+                %                 try
+                feature_dir = append(hit_subdir,'\Feature');
+                feature_files = Extract.filename(feature_dir,'*.txt');
+                datafile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Data')));
+                infofile_id = find(~cellfun(@isempty, regexp(cellstr(feature_files),'Info')));
+                Exp.setFeatures_SAT;
+                %                     sorted_data = Experiment.extractFeaturesFromSapRawData(feature_files{datafile_id} , feature_files{infofile_id} );
+                %                     Exp.setFeatures_SAP(sorted_data);
+                Exp.calMeanFeatures;
+                %                 catch
+                %                 end
+                experiments{k} = Exp;
 
             end
+            eleinf = load("F:\S01_GeneratedNeurons_20221209\all_eleinf.mat").eleinf;
+            A = Neuron(experiments,eleinf);
+            % A.calHarmRatio;
+            info = A.info;
 
-            A = Neuron(Ns);
-            %A.calHarmRatio;
 
+            if ~exist('whether_to_save','var')||whether_to_save==1
 
-
-            save(A.formated_name,'A','-v7.3'); % 保存的路径上不能存在中文
+                save(A.info.formated_name,'A','info','-v7.3'); % 保存的路径上不能存在中文
+            end
 
         end
 
-        function rest_roster = batch_genAnalysis(input_roster, from_where)% 生成Analysis object
+        function rest_roster = batch_genAnalysis(input_roster, from_where, whichDisk)% 生成Analysis object
 
             dbstop if error
             tic
@@ -759,7 +828,6 @@ classdef Archon
 
 
             for k = from_where: length(input_roster) % par
-                %                 try
                 birdname = input_roster(k).birdname;
                 ZPid = input_roster(k).neuronid;
                 channelname = input_roster(k).channelname;
@@ -767,38 +835,59 @@ classdef Archon
                 diskname = regexp(input_roster(k).neurondir,'[A-Z]:','match');
                 diskname = diskname{1};
 
-                if ~isfile(sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))
+                if ~isfile(sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit)) %检查当前的文件夹
                     count = count + 1;
                     not_exist{count} = input_roster(k);
-                    %                         Archon.genAnalysis(diskname,birdname,ZPid,channelname,unit);
+                    %  Archon.genAnalysis(diskname,birdname,ZPid,channelname,unit);
                 end
             end
 
             rest_roster = vertcat(not_exist{:});
+
+            if exist('whichDisk','var')
+
+                diskname = whichDisk;
+            else
+
+                diskname = regexp(rest_roster(1).neurondir,'[A-Z]:','match');
+                diskname = diskname{1};
+
+            end
+
+
 
             D = parallel.pool.DataQueue;
             h = waitbar(0, '开始生成 Neuron objects');
             Utl.UpdateParforWaitbar(length(rest_roster), h);
             afterEach(D, @Utl.UpdateParforWaitbar);
 
-          
-            for k = from_where: length(rest_roster) % par
-%                 try
+            if length(rest_roster) == 0
+                rest_roster = [];
+                return
+            end
+
+            birddirs = Extract.folder(diskname);
+            
+           parfor k = from_where: length(rest_roster) % par
+                try
                     birdname = rest_roster(k).birdname;
                     ZPid = rest_roster(k).neuronid;
                     channelname = rest_roster(k).channelname;
                     unit = rest_roster(k).unit;
-                    diskname = regexp(rest_roster(k).neurondir,'[A-Z]:','match');
-                    diskname = diskname{1};
+
+                    hitted_birddirs = birddirs(find(~cellfun(@isempty, regexp(birddirs,birdname))));
+
 
                     if ~isfile(sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))
-                        Archon.genAnalysis(diskname,birdname,ZPid,channelname,unit);
+
+                        Archon.genAnalysis(hitted_birddirs,birdname,ZPid,channelname,unit);
                     end
-%                 catch ME
-%                     rest_roster(k).ME = ME;
-%                     rest_roster(k).identifier = ME.identifier;
-%                     disp(ME);
-%                 end
+                catch ME
+                    %                   pause
+                    rest_roster(k).ME = ME;
+                    rest_roster(k).identifier = ME.identifier;
+                    disp(ME);
+                end
 
                 send(D, 1);
             end
@@ -904,7 +993,6 @@ classdef Archon
             end
 
         end
-
 
 
         function [birddir,zpdir] = getDirpath(birdname,ZPid)

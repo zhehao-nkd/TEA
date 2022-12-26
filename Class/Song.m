@@ -1,211 +1,177 @@
 classdef Song < handle
-    %@ 类说明 Member class of Neuron
+    %@ 类说明 Member class of Neuron 专门process Songs
     
     properties
-        replalist
-        list
+        normlist
         formated_name
+        list18
+        info
     end
     
     methods
         
-        function rp = Song(list)
-            % 从 Neuron 文件中提取neuron对replas的反应，已经具体的replas的名称
-            rp.list = list;
-            rp.judgeReplaResp;
-            replalist = rp.list(find(~cellfun(@isempty, regexp(cellstr({list.stimuliname}.'),'Repla'))));
-            
-            Replst_fnames = [replalist.stimuliname].';
-            locY = @(x,y) x{y}; % get element in location y
-            for k = 1:length(replalist)
-                splited = split(Replst_fnames{k},{'-before-','-gapis-'});
-                replalist(k).bname1 = Convert.bid(splited{1});
-                replalist(k).fid1 = str2num(locY(split(splited{1},'-'),4));
-                replalist(k).bname2 = Convert.bid(splited{2});
-                replalist(k).fid2 = str2num(locY(split(splited{2},'-'),3));
-                replalist(k).concat1 = sprintf('%s-%02u',replalist(k).bname1,replalist(k).fid1);
-                replalist(k).concat2 = sprintf('%s-%02u',replalist(k).bname2,replalist(k).fid2);
-                replalist(k).fullrepla = sprintf('%s-%02u-%s-%02u',replalist(k).bname1,replalist(k).fid1,replalist(k).bname2,replalist(k).fid2);
+        function sg = Song(input_list)
+            % 从 Neuron 文件中提取neuron对song的反应
+            % 把提取experiment list信息的方法放在Experiment里面，但是input_list需要用judge
+            % response过的list
+            % 以上弃用
+
+            % 首先把list根据Fid分裂开来，然后再对每一个分裂的list算num of
+            % norms的个数，取放了最多的stimuli的分裂list作为normlist
+            %如果有重复，那么就接受有多个normlist？ 或者产生一个替补normlist，因为之所以会有重复原因就在于替补
+            %此外还需要建立一个名为sibling的class
+            separated ={};
+            unique_fids = unique({input_list.Fid}.');
+            for k = 1:length(unique_fids) %有多少file，对应多少experiment
+                temp = input_list(find(~cellfun(@isempty, regexp(cellstr({input_list.Fid}.'),unique_fids{k}))));
+                separated{k}= temp(find(~cellfun(@isempty, regexp(cellstr({temp.stimuliname}.'),'norm'))));
             end
-            
-            rp.replalist = replalist;
-            
+
+     
+            [~,maxloc] = max(cellfun(@length,separated));
+            sg.normlist = separated{maxloc};
+
+
+%             sg.normlist = input_list(find(~cellfun(@isempty, regexp(cellstr({input_list.stimuliname}.'),'norm'))));
+            sg.list18 = sg.response18;
+            sg.getInfo;
             
         end
+
+        function sg = getInfo(sg)
+
+            respond_18_ids = find([sg.list18.label].' ==1);
+            sg.info.num_resp_to_18 = length(respond_18_ids);
+            if ~(sg.info.num_resp_to_18 == 0)
+                sg.info.name_resp_to_18 = cellfun(@Convert.bid,cellstr({sg.list18(respond_18_ids).stimuliname}.'),'Uni',0);
+            else
+                sg.info.name_resp_to_18 =[];
+            end
+
+        end
+
+        function list18 = response18(sg)
+
+
+            names18 = {'B346','B512','B521','B554','B606','G429','G506','G518','G548','G573',...
+                'G578','O331','O507','O509','O540','Y515','Y606','Y616'};
+
+
+
+%             findit = @(x) find(~cellfun(@isempty, regexp(cellstr({sg.normlist.stimuliname}.'),x)));
+
+            list18 = sg.normlist(~cellfun(@isempty, regexp(cellstr({sg.normlist.stimuliname}.'),strjoin(names18,'|') ))) ;
+
+
+
+        end
         
-        function  rp = judgeReplaResp(rp)
-            dbstop if error
-            
-            % evaluate the responsiveness of song replacements
-            replaids = find( ~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),'Repla') ));
-            
-            if isempty(replaids)
+        function drawThree(sg)
+
+            I = {};
+            for idx = 1: length(sg.normlist)
+                figure('Color','w','Position', [1933 672 673 497]);
+                Draw.three(sg.normlist(normids(idx)).plty,sg.normlist(normids(idx)).fs,sg.normlist(normids(idx)).pltsptimes);
+                frame = getframe(gcf);
+                I{idx} = frame.cdata;
+                close(gcf);
+            end
+
+%             figure('Color','w','Position', [1933 672 673 497]);
+%             neu.drawFirstWaveform;     % draw waveform
+%             frame = getframe(gcf);
+%             I{length(I)+ 1} = frame.cdata;
+%             close(gcf);
+
+            % draw blank white
+            lieshu = 9;
+            hangshu = ceil(length(I)/lieshu);
+            rest = lieshu*hangshu - length(I);
+            white = uint8(255*ones(size(I{1})));
+
+            if rest > 0
+                for k = 1:rest
+                    I = [I,white];
+                end
+            end
+
+            reshapedI = reshape(I, lieshu,[])';
+            clear I
+            img = cell2mat(reshapedI);
+            imwrite(img,sprintf('燕NormThree_%s.png',neu.formated_name));
+
+
+        end
+
+        function img = saveDrawSortedRespToCons(neu) %做三分析图，把使反应的neuron标记为黄色，不反应的不标记
+            %非常难以找到这个function
+
+            neu.judgeConResp;
+            %             finalfig = getframe(gcf).cdata;
+            %             close(gcf)
+            ids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'norm')));
+            normlist = neu.list(ids);
+            if isempty(normlist)
                 return
             end
-            % Find out that the repla stimuliname correspond to how many natrual songs
-            bnames = unique(cellfun(@(x)Convert.bid(x,2),[rp.list(replaids).stimuliname].','Uni',0));
-            
-            findCorrespConID = @(x) intersect(find( ~cellfun(@isempty, regexp([rp.list.stimuliname].','norm') )),...
-                find( ~cellfun(@isempty, regexp([rp.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
-            
-            findCorrespReplaID = @(x) intersect(find( ~cellfun(@isempty, regexp([rp.list.stimuliname].','Repla') )),...
-                find( ~cellfun(@isempty, regexp([rp.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
+            %sorted_fraglist = table2struct(sortrows( struct2table(fraglist) ,'maxvalue','descend'));
+            sorted_normlist = table2struct(sortrows( struct2table(normlist) ,'maxsdf','descend'));
 
-            for k = 1:length(bnames)
-             
-                rids = findCorrespReplaID( sprintf('(?<=before)\\S+%s',bnames{k} ) );
 
-                nid = findCorrespConID(bnames{k}); % 有可能得到多个nid
-                % 如果有多个nid
-                if length(nid) > 1
-                    minlength = [];
-                    for bb = 1:length(nid)
-                        minlength(bb) = min(rids - nid(bb));
-                    end
-                    [~,mindex] = min(abs(minlength)); % 找到和repla stimuli同一组的cons，也就是编号最接近的
-                    nid = nid(mindex);
-                    disp('Dangerous Code: @Neuron.judgeReplaResp');
+            I = {}; % collection of frag-response-three images
+            for k = 1: length(sorted_normlist)
+
+                if sorted_normlist(k).label == 0
+                    h =  figure('Position',[1606 287 1343 660],'Color','w');
+                elseif sorted_normlist(k).label == 1
+                    h =  figure('Position',[1606 287 1343 660],'Color','y');
                 end
 
-                
-         
-                for kk = 1:length(rids)
-                    [Ini_y,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla(...
-                        rp.list(nid).y,...
-                        rp.list(rids(kk)).y);
-%                     figure; subplot(211);Draw.spec(rp.list(nid).y,32000);subplot(212); Draw.spec(rp.list(rids(kk)).y,32000);
-                    if Ini_y == 0
-                        Ini_y = 1; % dangerous code
-                    end
-                    if isempty(Ini_y)|| Ini_y>length(rp.list(nid).y)
-                        continue  % another dangerous code
-                    end
+                %h.WindowState = 'maximized';
+                Draw.two(sorted_normlist(k).plty,sorted_normlist(k).fs,sorted_normlist(k).pltsptimes);
+                xlabel(sprintf('%s-maxsdf: %f',sorted_normlist(k).stimuliname,sorted_normlist(k).maxsdf));
+                temp = getframe(gcf);
+                I{k} = temp.cdata;
 
-                    num_of_zeros = find(rp.list(nid).y(Ini_y:end),1)-1; % 在分歧点后多长一段是0
-                    Ini_y = Ini_y + num_of_zeros;
-                    Ini_replay = Ini_replay + num_of_zeros;
-                    try
-                        rp.list(rids(kk)).targety = rp.list(rids(kk)).y(Ini_replay:Ini_replay + 0.2*32000); % 截取200ms
-                        rp.list(rids(kk)).replaceparty = rp.list(rids(kk)).y(1:Ini_replay ); % 被替换的那一部分的y值
-                    catch % if the second index overceed
-                        rp.list(rids(kk)).targety = rp.list(rids(kk)).y(Ini_replay:end); % 截取到 end
-                        rp.list(rids(kk)).replaceparty = rp.list(rids(kk)).y(1:Ini_replay ); % 被替换的那一部分的y值
-                        disp(' MEssage@Neuron.judgeReplaResp :Overceed');
-                    end
-                    rp.list(rids(kk)).targetsptimes = Extract.sptimes_resetSP(rp.list(rids(kk)).sptimes,Ini_replay/32000,(Ini_replay + 0.2*32000)/32000);
-                    rp.list(rids(kk)).replacepartsptimes = Extract.sptimes_resetSP(... % replacepart, sptimes
-                        rp.list(rids(kk)).sptimes,1,Ini_replay/32000);
-                    % corresponding pre (targety) data
-                    rp.list(rids(kk)).pretargety = zeros(length(rp.list(rids(kk)).targety),1);%rp.list(nid).prey(end - 0.1*32000:end); % 截取100ms
-                    rp.list(rids(kk)).pretargetsptimes = Extract.sptimes_resetSP(...
-                        rp.list(rids(kk)).presptimes,length(rp.list(rids(kk)).pretargety)/32000 -0.2*32000,length(rp.list(rids(kk)).pretargety)/32000 );%length(rp.list(rids(kk)).prey)/32000 -0.1*32000
-                    %calculate and judege whether the neuron respond to the target area or not
-                    [rp.list(rids(kk)).replaresp,rp.list(rids(kk)).replaPvalue] = Neuron.UseTtestToJudegeRespOrNot(...
-                        rp.list(rids(kk)).targety,rp.list(rids(kk)).targetsptimes,...
-                        rp.list(rids(kk)).pretargety ,rp.list(rids(kk)).pretargetsptimes ,32000);
-                    rp.list(rids(kk)).targetfr = length(vertcat(rp.list(rids(kk)).targetsptimes{:}))/200; % per milisecond
-                end
-                
-                
+
+                close(h)
             end
-            
-            
+
+            %             I{k+1} = finalfig; % performance figure
+
+            %             figure;
+            %             n.draw_waveform;     % draw waveform
+            %             frame = getframe(gcf);
+            %             I{length(I)+ 1} = frame.cdata;
+            %             close(gcf);
+
+            % draw blank white
+            lieshu = 10;
+            hangshu = ceil(length(I)/lieshu);
+            rest = lieshu*hangshu - length(I);
+            white = uint8(255*ones(size(I{1})));
+
+            if rest > 0
+                for k = 1:rest
+                    I = [I,white];
+                end
+            end
+
+            reshapedI = reshape(I, lieshu,[])';
+            clear I;
+            img = cell2mat(reshapedI);
+            imwrite(img,sprintf('秦RespToSongs_%s.png',neu.info.formated_name));
+
         end
-        
-        function toCheck(rp)
-            % 功能说明：把replalist的神经元反应结果作图，进而探明到底哪些replacement可以使神经元反应
-           dbstop if error
-            replalist = rp.replalist; % let us make replalist as an internal variable
-            if isempty(replalist)
-                return
-            end
-            replalist = table2struct(sortrows(struct2table(replalist),'targetfr','descend')); % rank by firing rate
-            
-           
-            replafig = {};
-            prefig = {};
-            replacepartfig = {};
-            for k = 1:length(replalist)
-                
-                figure('Position',[2189 255 560 1000])
-                Draw.two(replalist(k).targety, 32000,replalist(k).targetsptimes); % something wrong with the getReplallist
-                 xlabel(sprintf(...
-                    'mFR (target dur): %f, Result: % u ',replalist(k).targetfr,replalist(k).replaresp));%???? big problem here
-                replacepartfig {k} = getframe(gcf).cdata;
-                replafig{k} = getframe(gcf).cdata;
-                
-                close(gcf)
-                
-                figure('Position',[2189 255 560 1000])  %basline level prestimuli
-                Draw.two(replalist(k).pretargety, 32000,replalist(k).pretargetsptimes);
-                prefig{k} = getframe(gcf).cdata;
-                close(gcf)
-                
-                
-%                 figure('Position',[2189 255 200 840]) % the
-%                 Draw.two(replalist(k).replaceparty, 32000,replalist(k).replacepartsptimes);
-%                 replacepartfig {k} = getframe(gcf).cdata;
-%                 close(gcf)
-                
-                figure('Position',[2189 255 400 1000])
-               
-                Draw.two(replalist(k).replaceparty, 32000,replalist(k).replacepartsptimes);
-                replacepartfig {k} = getframe(gcf).cdata;
-                close(gcf)
-            end
-            
-            sum_replafig = vertcat(replafig{:});
-            sum_prefig = vertcat(prefig{:});
-            sum_replacepartfig = vertcat(replacepartfig{:});
-            sum_all = horzcat(sum_prefig,sum_replacepartfig,sum_replafig);
-            
-            %imwrite(sum_two,sprintf('%s_Sum_repla_fig.png',A.formated_name));
-            
-            imwrite(sum_all,sprintf('%s_Sum_preNreplaceNtarget.png',rp.formated_name));
-            
-        end
-        
-        
-        function replalist = does_neuron_respond_to_specific_transition(rp,transition_statics,syllable_theircatego)
-            % 根据Catego Trans Probility，解答最终的问题，即是否不常见的combination不会使neuron反应，或者正相反
-            replalist = rp.replalist;
-            for k = 1:length(replalist)
-                
-                ids1 = find(~cellfun(@isempty, regexp({syllable_theircatego.unifragnames}.', replalist(k).concat1)));
-                
-                if ~isempty(ids1)
-                    replalist(k).catego1 =  syllable_theircatego(ids1).catego;
-                else
-                    replalist(k).catego1 = 0;
-                end
-                
-                ids2 = find(~cellfun(@isempty, regexp({syllable_theircatego.unifragnames}.', replalist(k).concat2)));
-                if ~isempty(ids2)
-                    replalist(k).catego2 =  syllable_theircatego(ids2).catego;
-                else
-                    replalist(k).catego2 = 0;
-                end
-                
-                replalist(k).catego1catego2 = [replalist(k).catego1,replalist(k).catego2];
-                
-                transID = find(cellfun(@(x)isequal(replalist(k).catego1catego2,x),{transition_statics.firstsecond}.','Uni',1));
-                if ~isempty(transID)
-                    replalist(k).transrank = transition_statics(transID).rank;
-                    replalist(k).count = transition_statics(transID).counts;
-                     replalist(k).chance = transition_statics(transID).chance;
-                else
-                    replalist(k).transrank = 0;
-                    replalist(k).count = 0;
-                    replalist(k).chance = 0;
-                end
-                
-            end
-            
-        end
-        
+
+    
     end
     
     methods(Static)
+
+
+   
+
         
         function namelist = get_all_elements_involved(rawdir_path)
             % 功能说明： 从dir里包含的所用音频文件里提取参与到replacement的音节的名称，称为namelist

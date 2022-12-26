@@ -1,5 +1,6 @@
 classdef MetaStimuli < handle
     % Metadata of stimuli
+    % 读取stimuli的分割文件，生成eleinf
     %This class read and process the segmentation information of each stimuli to generat eth metadata of a stimuli set
 
     properties

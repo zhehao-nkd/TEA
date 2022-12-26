@@ -9,7 +9,7 @@ classdef Trigger < handle
         pl2name
         raw
         trigger_fs
-        inputpath
+        path_pl2 % input path
         recording_time %记录时间
         
     end
@@ -18,7 +18,7 @@ classdef Trigger < handle
         
         function t = Trigger(path_pl2)
             
-            t.inputpath = path_pl2;
+            t.path_pl2 = path_pl2;
             [~,t.pl2name,~] = fileparts(path_pl2);
             path_pl2 = convertStringsToChars(path_pl2);
             try
@@ -30,15 +30,14 @@ classdef Trigger < handle
             PULSE_LOCATION = 0;
             % find the strat and stop field
             
-            if ~isempty(regexp(pl2info.CreatorSoftwareName,'Zeus|Version'))
+            if ~isempty(regexp(pl2info.CreatorSoftwareName,'Zeus')) || ~isempty(find(~arrayfun(@isempty, regexp(pl2info.FilePath,'Z\d{2}')))) % zeus
                 if  isempty(vertcat(pl2info.EventChannels{:}))||isempty(find(~cellfun(@isempty, regexp( {vertcat(pl2info.EventChannels{:}).Name}.','DIG01'))))
                     code_method = 2;
                 else
                     code_method = 1;
                 end
-            elseif ~isempty(regexp(pl2info.CreatorSoftwareName,'OmniPlex'))
-                code_method = 3;
-                
+            elseif ~isempty(regexp(pl2info.CreatorSoftwareName,'OmniPlex')) || ~isempty(find(~arrayfun(@isempty, regexp(pl2info.FilePath,'P\d{2}')))) % plexon
+                code_method = 3;   
             end
             
             switch code_method
@@ -52,7 +51,7 @@ classdef Trigger < handle
             
         end
         
-        function time = getTime(t, pulse_number)
+        function time = Frozen_getTime(t, pulse_number)
             if exist('pulse_number','var')
                 time = t.info(pulse_number).time;
             else
@@ -61,6 +60,7 @@ classdef Trigger < handle
         end
         
         function properties = getsingle(t, which)
+            % 找到某一个stimuli对应的trigger标记的信息
             properties.equipment = t.equipment;
             properties.info = t.info(which);
             properties.pl2name = t.pl2name;
@@ -72,13 +72,11 @@ classdef Trigger < handle
         
         function info = digextract(t)
             
-            
+
             fs = 30000;
             t.trigger_fs = fs;
             pulse_initials = t.raw.Timestamps;
-            
-            
-            
+
             % figure; line([pulse_initials,pulse_initials],[0,5]); %for debug
             
             m = 1;
@@ -155,177 +153,193 @@ classdef Trigger < handle
             
         end
         
-        function info = Extract(t)
-            
-            fs = t.raw.ADFreq; % avoid hard-coding;
+        function suminfo = Extract(t)
+
+            [adfreq, ~, ts, frag_nums, ad] = plx_ad(t.path_pl2,'AI01'); % figure; plot(ad);
+            if length(ad) <= 1 % 当AI01 channel不存在
+                [adfreq, ~, ts, frag_nums, ad] = plx_ad(t.path_pl2,'AIN02');
+            end
+
+            if frag_nums(length(frag_nums))/adfreq < 45 % 有些时候frag_nums会出现问题,最后一段有一个极短的section, 比如小于三十秒
+                frag_nums = frag_nums(1:end-1);
+            end
+            fs = adfreq; % avoid hard-coding;
             t.trigger_fs = fs;
-            %dbstop if error
-%             if abs(min(t.raw.Values)) < abs(max(t.raw.Values))
-%                 pulse_channel = t.raw.Values;
-%             elseif abs(min(t.raw.Values)) > abs(max(t.raw.Values))
-%                 pulse_channel = - t.raw.Values;
-%             end
 
-            if mean(t.raw.Values) > 0
-                pulse_channel = t.raw.Values;
-            elseif mean(t.raw.Values) < 0
-                pulse_channel = - t.raw.Values;
-            end
-%             figure; plot(pulse_channel)
+            info_collect = {};
+            counter = 0;
 
-% 
-%             length(find(t.raw.Values>1000)) length(find(t.raw.Values<-1000))
-            %detecting triggers and recording their time
-            
-            % debug pulse_channel = trigger.Values;
-            
-            MIN_THRESHOLD = 25000; % May vary in different situations
-            MAX_THRESHOLD = 40000; % May vary in different situations
-            
-            if max(pulse_channel) < MIN_THRESHOLD % Sarah's case
-                MAX_THRESHOLD = max(pulse_channel)*1.3;
-                MIN_THRESHOLD = max(pulse_channel)*0.7;
-            end
-            
-            pulse_channel(pulse_channel < MIN_THRESHOLD | pulse_channel > MAX_THRESHOLD) = 0; %Convert singals of pulse channel to 0 and 1
-            %figure; plot(pulse_channel);
-            
-            pulse_channel(pulse_channel ~= 0) = 1; % based on the threshold
-            %figure; plot(pulse_channel);
-            
-            
-            
-            k = find(pulse_channel);   % Find all the 1
-            
-            if k(1) == 1 % incase that k(1) = 1, when there are noises interrrput the pulse channel
-                tempinitial = find(pulse_channel == 0);
-                newinitial = tempinitial(1);
-                pulse_channel = pulse_channel(newinitial:end);
-                k = find(pulse_channel);
-            end
-            
-            %    difference =  k(2:end)- k(1:end-1) ;
-            %    idxDif = find(difference ~= 1);
-            pulse_initials = k(pulse_channel(k - 1)==0);      % Find the initial of all the pulses
-            pulse_ends = k(pulse_channel(k + 1)==0);          % Find the ends of all the pulses
-            % Remove noises  这个不一定对， 可能 10e-3 要改
-            for n = 1:length(pulse_initials)
-                if pulse_ends(n) - pulse_initials(n) < 10e-3 / 2 * fs % 20000 is the fs of AI channel
-                    pulse_initials(n) = NaN;
-                    pulse_ends(n) = NaN;
+            edited_frag_nums = [0;frag_nums(1:end-1)]; % 暂时想不到好的命名方法了
+
+            for k = 1:length(frag_nums) % fn 是每一个有data的section
+                initial_timepoint = ts(k)*adfreq;
+                values = ad(sum(edited_frag_nums(1:k)) + 1:sum(frag_nums(1:k)));
+                % figure; plot(values);
+
+                if mean(values) > 0
+                    pulse_channel = values;
+                elseif mean(values) < 0
+                    pulse_channel = - values;
                 end
-            end
-            pulse_initials (isnan(pulse_initials)) = [];
-            pulse_ends (isnan(pulse_ends)) = [];
-            % 根据 diff的种类选择 decode 的 类型
-            ini_diffs =  round(diff(pulse_initials),-1);
-            
-            group_split_thres = 3000;
-            
-            to_judge_decode_method = ini_diffs(ini_diffs < group_split_thres);
-            if length(unique(to_judge_decode_method)) == 1
-                % use the direct decode method
-                m = 1;
-                groups ={};
-                coder.varsize(groups);
-                % As different stimuli have different number of square pulses, this works for grouping pulse clusters
-                
-                WINDOW = fs; % The length of searching window, 20000samples means 1 second
-                for n = 1: length(pulse_initials)
-                    
-                    if n == length(pulse_initials)
-                        groups{m}= [groups{m},pulse_initials(n)];
-                    else
-                        
-                        if pulse_initials(n+1)-pulse_initials(n)<WINDOW
-                            if isempty(groups)
-                                groups{m} = pulse_initials(n);
-                            else
-                                groups{m}=[ groups{m},pulse_initials(n)];
-                            end
-                            
+                % figure; plot(pulse_channel); % for debug
+
+
+                MIN_THRESHOLD = 25000; % May vary in different situations
+                MAX_THRESHOLD = 40000; % May vary in different situations
+
+%                 if max(pulse_channel) < MIN_THRESHOLD % Sarah's case
+%                     MAX_THRESHOLD = max(pulse_channel)*1.3;
+%                     MIN_THRESHOLD = max(pulse_channel)*0.7;
+%                 end
+
+                pulse_channel(pulse_channel < MIN_THRESHOLD | pulse_channel > MAX_THRESHOLD) = 0; %Convert singals of pulse channel to 0 and 1
+                %figure; plot(pulse_channel);
+                pulse_channel(pulse_channel ~= 0) = 1; % based on the threshold
+                %figure; plot(pulse_channel);
+
+
+
+                all_the_ones = find(pulse_channel);   % Find all the 1
+                if all_the_ones(1) == 1 % incase that k(1) = 1, when there are noises interrrput the pulse channel
+                    tempinitial = find(pulse_channel == 0);
+                    newinitial = tempinitial(1);
+                    pulse_channel = pulse_channel(newinitial:end);
+                    all_the_ones = find(pulse_channel);
+                end
+                pulse_initials = all_the_ones(pulse_channel(all_the_ones - 1)==0);      % Find the initial of all the pulses
+                pulse_ends = all_the_ones(pulse_channel(all_the_ones + 1)==0);          % Find the ends of all the pulses
+                % Remove noises  这个不一定对， 可能 10e-3 要改
+                for n = 1:length(pulse_initials)
+                    if pulse_ends(n) - pulse_initials(n) < 10e-3 / 2 * fs % 20000 is the fs of AI channel
+                        pulse_initials(n) = NaN;
+                        pulse_ends(n) = NaN;
+                    end
+                end
+
+                pulse_initials (isnan(pulse_initials)) = [];
+                pulse_ends (isnan(pulse_ends)) = [];
+                % 根据 diff的种类选择 decode 的 类型
+                ini_diffs =  round(diff(pulse_initials),-1);
+                group_split_thres = 3000;
+                to_judge_decode_method = ini_diffs(ini_diffs < group_split_thres);
+
+
+                if length(unique(to_judge_decode_method)) == 1 % use the direct decode method
+                    info = struct; % 初始化info
+                    m = 1;
+                    groups ={};
+                    coder.varsize(groups);
+                    % As different stimuli have different number of square pulses, this works for grouping pulse clusters
+                    WINDOW = fs; % The length of searching window, 20000samples means 1 second
+
+                    for n = 1: length(pulse_initials)
+                        if n == length(pulse_initials)
+                            groups{m}= [groups{m},pulse_initials(n)];
                         else
-                            if isempty(groups)
-                                groups{m}= pulse_initials(n);
-                                m = m+1;
-                                groups{m} =[];
+                            if pulse_initials(n+1)-pulse_initials(n)<WINDOW
+                                if isempty(groups)
+                                    groups{m} = pulse_initials(n);
+                                else
+                                    groups{m}=[ groups{m},pulse_initials(n)];
+                                end
                             else
-                                groups{m}= [groups{m},pulse_initials(n)];
-                                m = m+1;
-                                groups{m} =[];
+                                if isempty(groups)
+                                    groups{m}= pulse_initials(n);
+                                    m = m+1;
+                                    groups{m} =[];
+                                else
+                                    groups{m}= [groups{m},pulse_initials(n)];
+                                    m = m+1;
+                                    groups{m} =[];
+                                end
                             end
-                        end      
+                        end
                     end
-                end
-                % For collecting .time and .number
-                detection.samplepoint = [];
-                detection.name= [];
-                coder.varsize(detection.name,detection.samplepoint);
-                for o = 1:length(groups)
-                    
-                    detection.samplepoint(o) = groups{o}(1);
-                    detection.name(o) = length(groups{o});
-                end
-                detection.time = detection.samplepoint/fs;
-                name = unique(detection.name);
-                %sort triggers with same number of pulses
-                for n = 1:length(name) % for write name into the struct 'info'
-                    info(n).name = name(n);
-                end
-                for n = 1:length(name)
-                    info(n).repeats = length(find(detection.name==name(n)));
-                    info(n).time = detection.time(find(detection.name==name(n)));
-                end
-            else  % use the bi 2 bi decode method
-                raws = pulse_initials;
-                diff_between_pulse  = round(diff(raws),-1);
-                split_ids = find( diff_between_pulse >  group_split_thres);
-                split_ids = [0; split_ids;length(raws)];
-                groups = {};
-                for g = 1: length(split_ids)-1
-                    the_first =  split_ids(g)+ 1;
-                    the_last = split_ids(g+ 1);
-                    groups{g} = raws(the_first:the_last);
-                end
-                temp = cellfun(@diff,groups,'UniformOutput',0);
-                diff_collect_for_find_bi =arrayfun(@(x) round(x,-1), double(vertcat(temp{:})) );
-                zero_value = min(  diff_collect_for_find_bi);
-                one_value = max( diff_collect_for_find_bi);
-                for u = 1: length(groups)
-                    inner_group_diff = round(diff(double(groups{u})),-1);
-                    inner_group_diff(inner_group_diff== zero_value) = 0;
-                    inner_group_diff(inner_group_diff== one_value) = 1;
-                    binary_code =  flip(inner_group_diff.'); % binary code
-                    if isempty(binary_code)
-                        disp('Your encoder is wrong!!')
+
+                    % For collecting .time and .number
+                    detection.samplepoint = [];
+                    detection.name= [];
+                    coder.varsize(detection.name,detection.samplepoint);
+                    for o = 1:length(groups)
+                        detection.samplepoint(o) = groups{o}(1);
+                        detection.name(o) = length(groups{o});
                     end
-                    decimal_id(u) = bi2de(flip(binary_code));  % flip is necessar, as bi2de read in opposite direction
-                end
-                tris = unique(decimal_id);
-                info = struct;
-                for e = 1: length(tris)
-                    info(e).name = tris(e);
-                    %info(e).name = tris(e)+ 1;
-                    info(e).repeats = length(find(decimal_id == tris(e)));
-                    tri_id = find(decimal_id == tris(e));
-                    collects = {groups{tri_id}};
-                    for yy = 1: length(collects)
-                        % important note here, here collects return int32, but what
-                        % is necessary is double
-                        info(e).time(yy) = double(collects{yy}(1))/fs;   % fs equals to 30000
+                    detection.time = (detection.samplepoint + initial_timepoint)/fs;
+                    name = unique(detection.name);
+
+                    %sort triggers with same number of pulses
+                    for n = 1:length(name) % for write name into the struct 'info'
+                        info(n).name = name(n);
+                        info(n).repeats = length(find(detection.name==name(n))); % 这三行是否适合合在一起有待商榷
+                        info(n).time = detection.time(find(detection.name==name(n)));
                     end
+
+                    counter = counter + 1;
+                    info_collect{counter} = info;
+
+
+                else  % use the bi 2 bi decode method 二进制
+
+                    info = struct; % 初始化info
+                    raws = pulse_initials;
+                    diff_between_pulse  = round(diff(raws),-1);
+                    split_ids = find( diff_between_pulse >  group_split_thres);
+                    split_ids = [0; split_ids;length(raws)];
+                    groups = {};
+                    for g = 1: length(split_ids)-1
+                        the_first =  split_ids(g)+ 1;
+                        the_last = split_ids(g+ 1);
+                        groups{g} = raws(the_first:the_last);
+                    end
+                    temp = cellfun(@diff,groups,'UniformOutput',0);
+                    diff_collect_for_find_bi =arrayfun(@(x) round(x,-1), double(vertcat(temp{:})) );
+                    zero_value = min(  diff_collect_for_find_bi);
+                    one_value = max( diff_collect_for_find_bi);
+                    decimal_id = []; % added 2022.12.11 initialize,, because there is a bug in Line 315: collects = {groups{tri_id}};
+                    for u = 1: length(groups)
+                        inner_group_diff = round(diff(double(groups{u})),-1);
+                        inner_group_diff(inner_group_diff== zero_value) = 0;
+                        inner_group_diff(inner_group_diff== one_value) = 1;
+                        binary_code =  flip(inner_group_diff.'); % binary code
+                        if isempty(binary_code)
+                            disp('Your encoder is wrong!!')
+                        end
+                        decimal_id(u) = bi2de(flip(binary_code));  % flip is necessar, as bi2de read in opposite direction
+                    end
+                    tris = unique(decimal_id);
+                    info = struct;
+                    for e = 1: length(tris)
+                        info(e).name = tris(e);
+                        %info(e).name = tris(e)+ 1;
+                        info(e).repeats = length(find(decimal_id == tris(e)));
+                        tri_id = find(decimal_id == tris(e));
+                        collects = {groups{tri_id}};
+                        for yy = 1: length(collects)
+                            % important note here, here collects return int32, but what
+                            % is necessary is double
+                            info(e).time(yy) = double(collects{yy}(1) +  initial_timepoint)/fs;   % fs equals to 30000 % 为什么我这里会写fs = 30000？ 搞不好这就能解释为什么会出现bug
+                        end
+                    end
+
+
+                    counter = counter + 1;
+                    info_collect{counter} = info;
+
                 end
-                
+
+
             end
+
+
+            suminfo = horzcat(info_collect{:}); % 最后把所有的info拼接在一起
             % line([pulse_initials,pulse_initials],[0,5]); %for debug
-            
+
         end
         
         function info = digbidecode(t) % decode binary trigger information, which is compatible with the encoder
             
             
             fs = 30000;
-            
             t.trigger_fs = fs;
             group_split_thres = 0.1667; % 5000 samples,0.1667 seconds, to split dig timestmaps to different groups for different stimuli
             raws = t.raw.Timestamps;
@@ -382,7 +396,7 @@ classdef Trigger < handle
             
             t.equipment = 'ZEUS';
            % t.raw = plexonfile.EventChannels(PULSE_LOCATION);
-            t.raw.Timestamps = PL2EventTs(path_pl2,'DIG01').Ts;
+            t.raw.Timestamps = PL2EventTs(path_pl2,'DIG01').Ts;   
             raw_to_analysis = t.raw.Timestamps;
             
             % to judge whether to use the binary-code decoder or
@@ -423,20 +437,29 @@ classdef Trigger < handle
             %             t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
             %             t.raw.Values = -t.raw.Values;
             %             t.info = t.Extract; % not digital
+
+%             if isempty(t.raw.Values)
+%                 t.raw = PL2Ad(path_pl2,'AIN02');
+%             end
+
             
             t.equipment = 'ZEUS';
-            t.raw = PL2Ad(path_pl2,'AI01');
-            if isempty(t.raw.Values)
-                t.raw = PL2Ad(path_pl2,'AIN02');
-            end
-            t.raw.Values = -t.raw.Values;
+
+%             t.raw = PL2Ad(path_pl2,'AI01');
+%             if isempty(t.raw.Values)
+%                 t.raw = PL2Ad(path_pl2,'AIN02');
+%             end
+%             t.raw.Values = -t.raw.Values;
             t.info = t.Extract; % not digital
         end
         
         function coreTriggerPlexAna(t,path_pl2)
             
             t.equipment = 'PLEXON';
-            t.raw = PL2Ad(path_pl2,'AI01');
+%             t.raw = PL2Ad(path_pl2,'AI01');
+
+           
+%             [gap_adfreq, gap_n, gap_ts, gap_fn] = plx_ad_gap_info(path_pl2,'AI01')
             %t.raw = plexonfile.ContinuousChannels(PULSE_LOCATION);
             t.info = t.Extract; % not digital
             

@@ -15,8 +15,8 @@ classdef simultaneousNeurons < Sultan
             s@Sultan(dirs_of_analysis);
             
             grouping_info = {};
-            for k = 1: length(s.anas)
-                grouping_info{k} = regexp(s.anas{k},'[OGBRY]\d{3}_[ZP]\d{2}','match');   
+            for k = 1: length(s.mfiles)
+                grouping_info{k} = regexp(s.mfiles{k},'[OGBRY]\d{3}_[ZP]\d{2}','match');   
             end
             
             unqs = unique(cellstr(grouping_info.'));
@@ -26,7 +26,7 @@ classdef simultaneousNeurons < Sultan
                 
                 ids = find(~cellfun(@isempty, regexp(cellstr(grouping_info),unqs{k})));
                 
-                s.groups{k} = s.anas(ids);
+                s.groups{k} = s.mfiles(ids);
             end
             
         end
@@ -119,7 +119,7 @@ classdef simultaneousNeurons < Sultan
                 A.neurons{A.song_id}.draw_waveform; % draw waveform plot
                 frame = getframe(gcf);close(gcf);
                 conallneurons(k).figwf = frame.cdata; % waveform figure
-                %waitbar(k/length(s.anas),wb,sprintf('%u of %u files',k,length(s.anas)));
+                %waitbar(k/length(s.mfiles),wb,sprintf('%u of %u files',k,length(s.mfiles)));
                 
                 % Note we send only an "increment" for the waitbar.
                 send(D, 1);

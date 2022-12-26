@@ -55,6 +55,7 @@ classdef categoFrags
             output_fraginf = categoFrags.core(c.global_eleinf,thres);
             
         end
+       
         function unique_eleinf = include_con(c,con_eleinf)
             % this function categorize eleinf for each unique songname
             oteeleinf = c.global_eleinf;
@@ -115,6 +116,7 @@ classdef categoFrags
     
     
     methods(Static)
+        
          function bird_eleinf = core(bird_eleinf, similarity_thres)
             % @-----@ This section is for finding the similar fragments
             frag_img = {};

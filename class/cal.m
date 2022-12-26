@@ -10,6 +10,11 @@ classdef Cal
     methods(Static)
         
         function diffs = allPairDiff(array)
+            % 计算一个array里所有成员之间的距离
+            if length(array) < 2
+                diffs = [];
+                return
+            end
             array = array(:)'; %强制转为行向量
             % Cal all pairwise diffs between members of an array
             part1 = nchoosek(array,2);
@@ -162,7 +167,8 @@ classdef Cal
         end
         
         
-        function threshold = thres(sdf,range)  % calculate the threshold that above this threshold, percentage of samples is smaller than the range
+        function threshold = thres(sdf,range) 
+            % calculate the threshold that above this threshold, percentage of samples is smaller than the range
             [N,edges] = histcounts(sdf,100);
             
             countN = 0;
@@ -319,6 +325,7 @@ classdef Cal
             
             filenames = Extract.filename(dirpath);
         end
+        
     end
     
 end

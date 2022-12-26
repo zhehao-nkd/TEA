@@ -1,4 +1,4 @@
-classdef Piece < handle & EphysAnalysis
+classdef Piece < handle %& EphysAnalysis
 
     %EPHYS2 Summary of this class goes here
     %   Detailed explanation goes here
@@ -55,7 +55,7 @@ classdef Piece < handle & EphysAnalysis
         eliciting_element_counting_whole %  index of the response-elciting
         %element by taking neural response to all stimuli into consideration
         % this Paramter are calculated outside the Piece class
-        trigger_onset % onset of trigger stimuli
+        trigger_onset % onset of trigger stimuli, 代表了stimuli播放的时间
         pltext
         judgelaten
         
@@ -197,12 +197,7 @@ classdef Piece < handle & EphysAnalysis
             e.setExtAndAllocate; % 包含了e.setPltext && e.allocate 
             e.fsize = PM.size3plots;
         end
-        
-   
-        function add(e)
-            disp('???')
-            
-        end
+       
         
         function sylidx = getIndexOfSigSyllable(e,latency) % index of significant syllable
             % This is based on neural respons to a single stimuli, which is
@@ -242,11 +237,7 @@ classdef Piece < handle & EphysAnalysis
             
             xlabel(e.sound.name);
         end
-        
-        
-        function judgeResponse(e)
-        end
-        
+       
         function collected = collectImages(e)
             
             if ~isempty(regexp(e.list.stimuliname,'Frag'))
@@ -258,9 +249,6 @@ classdef Piece < handle & EphysAnalysis
             collected.rasterimg = e.drawsaveRaster(ext);
             
         end
-        
-        
-        
         
         function [new_pltsptimes,plty] = allocate_variablePrePostLength(e, extlen)
              % here the response is the collection of response
@@ -471,7 +459,7 @@ classdef Piece < handle & EphysAnalysis
             
             
         end
-        
+
         
         function pre = preinf(e, duration)% info of pre-peak duration
             
@@ -505,6 +493,21 @@ classdef Piece < handle & EphysAnalysis
             
         end
         
+
+        function [latency,prelatency] =calObservedFirstSpikeLatency(e)
+
+            %https://direct.mit.edu/neco/article/22/7/1675/7562/First-Spike-Latency-in-the-Presence-of-Spontaneous
+
+            latency = min(vertcat(e.sptimes{:}));
+            prelatency = min(vertcat(e.presptimes{:}));
+            if isempty(latency)
+                latency = nan
+            end
+            if isempty(prelatency )
+                prelatency  = nan
+            end
+
+        end
     end
     
     methods  % 作图方法
@@ -757,6 +760,7 @@ classdef Piece < handle & EphysAnalysis
             fea.y = e.y;
         end
         
+
     end
     
     methods(Hidden= true)

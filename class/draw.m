@@ -18,7 +18,7 @@ classdef Draw
             xticklabels('');
             set(gca,'FontSize',18)
             axes(ax(2));
-            Draw.rasterBeta(sptimes,y,fs,1.4,'k')
+            Draw.raster(sptimes,y,fs,1.4,'k')
              yticks([0 5 10])
             yticklabels({'0','5','10'})
             xticks([0 1 2 3 4 5 6 7])
@@ -226,55 +226,55 @@ classdef Draw
             xlim([0-zpt length(y)/fs-zpt]);   %%%%%%%%%%%%%%%%%???????????????????????????????? 哪里不太对
         end
 
-%         function raster(sptimes,y,fs,ticksize)
-%             
-%             idx = find(y,1);
-%             
-%             %initial_timestamps = idx;
-%             % y = y - initial_timestamps;
-%             
-%             zpt = idx/fs;
-%             zpt = 0; %%%% close zpt compensation
-%             
-%             % calculation...
-%             hold on
-%             if ~exist('ticksize','var')
-%                 ticksize = 18;
-%             end
-%                 
-%             ylabel('Trials','FontSize',ticksize);
-%             % calculation...
-%             for nUnits = 1:length(sptimes)
-%                 
-%                 spks            = sptimes{nUnits}';  % Get all spikes of respective trial
-%                 
-%                 xspikes         = repmat(spks,2,1);         % Replicate array
-%                 yspikes      	= nan(size(xspikes));       % NaN array
-%                 
-%                 % if ~isempty(yspikes)
-%                 yspikes(1,:) = nUnits-1;                % Y-offset for raster plot
-%                 yspikes(2,:) = nUnits;
-%                 % end
-%                 if ~isempty(xspikes) % in case that xspikes is empty
-%                     plot(xspikes-zpt, yspikes, 'Color', 'k','linewidth',1)
-%                 end
-%                 
-%             end
-%             
-%             %figure configuration
-%             
-%             ylim([0 length(sptimes)]);
-%             
-%             %ax.XLabel.String  	= 'Time (s)';
-%             
-%             ydata = get(gca,'Ylim');
-%             if ~exist ('color','var')
-%                 line([0,0],[min(ydata),max(ydata)],'color','r');
-%             end
-%             
-%             xlim([0-zpt length(y)/fs-zpt]);   %%%%%%%%%%%%%%%%%???????????????????????????????? 哪里不太对
-%         end
-%         
+        function Deprecated_raster(sptimes,y,fs,ticksize)
+            
+            idx = find(y,1);
+            
+            %initial_timestamps = idx;
+            % y = y - initial_timestamps;
+            
+            zpt = idx/fs;
+            zpt = 0; %%%% close zpt compensation
+            
+            % calculation...
+            hold on
+            if ~exist('ticksize','var')
+                ticksize = 18;
+            end
+                
+            ylabel('Trials','FontSize',ticksize);
+            % calculation...
+            for nUnits = 1:length(sptimes)
+                
+                spks            = sptimes{nUnits}';  % Get all spikes of respective trial
+                
+                xspikes         = repmat(spks,2,1);         % Replicate array
+                yspikes      	= nan(size(xspikes));       % NaN array
+                
+                % if ~isempty(yspikes)
+                yspikes(1,:) = nUnits-1;                % Y-offset for raster plot
+                yspikes(2,:) = nUnits;
+                % end
+                if ~isempty(xspikes) % in case that xspikes is empty
+                    plot(xspikes-zpt, yspikes, 'Color', 'k','linewidth',1)
+                end
+                
+            end
+            
+            %figure configuration
+            
+            ylim([0 length(sptimes)]);
+            
+            %ax.XLabel.String  	= 'Time (s)';
+            
+            ydata = get(gca,'Ylim');
+            if ~exist ('color','var')
+                line([0,0],[min(ydata),max(ydata)],'color','r');
+            end
+            
+            xlim([0-zpt length(y)/fs-zpt]);   %%%%%%%%%%%%%%%%%???????????????????????????????? 哪里不太对
+        end
+        
         function rasterpartial(sptimes,y,fs,which_trials)
             %find initial of stimuli
             sptimes = sptimes{1:which_trials};
@@ -494,6 +494,14 @@ classdef Draw
             Draw.raster(sptimes, y, fs);
             subplot(3,1,3)
             Draw.sdf(y,fs,sptimes);
+        end
+
+        function specSdf(y,fs,sptimes)
+            subplot(2,1,1)
+            Draw.spec(y,fs);
+            subplot(2,1,2)
+            Draw.sdf(y,fs,sptimes);
+
         end
         
         function two(y,fs,sptimes)

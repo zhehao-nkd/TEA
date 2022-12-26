@@ -156,6 +156,7 @@ classdef Sound < handle
         end
         
         function drawSegment(s)
+            % 画出song的spectrogram，并把segmentation画成竖线
             ini = [s.fragment.initial].'
             ter = [s.fragment.terminal].'
             

@@ -1,56 +1,342 @@
 classdef Repla < handle
     %@ 类说明 Member class of Neuron
-    
+
     properties
         replalist
         list
         formated_name
+        simatrix
     end
-    
+
     methods
-        
+
         function rp = Repla(list)
             % 从 Neuron 文件中提取neuron对replas的反应，已经具体的replas的名称
             rp.list = list;
-            rp.judgeReplaResp;
-            replalist = rp.list(find(~cellfun(@isempty, regexp(cellstr({list.stimuliname}.'),'Repla'))));
+            rp.genReplalist
+            rp.judgeReplaResp; % judgeReplaResponse是在生成replalist之后的，所以应该比较方便修改
             
-            Replst_fnames = [replalist.stimuliname].';
-            locY = @(x,y) x{y}; % get element in location y
-            for k = 1:length(replalist)
-                splited = split(Replst_fnames{k},{'-before-','-gapis-'});
-                replalist(k).bname1 = Convert.bid(splited{1});
-                replalist(k).fid1 = str2num(locY(split(splited{1},'-'),4));
-                replalist(k).bname2 = Convert.bid(splited{2});
-                replalist(k).fid2 = str2num(locY(split(splited{2},'-'),3));
-                replalist(k).concat1 = sprintf('%s-%02u',replalist(k).bname1,replalist(k).fid1);
-                replalist(k).concat2 = sprintf('%s-%02u',replalist(k).bname2,replalist(k).fid2);
-                replalist(k).fullrepla = sprintf('%s-%02u-%s-%02u',replalist(k).bname1,replalist(k).fid1,replalist(k).bname2,replalist(k).fid2);
+            for k = 1:length(rp.replalist)
+                rp.simatrix{k} = Simatrix(rp.replalist{k});
             end
-            
-            rp.replalist = replalist;
-            
-            
+
+
+        end
+
+        function genReplalist(rp)
+            % 从list里筛选出每组repla stimuli，加上一些提取的信息生成replalist；
+
+
+            replaids = find(~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),'repla|Repla') ));
+            list_contain_replas = rp.list(replaids);
+            repla_birdid = cellfun(@(x) Convert.bid(x,2), cellstr({list_contain_replas.stimuliname}.'),'Uni',0);
+            unique_repla_birdids = unique(repla_birdid);
+            unpack = @(x) x{1};
+
+            for k = 1:length(unique_repla_birdids) % 筛选出repla stimuli构成list
+                correspids = strcmp(unique_repla_birdids{k},repla_birdid); % 找到有这个birdid的所有repla的ids,这ids是关于list_contain_replas的
+                rp.replalist{k} = list_contain_replas(correspids);
+
+                corresp_fid = unpack(unique({rp.replalist{k}.Fid}.')); % 找到repla stimuli对应的fid
+
+                corresp_norm = mintersect( find(~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),unique_repla_birdids{k}))),...
+                    find(~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),'norm'))),...
+                    find(~cellfun(@isempty, regexp(cellstr({rp.list.Fid}.'),corresp_fid))) );
+
+                if isempty(corresp_norm ) %如果因为实验中的疏漏没有在repla环节播放norm song， % 那么取其他次播放的norm song
+                    corresp_norm = min(intersect( find(~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),unique_repla_birdids{k}))),...
+                        find(~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),'norm'))))); % 如果对应了多个值，那么取最小的那个
+
+                end
+
+                rp.replalist{k} = vertcat(rp.list(corresp_norm).',rp.replalist{k}.');
+
+            end
+
+
+            for a = 1:length(rp.replalist) % 补充replalist特有的一些信息
+                thislist = rp.replalist{a};
+
+                Replst_fnames = {thislist.stimuliname}.';
+                locY = @(x,y) x{y}; % get element in location y
+                k_of_norm = [];
+                for k = 1:length(thislist)
+                    splited = split(Replst_fnames{k},{'-before-','-gapis-'});
+
+                    if length(splited) == 1 % 如果这个stimuli是norm的话,可以看成是原来的song和原来的song发生replacement
+                       k_of_norm = k;
+                        continue %暂时跳过，目的是利用后续行的fid填充norm song的fid 
+                    else
+                        thislist(k).bname1 = Convert.bid(splited{1});
+                        thislist(k).fid1 = str2num(locY(split(splited{1},'-'),4));
+                        thislist(k).bname2 = Convert.bid(splited{2});
+                        thislist(k).fid2 = str2num(locY(split(splited{2},'-'),3));
+                        thislist(k).concat1 = sprintf('%s-%02u',thislist(k).bname1,thislist(k).fid1);
+                        thislist(k).concat2 = sprintf('%s-%02u',thislist(k).bname2,thislist(k).fid2);
+                        thislist(k).fullrepla = sprintf('%s-%02u-%s-%02u',thislist(k).bname1,thislist(k).fid1,thislist(k).bname2,thislist(k).fid2);
+                    end
+                end
+
+                % 最后填充norm song的信息
+                splited = split(Replst_fnames{k_of_norm},{'-before-','-gapis-'});
+                thislist(k_of_norm).bname1 = Convert.bid(splited{1});
+                thislist(k_of_norm).fid1 =  thislist(k_of_norm+1).fid2-1
+                thislist(k_of_norm).bname2 = thislist(k_of_norm).bname1 ;
+                thislist(k_of_norm).fid2 = thislist(k_of_norm+1).fid2;
+                thislist(k_of_norm).concat1 = sprintf('%s-%02u',thislist(k_of_norm).bname1,thislist(k_of_norm).fid1);
+                thislist(k_of_norm).concat2 = sprintf('%s-%02u',thislist(k_of_norm).bname2,thislist(k_of_norm).fid2);
+                thislist(k_of_norm).fullrepla = sprintf('%s-%02u-%s-%02u',thislist(k_of_norm).bname1,thislist(k_of_norm).fid1,thislist(k_of_norm).bname2,thislist(k_of_norm).fid2);
+                rp.replalist{a} = thislist;
+
+            end
+
+
+
+
         end
         
         function  rp = judgeReplaResp(rp)
+            % 为什么会有V1和V2，写的时候没有注意，导致有两个版本，有些许区别，但似乎V1更正确
+            % 如果需要对比，可使用 online code difference comparision 的工具
             dbstop if error
-            
+
+            % evaluate the responsiveness of song replacements
+            % Find out that the repla stimuliname correspond to how many natrual songs
+            %             bnames = unique(cellfun(@(x)Convert.bid(x,2),[rp.list(replaids).stimuliname].','Uni',0));
+            %
+            %             findCorrespConID = @(x) intersect(find( ~cellfun(@isempty, regexp([rp.list.stimuliname].','norm') )),...
+            %                 find( ~cellfun(@isempty, regexp([rp.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
+            %
+            %             findCorrespReplaID = @(x) intersect(find( ~cellfun(@isempty, regexp([rp.list.stimuliname].','Repla') )),...
+            %                 find( ~cellfun(@isempty, regexp([rp.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
+
+
+            for k = 1:length(rp.replalist) % 对于每组replacement来说！ 一组针对一个目标syllables
+
+                sublist = rp.replalist{k};
+                rids = find( ~cellfun(@isempty, regexp(cellstr({sublist.stimuliname}.'),'Repla|repla') ));
+                nid = find( ~cellfun(@isempty, regexp(cellstr({sublist.stimuliname}.'),'norm') ));
+
+                Ini_y_collect = [];
+                allids = [rids;nid];
+                for kk = 1:length(allids)
+
+                    if allids(kk) == nid
+                        Ini_replay = unique(Ini_y_collect) + (find(sublist(nid).y(Ini_y_collect:end),1)-1);  
+                    else
+
+                        [Ini_y,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla( sublist(nid).y,sublist(allids(kk)).y);
+                        %    figure; subplot(211);Draw.spec(sublist(nid).y,32000);subplot(212); Draw.spec(sublist(rids(kk)).y,32000);
+                        if Ini_y == 0
+                            Ini_y = 1; % dangerous code
+                        end
+                        if isempty(Ini_y)|| Ini_y>length(sublist(nid).y)
+                            continue  % another dangerous code
+                        end
+
+                        num_of_zeros = find(sublist(nid).y(Ini_y:end),1)-1; % 在分歧点后多长一段是0
+                        Ini_y_collect(kk) = Ini_y + num_of_zeros;  % y of the responsive parts
+                        Ini_replay = Ini_replay + num_of_zeros;
+
+                    end
+               
+                    try
+                        sublist(allids(kk)).targety = sublist(allids(kk)).y(Ini_replay:Ini_replay + 0.2*sublist(allids(kk)).fs); % 截取200ms
+                        sublist(allids(kk)).replaceparty = sublist(allids(kk)).y(1:Ini_replay ); % 被替换的那一部分的y值
+                    catch % if the second index overceed 当剩下的distance小于200ms时
+                        sublist(allids(kk)).targety = sublist(allids(kk)).y(Ini_replay:end); % 截取到 end
+                        sublist(allids(kk)).replaceparty = sublist(allids(kk)).y(1:Ini_replay ); % 被替换的那一部分的y值
+                        disp(' MEssage@Neuron.judgeReplaResp :Overceed');
+                    end
+                    sublist(allids(kk)).targetsptimes = Extract.sptimes_resetSP(sublist(allids(kk)).sptimes,Ini_replay/32000,(Ini_replay + 0.2*sublist(allids(kk)).fs)/sublist(allids(kk)).fs);
+                    sublist(allids(kk)).replacepartsptimes = Extract.sptimes_resetSP(... % replacepart, sptimes
+                        sublist(allids(kk)).sptimes,1,Ini_replay/sublist(allids(kk)).fs);
+                    % corresponding pre (targety) data
+                    sublist(allids(kk)).pretargety = zeros(length(sublist(allids(kk)).targety),1);%sublist(nid).prey(end - 0.1*32000:end); % 截取100ms
+                    sublist(allids(kk)).pretargetsptimes = Extract.sptimes_resetSP(...
+                        sublist(allids(kk)).presptimes,length(sublist(allids(kk)).pretargety)/sublist(allids(kk)).fs -0.2*sublist(allids(kk)).fs,length(sublist(allids(kk)).pretargety)/32000 );%length(sublist(rids(kk)).prey)/32000 -0.1*32000
+                    %calculate and judege whether the neuron respond to the target area or not
+                    temp = Neuron.UseMaxSdfToJudegeRespOrNot(sublist(allids(kk)).targety,sublist(allids(kk)).targetsptimes,...
+                        sublist(allids(kk)).pretargety,sublist(allids(kk)).pretargetsptimes,sublist(allids(kk)).fs);
+                    sublist(allids(kk)).label = temp.label;
+                    sublist(allids(kk)).replaPvalue = temp.pvalue;
+                    sublist(allids(kk)).maxsdf = temp.maxsdf;
+                    %                     [sublist(rids(kk)).label,sublist(rids(kk)).replaPvalue] = Neuron.UseTtestToJudegeRespOrNot(...
+                    %                         sublist(rids(kk)).targety,sublist(rids(kk)).targetsptimes,... % 查看对replaced song的反应是否明显大于对pre period的response
+                    %                         sublist(rids(kk)).pretargety ,sublist(rids(kk)).pretargetsptimes ,sublist(rids(kk)).fs);
+                    sublist(allids(kk)).targetfr = length(vertcat(sublist(allids(kk)).targetsptimes{:}))/200; % per milisecond
+
+
+
+                end
+
+
+
+                % do the same analysi for norm song
+                rp.replalist{k} = sublist;
+
+            end
+
+
+        end
+
+        function toCheck(rp)
+            % 功能说明：把replalist的神经元反应结果作图，进而探明到底哪些replacement可以使神经元反应
+            dbstop if error
+
+            for index = 1:length(rp.replalist)
+
+                current_replalist = rp.replalist{index}; % let us make replalist as an internal variable
+
+                purerepla = current_replalist(2:end);
+                purerepla = table2struct(sortrows(struct2table(purerepla),'targetfr','descend')); % rank by firing rate
+
+
+                replafig = {};
+                prefig = {};
+                replacepartfig = {};
+                for k = 1:length(purerepla)
+
+                    figure('Position',[2189 255 560 1000])
+                    Draw.two(purerepla(k).targety, 32000,purerepla(k).targetsptimes); % something wrong with the getReplallist
+                    xlabel(sprintf(...
+                        'mFR (target dur): %f, Result: % u ',purerepla(k).targetfr,purerepla(k).replaresp));%???? big problem here
+                    replacepartfig {k} = getframe(gcf).cdata;
+                    replafig{k} = getframe(gcf).cdata;
+
+                    close(gcf)
+
+                    figure('Position',[2189 255 560 1000])  %basline level prestimuli
+                    Draw.two(purerepla(k).pretargety, 32000,purerepla(k).pretargetsptimes);
+                    prefig{k} = getframe(gcf).cdata;
+                    close(gcf)
+
+                    figure('Position',[2189 255 400 1000])
+
+                    Draw.two(purerepla(k).replaceparty, 32000,purerepla(k).replacepartsptimes);
+                    replacepartfig {k} = getframe(gcf).cdata;
+                    close(gcf)
+                end
+
+                sum_replafig = vertcat(replafig{:});
+                sum_prefig = vertcat(prefig{:});
+                sum_replacepartfig = vertcat(replacepartfig{:});
+                sum_all = horzcat(sum_prefig,sum_replacepartfig,sum_replafig);
+
+                %imwrite(sum_two,sprintf('%s_Sum_repla_fig.png',A.formated_name));
+
+                imwrite(sum_all,sprintf('晋%s_Sum_preNreplaceNtarget.png',rp.formated_name));
+
+
+            end
+
+
+        end
+
+
+        function weather_response_eliciting_syllables_are_similar
+
+        end
+
+        function replalist = does_neuron_respond_to_specific_transition(rp,transition_statics,syllable_theircatego)
+            % 根据Catego Trans Probility，解答最终的问题，即是否不常见的combination不会使neuron反应，或者正相反
+            replalist = rp.replalist;
+            for k = 1:length(replalist)
+
+                ids1 = find(~cellfun(@isempty, regexp({syllable_theircatego.unireplanames}.', replalist(k).concat1)));
+
+                if ~isempty(ids1)
+                    replalist(k).catego1 =  syllable_theircatego(ids1).catego;
+                else
+                    replalist(k).catego1 = 0;
+                end
+
+                ids2 = find(~cellfun(@isempty, regexp({syllable_theircatego.unireplanames}.', replalist(k).concat2)));
+                if ~isempty(ids2)
+                    replalist(k).catego2 =  syllable_theircatego(ids2).catego;
+                else
+                    replalist(k).catego2 = 0;
+                end
+
+                replalist(k).catego1catego2 = [replalist(k).catego1,replalist(k).catego2];
+
+                transID = find(cellfun(@(x)isequal(replalist(k).catego1catego2,x),{transition_statics.firstsecond}.','Uni',1));
+                if ~isempty(transID)
+                    replalist(k).transrank = transition_statics(transID).rank;
+                    replalist(k).count = transition_statics(transID).counts;
+                    replalist(k).chance = transition_statics(transID).chance;
+                else
+                    replalist(k).transrank = 0;
+                    replalist(k).count = 0;
+                    replalist(k).chance = 0;
+                end
+
+            end
+
+        end
+
+
+
+        function a = getFinalFromReplalistAndTransstatics(a, transition_statics,classification_table)
+            % 根据Catego Trans Probility，解答最终的问题，即是否不常见的combination不会使neuron反应，或者正相反
+            %a.replalist = a.replalist;
+            a.getReplalistFromA;
+
+            for k = 1:length(a.replalist)
+
+                ids1 = find(~cellfun(@isempty, regexp({classification_table.unifragnames}.', a.replalist(k).concat1)));
+
+                if ~isempty(ids1)
+                    a.replalist(k).catego1 =  classification_table(ids1).catego;
+                else
+                    a.replalist(k).catego1 = 0;
+                end
+
+                ids2 = find(~cellfun(@isempty, regexp({classification_table.unifragnames}.', a.replalist(k).concat2)));
+                if ~isempty(ids2)
+                    a.replalist(k).catego2 =  classification_table(ids2).catego;
+                else
+                    a.replalist(k).catego2 = 0;
+                end
+
+                a.replalist(k).catego1catego2 = [a.replalist(k).catego1,a.replalist(k).catego2];
+
+                transID = find(cellfun(@(x)isequal(a.replalist(k).catego1catego2,x),{transition_statics.firstsecond}.','Uni',1));
+                if ~isempty(transID)
+                    a.replalist(k).transrank = transition_statics(transID).rank;
+                    a.replalist(k).count = transition_statics(transID).counts;
+                else
+                    a.replalist(k).transrank = 0;
+                    a.replalist(k).count = 0;
+                end
+
+            end
+
+        end
+
+
+    end
+
+    methods % deprecated
+
+        function  rp = Deprecated_judgeReplaRespV2(rp)
+            dbstop if error
+
             % evaluate the responsiveness of song replacements
             replaids = find( ~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),'Repla') ));
-            
+
             if isempty(replaids)
                 return
             end
             % Find out that the repla stimuliname correspond to how many natrual songs
             bnames = unique(cellfun(@(x)Convert.bid(x,2),[rp.list(replaids).stimuliname].','Uni',0));
-            
+
             findCorrespConID = @(x) intersect(find( ~cellfun(@isempty, regexp([rp.list.stimuliname].','norm') )),...
                 find( ~cellfun(@isempty, regexp([rp.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
-            
+
             findCorrespReplaID = @(x) intersect(find( ~cellfun(@isempty, regexp([rp.list.stimuliname].','Repla') )),...
                 find( ~cellfun(@isempty, regexp([rp.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
-            
+
             for k = 1:length(bnames)
                 nid = findCorrespConID(bnames{k}); % 有可能得到多个nid
                 % 如果有多个nid
@@ -59,9 +345,9 @@ classdef Repla < handle
                     disp('Dangerous Code: @Neuron.judgeReplaResp');
                 end
                 rids = findCorrespReplaID(sprintf('(?<=before\\S+%s)',bnames{k}));
-                
+
                 for kk = 1:length(rids)
-                    [Ini_y,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla(...
+                    [Ini_y,Ini_replay] = Repla.findConergentPointBetwenNormAndRepla(...
                         rp.list(nid).y,...
                         rp.list(rids(kk)).y );
 
@@ -88,116 +374,191 @@ classdef Repla < handle
                         rp.list(rids(kk)).targety,rp.list(rids(kk)).targetsptimes,...
                         rp.list(rids(kk)).pretargety ,rp.list(rids(kk)).pretargetsptimes ,32000);
                     rp.list(rids(kk)).targetfr = length(vertcat(rp.list(rids(kk)).targetsptimes{:}))/200; % per milisecond
+
                 end
-                
-                
+
+
             end
-            
-            
+
+
         end
-        
-        function toCheck(rp)
-            % 功能说明：把replalist的神经元反应结果作图，进而探明到底哪些replacement可以使神经元反应
-           dbstop if error
-            replalist = rp.replalist; % let us make replalist as an internal variable
-            if isempty(replalist)
-                return
-            end
-            replalist = table2struct(sortrows(struct2table(replalist),'targetfr','descend')); % rank by firing rate
-            
-           
-            replafig = {};
-            prefig = {};
-            replacepartfig = {};
+
+
+        function a = Deprecated_getReplalistFromAB(a)
+            % 从 Neuron 文件中提取neuron对replas的反应，已经具体的replas的名称
+            a.judgeReplaResp;
+            replalist = a.list(find(~cellfun(@isempty, regexp(cellstr({a.list.stimuliname}.'),'Repla'))));
+
+            Replst_fnames = [replalist.stimuliname].';
+            locY = @(x,y) x{y}; % get element in location y
             for k = 1:length(replalist)
-                
-                figure('Position',[2189 255 560 1000])
-                Draw.two(replalist(k).targety, 32000,replalist(k).targetsptimes); % something wrong with the getReplallist
-                 xlabel(sprintf(...
-                    'mFR (target dur): %f, Result: % u ',replalist(k).targetfr,replalist(k).replaresp));%???? big problem here
-                replacepartfig {k} = getframe(gcf).cdata;
-                replafig{k} = getframe(gcf).cdata;
-                
-                close(gcf)
-                
-                figure('Position',[2189 255 560 1000])  %basline level prestimuli
-                Draw.two(replalist(k).pretargety, 32000,replalist(k).pretargetsptimes);
-                prefig{k} = getframe(gcf).cdata;
-                close(gcf)
-                
-                
-%                 figure('Position',[2189 255 200 840]) % the
-%                 Draw.two(replalist(k).replaceparty, 32000,replalist(k).replacepartsptimes);
-%                 replacepartfig {k} = getframe(gcf).cdata;
-%                 close(gcf)
-                
-                figure('Position',[2189 255 400 1000])
-               
-                Draw.two(replalist(k).replaceparty, 32000,replalist(k).replacepartsptimes);
-                replacepartfig {k} = getframe(gcf).cdata;
-                close(gcf)
+                splited = split(Replst_fnames{k},{'-before-','-gapis-'});
+                replalist(k).bname1 = Convert.bid(splited{1});
+                replalist(k).fid1 = str2num(locY(split(splited{1},'-'),4));
+                replalist(k).bname2 = Convert.bid(splited{2});
+                replalist(k).fid2 = str2num(locY(split(splited{2},'-'),3));
+                replalist(k).concat1 = sprintf('%s-%02u',replalist(k).bname1,replalist(k).fid1);
+                replalist(k).concat2 = sprintf('%s-%02u',replalist(k).bname2,replalist(k).fid2);
+                replalist(k).fullrepla = sprintf('%s-%02u-%s-%02u',replalist(k).bname1,replalist(k).fid1,replalist(k).bname2,replalist(k).fid2);
             end
-            
-            sum_replafig = vertcat(replafig{:});
-            sum_prefig = vertcat(prefig{:});
-            sum_replacepartfig = vertcat(replacepartfig{:});
-            sum_all = horzcat(sum_prefig,sum_replacepartfig,sum_replafig);
-            
-            %imwrite(sum_two,sprintf('%s_Sum_repla_fig.png',A.formated_name));
-            
-            imwrite(sum_all,sprintf('%s_Sum_preNreplaceNtarget.png',rp.formated_name));
-            
+
+            a.replalist = replalist;
+            %             unique({replalist.concat1}.') % how many unique pre syllable
+            %             unique({replalist.concat2}.') % how many unique post syllable
+            %             unique(vertcat({replalist.concat1}.',{replalist.concat2}.'))  % how many syllable to be classified in total
+            %             unique({replalist.fullrepla}.') % how many unique transition in neurons intotal?
+
         end
-        
-        
-        function replalist = does_neuron_respond_to_specific_transition(rp,transition_statics,syllable_theircatego)
-            % 根据Catego Trans Probility，解答最终的问题，即是否不常见的combination不会使neuron反应，或者正相反
-            replalist = rp.replalist;
+
+
+        function  a = Deprecated_judgeReplaRespV3(a)
+            dbstop if error
+
+            % evaluate the responsiveness of song replacements
+            replaids = find( ~cellfun(@isempty, regexp([a.list.stimuliname].','Repla') ));
+
+            % Find out that the repla stimuliname correspond to how many natrual songs
+            bnames = unique(cellfun(@(x)Convert.bid(x,2),[a.list(replaids).stimuliname].','Uni',0));
+
+            findCorrespConID = @(x) intersect(find( ~cellfun(@isempty, regexp([a.list.stimuliname].','norm') )),...
+                find( ~cellfun(@isempty, regexp([a.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
+
+            findCorrespReplaID = @(x) intersect(find( ~cellfun(@isempty, regexp([a.list.stimuliname].','Repla') )),...
+                find( ~cellfun(@isempty, regexp([a.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
+
+            for k = 1:length(bnames)
+                nid = findCorrespConID(bnames{k}); % 有可能得到多个nid
+                % 如果有多个nid
+                if length(nid) > 1
+                    nid = nid(1);
+                    disp('Dangerous Code: @Neuron.judgeReplaResp');
+                end
+                rids = findCorrespReplaID(bnames{k});
+
+                for kk = 1:length(rids)
+                    [Ini_y,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla(...
+                        a.list(nid).y,...
+                        a.list(rids(kk)).y );
+                    num_of_zeros = find(a.list(nid).y(Ini_y:end),1)-1; % 在分歧点后多长一段是0
+                    Ini_y = Ini_y + num_of_zeros;
+                    Ini_replay = Ini_replay + num_of_zeros;
+                    try
+                        a.list(rids(kk)).targety = a.list(rids(kk)).y(Ini_replay:Ini_replay + 0.2*32000); % 截取200ms
+                        a.list(rids(kk)).replaceparty = a.list(rids(kk)).y(1:Ini_replay ); % 被替换的那一部分的y值
+                    catch % if the second index overceed
+                        a.list(rids(kk)).targety = a.list(rids(kk)).y(Ini_replay:end); % 截取200ms
+                        disp(' MEssage@Neuron.judgeReplaResp :Overceed');
+                    end
+                    a.list(rids(kk)).targetsptimes = Extract.sptimes_resetSP(a.list(rids(kk)).sptimes,Ini_replay/32000,(Ini_replay + 0.2*32000)/32000);
+                    a.list(rids(kk)).replacepartsptimes = Extract.sptimes_resetSP(... % replacepart, sptimes
+                        a.list(rids(kk)).sptimes,1,Ini_replay/32000);
+                    % corresponding pre (targety) data
+                    a.list(rids(kk)).pretargety = zeros(length(a.list(rids(kk)).targety),1);%a.list(nid).prey(end - 0.1*32000:end); % 截取100ms
+                    a.list(rids(kk)).pretargetsptimes = Extract.sptimes_resetSP(...
+                        a.list(rids(kk)).presptimes,length(a.list(rids(kk)).pretargety)/32000 -0.2*32000,length(a.list(rids(kk)).pretargety)/32000 );%length(a.list(rids(kk)).prey)/32000 -0.1*32000
+                    %calculate and judege whether the neuron respond to the target area or not
+                    [a.list(rids(kk)).replaresp,a.list(rids(kk)).replaPvalue] = Neuron.UseTtestToJudegeRespOrNot(...
+                        a.list(rids(kk)).targety,a.list(rids(kk)).targetsptimes,...
+                        a.list(rids(kk)).pretargety ,a.list(rids(kk)).pretargetsptimes ,32000);
+                    a.list(rids(kk)).targetfr = length(vertcat(a.list(rids(kk)).targetsptimes{:}))/200; % per milisecond
+                end
+                % a.list(nid).target = a.list(nid).y(Ini_y:Ini_y + 0.2*32000); % 截取200ms
+                % a.list(nid).targetsptimes = Extract.sptimes_resetSP(a.list(nid).sptimes,Ini_y,Ini_y + 0.2*32000);
+                %a.list(nid).targetfr = length(vertcat(a.list(nid).targetsptimes{:}))/0.2;
+
+
+            end
+
+
+        end
+
+
+        function neu = Deprecated_getReplalistFromA(neu)
+            % 从 Neuron 文件中提取neuron对replas的反应，已经具体的replas的名称
+            neu.judgeReplaResp;
+            replalist = neu.list(find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'Repla'))));
+
+            Replst_fnames = [replalist.stimuliname].';
+            locY = @(x,y) x{y}; % get element in location y
             for k = 1:length(replalist)
-                
-                ids1 = find(~cellfun(@isempty, regexp({syllable_theircatego.unifragnames}.', replalist(k).concat1)));
-                
-                if ~isempty(ids1)
-                    replalist(k).catego1 =  syllable_theircatego(ids1).catego;
-                else
-                    replalist(k).catego1 = 0;
-                end
-                
-                ids2 = find(~cellfun(@isempty, regexp({syllable_theircatego.unifragnames}.', replalist(k).concat2)));
-                if ~isempty(ids2)
-                    replalist(k).catego2 =  syllable_theircatego(ids2).catego;
-                else
-                    replalist(k).catego2 = 0;
-                end
-                
-                replalist(k).catego1catego2 = [replalist(k).catego1,replalist(k).catego2];
-                
-                transID = find(cellfun(@(x)isequal(replalist(k).catego1catego2,x),{transition_statics.firstsecond}.','Uni',1));
-                if ~isempty(transID)
-                    replalist(k).transrank = transition_statics(transID).rank;
-                    replalist(k).count = transition_statics(transID).counts;
-                     replalist(k).chance = transition_statics(transID).chance;
-                else
-                    replalist(k).transrank = 0;
-                    replalist(k).count = 0;
-                    replalist(k).chance = 0;
-                end
-                
+                splited = split(Replst_fnames{k},{'-before-','-gapis-'});
+                replalist(k).bname1 = Convert.bid(splited{1});
+                replalist(k).fid1 = str2num(locY(split(splited{1},'-'),4));
+                replalist(k).bname2 = Convert.bid(splited{2});
+                replalist(k).fid2 = str2num(locY(split(splited{2},'-'),3));
+                replalist(k).concat1 = sprintf('%s-%02u',replalist(k).bname1,replalist(k).fid1);
+                replalist(k).concat2 = sprintf('%s-%02u',replalist(k).bname2,replalist(k).fid2);
+                replalist(k).fullrepla = sprintf('%s-%02u-%s-%02u',replalist(k).bname1,replalist(k).fid1,replalist(k).bname2,replalist(k).fid2);
             end
-            
+            unique({replalist.concat1}.') % how many unique pre syllable
+            unique({replalist.concat2}.') % how many unique post syllable
+            unique(vertcat({replalist.concat1}.',{replalist.concat2}.'))  % how many syllable to be classified in total
+            unique({replalist.fullrepla}.') % how many unique transition in experiments intotal?
+
+            neu.replalist = replalist;
         end
-        
+
+
     end
-    
+
+
+
+
     methods(Static)
-        
+
+
+        function [ConvergentIndexY,ConvergentIndexReplaY] = findConergentPointBetwenNormAndRepla(y, yrepla) % find the correspoding initial timestamps by aliging two time series
+            % 此趋同点指的是趋同数据点在yrepla中的次序 （从前往后数）
+            % 之后或可考虑更复杂的序列对比算法，这样的算法应更普适一些
+            % 但现如今应该做的是增加当y和yrepla后补了很多零的问题
+            % input的y可以是y或者plty,yrepla也可以是pltreplay或者yrepla
+            dbstop if error
+
+            y = y(1:find(y,1,'last')); % remove the padded zeros， 11111111000000000 to  11111111，% 有点危险
+            yrepla = yrepla(1:find(yrepla,1,'last'));
+
+            freezey = y; freezeyrepla = yrepla;
+            [maxlength,maxid] = max([length(y),length(yrepla)]);
+
+            if maxid == 1 % ru-guo-y-bi-jiao-chang
+                yrepla = [zeros(length(y)-length(yrepla),1);yrepla];
+            elseif maxid==2 % ru-guo-yrepla-bi-jiao-chang
+                y =  [zeros(length(yrepla)-length(y),1);y];
+            end
+
+            %figure; subplot(311); plot(y);subplot(312); plot(yrepla);subplot(313); plot(yrepla-y);
+
+            temp_convergentpoint = find(flip(y-yrepla), 1 ); % 找到第一个非零元素
+            % 如果把y和yrepla倒过来之后第一个非零元素是第一位，说明y和yrepla不同，这stimuli有问题
+            %             [coeffsy,~,~,~] = mfcc(flip(y),32000);
+            %             [coeffsyrepla,~,~,~] = mfcc(flip(yrepla),32000);
+            %             figure; plot(sum(coeffsy,2) - sum(coeffsyrepla,2));
+            %             figure; subplot(311); Draw.spec(y,32000);subplot(312); Draw.spec(yrepla,32000);subplot(313);Draw.spec(yrepla-y,32000);
+            %            figure; plot( flip(round(y,3)) - flip(round(yrepla,3)) )
+
+            %figure; plot(flip(y-yrepla))
+            convergentpoint = maxlength - temp_convergentpoint + 2;
+
+            if maxid == 1 % y更长
+                ConvergentIndexY  = convergentpoint;
+                ConvergentIndexReplaY = convergentpoint-(length(freezey)-length(freezeyrepla));
+            elseif maxid ==2 % replay 更长
+                ConvergentIndexY  = convergentpoint-(length(freezeyrepla)-length(freezey));
+                ConvergentIndexReplaY = convergentpoint;
+            end
+
+
+        end
+
+
+
         function namelist = get_all_elements_involved(rawdir_path)
             % 功能说明： 从dir里包含的所用音频文件里提取参与到replacement的音节的名称，称为namelist
             % from all ZP folder, know all the syllable transitions presented as repla stimuli
             filenames = cellfun(@Utl.fileparts,Extract.filesAllLevel(rawdir_path, '*.wav'),'Uni',0);
             repla_filenames = filenames(find(~cellfun(@isempty, regexp(filenames,'Repla|repla'))));
-            %上面那行可以用来获取ZPdir里面的Individual Fragments的filename，以期后续对其分类
-            
+            %上面那行可以用来获取ZPdir里面的Individual replaments的filename，以期后续对其分类
+
             namelist = struct;
             locY = @(x,y) x{y}; % get element in location y
             for k = 1:length(repla_filenames)
@@ -210,28 +571,28 @@ classdef Repla < handle
                 namelist(k).concat2 = sprintf('%s-%02u',namelist(k).bname2,namelist(k).fid2);
                 namelist(k).fullrepla = sprintf('%s-%02u-%s-%02u',namelist(k).bname1,namelist(k).fid1,namelist(k).bname2,namelist(k).fid2);
             end
-            
+
             [~,uniqueids,~] = unique({namelist.fullrepla}.'); % 去除重复的rows
             namelist = namelist(uniqueids);
-            
+
         end
-        
-        
+
+
         function metadata = namelist2meta(namelist,refer_list)
             % @功能说明： convert namelist to standard metadata, based on refer_list
-            unifragnames = unique(vertcat({namelist.concat1}.',{namelist.concat2}.')); % unique fragnames in ZPdirs of repla stimuli
+            unireplanames = unique(vertcat({namelist.concat1}.',{namelist.concat2}.')); % unique replanames in ZPdirs of repla stimuli
             %reference_eleinf = Utl.load('con_and_allspe_eleinf.mat');
-            
+
             bnames = cellfun(@Convert.bid,{refer_list.fullname}.','UniformOutput',false);
             func1 = @(x) regexp(x,'(?<=-)\d+','match'); % reference_eleinf(1).fullname
             func2 = @(x) x{1};
-            fragids = cellfun(@(x) func2(func1(x)),{refer_list.fullname}.','UniformOutput',false) ;
-            bname_fragid = cellfun(@(x,y) horzcat(x,'-',y), bnames,fragids,'Uni',0); % reference_eleinf
-            
+            replaids = cellfun(@(x) func2(func1(x)),{refer_list.fullname}.','UniformOutput',false) ;
+            bname_replaid = cellfun(@(x,y) horzcat(x,'-',y), bnames,replaids,'Uni',0); % reference_eleinf
+
             metadata = struct;
-            for k = 1:length(unifragnames)
-                ids = find(strcmp(unifragnames{k},bname_fragid));
-                metadata(k).unifragnames = unifragnames{k};
+            for k = 1:length(unireplanames)
+                ids = find(strcmp(unireplanames{k},bname_replaid));
+                metadata(k).unireplanames = unireplanames{k};
                 if ~isempty(ids)
                     metadata(k).y = refer_list(ids).y;
                     metadata(k).fs= refer_list(ids).fs;
@@ -242,12 +603,12 @@ classdef Repla < handle
                     metadata(k).fullname = [];
                 end
             end
-            
+
             metadata = metadata(~cellfun(@isempty,{metadata.fullname}.'));
-            
+
         end
-        
-        
+
+
         function [transition_statics,relation_map] = get_trans_statics(sequential_song_meta)
             % @功能说明： 生成transition statics
             % remove those with catego num as 0
@@ -264,19 +625,19 @@ classdef Repla < handle
                 collect_transfering{k} = transfering;
             end
             all_transfering = horzcat(collect_transfering{:}); % Concat这些song里面所有的transfering
-            
+
             % 集合所有存在的transition事件
             transitioncollect = struct;
             for k = 1:length(all_transfering)
                 transitioncollect(k).first = all_transfering{k}(1);
                 transitioncollect(k).second = all_transfering{k}(2);
             end
-            
+
             % 对每对可能的catego transition统计对应的频数
             all_categos = unique([sequential_song_meta .catego].');
             relation_map = zeros(length(all_categos),length(all_categos)); % initialization
             transition_statics = struct;
-            
+
             count = 0;
             for k = 1:length(all_categos)
                 for kk = 1:length(all_categos)
@@ -284,114 +645,114 @@ classdef Repla < handle
                     relation_map(k,kk) = length(intersect(...
                         find([transitioncollect.first] == all_categos(k)),...
                         find([transitioncollect.second] == all_categos(kk))));
-                    
+
                     transition_statics(count).firstsyllable = k;
                     transition_statics(count).secondsyllable = kk;
                     transition_statics(count).firstsecond = [k,kk];
                     transition_statics(count).counts = relation_map(k,kk);
                 end
             end
-            
-             all_counts = sum(sum(relation_map));
-            
+
+            all_counts = sum(sum(relation_map));
+
             % sort the transition_statics and assign the rank
             transition_statics = table2struct(sortrows(struct2table(transition_statics),'counts','descend'));
             for k = 1:length(transition_statics)
                 transition_statics(k).rank = k; % rank越小， transition越常见
-                transition_statics(k).chance =  transition_statics(k).counts/all_counts;        
+                transition_statics(k).chance =  transition_statics(k).counts/all_counts;
             end
-            
+
         end
-        
-        
-        function drawFragSpec(all_eleinf,mode)
-            % A function to Draw spectrograms of already categorized fragments
-            
+
+
+        function drawreplaSpec(all_eleinf,mode)
+            % A function to Draw spectrograms of already categorized replaments
+
             fs = 32000;
             img = {};
-            
+
             switch mode
                 case 'by categos' % by number of categories
                     categos = unique([all_eleinf.catego].'); % 计算categos的数量
                     concated_y = {};
                     for k = 1: length(categos)
-                        
+
                         ids = find([all_eleinf.catego].' == categos(k));
                         gap = zeros(0.3*fs,1);
                         categoys = cellfun(@(x) vertcat(x,gap),{all_eleinf(ids).y}.','Uni',0);
                         concated_y{k} = vertcat(categoys{:});
-                        
+
                     end
-                    
+
                     max_y_length = max(cellfun(@length,concated_y));
-                    
-                    
+
+
                     for k = 1: length(categos)
-                        
-                        
+
+
                         concated_y{k} = [concated_y{k};zeros(max_y_length - length(concated_y{k}),1)];
-                        
+
                         figure('Position',[8 310 6000 716]);
                         Draw.spec(concated_y{k},fs);
                         img{k} = getframe(gcf).cdata;
                         close(gcf);
                     end
-                    
-                    
+
+
                 case 'by rows' % by number of rows
-                    
+
                     [~,index] = sortrows([all_eleinf.catego].'); all_eleinf = all_eleinf(index); clear index % sort all_eleinf
                     column_num = 10; % I should use fixed syllables for replacement
                     row_num = round(length(all_eleinf)/column_num);
-                    
+
                     for k = 1: row_num
-                        
+
                         ids = column_num*(k-1) + 1: min(column_num*k,length(all_eleinf));
                         gap = zeros(0.3*fs,1);
                         categoys = cellfun(@(x) vertcat(x,gap),{all_eleinf(ids).y}.','Uni',0);
                         concated_y = vertcat(categoys{:});
-                        
+
                         figure('Position',[14 829 1902 280]);
                         Draw.spec(concated_y,fs);
                         img{k} = getframe(gcf).cdata;
                         close(gcf);
-                        
+
                     end
             end
-            
+
             whole_img = vertcat(img{:});
-            imwrite(whole_img,'New_Frags_separated_by_frags.png')
+            imwrite(whole_img,'New_replas_separated_by_replas.png')
         end
 
-        
+
         % from csv sort figures
 
 
         function csv2Sortfig(csv_path,figdir)
             %csvpath = "E:\My_Analysis_by_date\0925_CheckNeuralResponseToReplas\FigOTE.csv";
-            
+
             otestruct = table2struct(readtable(csv_path))
             %figdir = "E:\My_Analysis_by_date\0925_CheckNeuralResponseToReplas\Figs_NewCon_OTE_For_TransStatastics\Figs_OTE";
             [~,figdirname,~]= fileparts(figdir)
             which_categos = unique([otestruct.catego].');
             outdir = sprintf('Sorted_%s_figs',figdirname);
-            
+
             for k = 1:length(which_categos)
                 subdirs{k} = sprintf('%s\\%u',outdir,which_categos(k));
                 mkdir(subdirs{k});
             end
-            
+
             if min(which_categos) == 0
                 method = 0;
             else
                 methods = 1;
             end
-              
-            
+
+
             for k = 1:length(otestruct)
                 if method == 0
                     targetdir = subdirs{otestruct(k).catego + 1};
-                    
+
                 else
                     targetdir = subdirs{otestruct(k).catego};
                 end
@@ -399,19 +760,19 @@ classdef Repla < handle
                 destiney = fullfile(targetdir,otestruct(k).name);
                 copyfile(source,destiney);
             end
-            
+
         end
 
         % from sorted fig regenrate csv
         function figdir2csv(figdir)
             %figdir = "E:\My_Analysis_by_date\0925_CheckNeuralResponseToReplas\Sorted_ote_repla_figs";
-            
+
             subdirs = Extract.folder(figdir);
-            
+
             figstruct = struct;
             count = 0;
             for k = 1:length(subdirs)
-                
+
                 [~,categoname,~] = fileparts(subdirs{k});
                 categonum = int16(str2double(categoname));
                 files = Extract.filename(subdirs{k},'*.png');
@@ -421,16 +782,48 @@ classdef Repla < handle
                     figstruct(count).name = strcat(name, ext);
                     figstruct(count).catego = categonum;
                 end
-                
+
             end
-            
+
             figtable = struct2table(figstruct);
             [~,figdirname,~] = fileparts(figdir);
-            
+
             writetable(figtable,sprintf('%s.csv',figdirname));
         end
 
-        
+
+        function fraglist = to2ndAcousticSpace(rp)
+            % compare the similarity between two-syllable sequence which
+            % triggered the neuron to respond and those did not
+
+
+            %             ids = find(~cellfun(@isempty, regexp({rp.list.stimuliname}.','repla'))); % find all frags
+            %
+            %             fraglist = neu.list(ids);
+
+            replalist = rp.replalist;
+
+            for n = 1: length(fraglist)
+                tempsum = Cal.psth_frag(fraglist(n).rawy,fraglist(n).fs,fraglist(n).rawsptimes);
+                range = 1 % the very fisrt 1 second
+                beginmax = max(tempsum(1: ceil(length(tempsum)*range/(length(fraglist(n).rawy)/fraglist(n).fs)) ));% the maximum value of the begining 0.5 second
+                halfsum = sum(tempsum(end/2:end));
+                fullsum = sum(tempsum);
+                maxvalue = max(Cal.psth_frag(fraglist(n).rawy,fraglist(n).fs,fraglist(n).rawsptimes));
+                fraglist(n).maxvalue = maxvalue;
+                fraglist(n).halfsum = halfsum;
+                fraglist(n).fullsum = fullsum;
+                fraglist(n).beginmax = beginmax;
+                if maxvalue > 8 % here the threshold is very important
+                    fraglist(n).label = 1;
+                else
+                    fraglist(n).label = 0;
+                end
+            end
+
+        end
+
+
     end
 end
 
