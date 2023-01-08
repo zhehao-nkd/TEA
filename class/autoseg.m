@@ -702,7 +702,7 @@ classdef autoseg
                     % remove some of the all_X if the distance between them are too short
                     ele_time_judge = [1,all_X(:).',length(e_max)];
                     
-                    if exist( 'CONFIG','var')
+                    if exist( 'CONFIG','var') % configs 可以跳过， set as default
                         short_ele = find(diff(ele_time_judge) < CONFIG.ele_time_judge);
                     else
                         short_ele = find(diff(ele_time_judge) < 28); % originallly set to 15

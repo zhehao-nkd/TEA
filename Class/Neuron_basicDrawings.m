@@ -25,6 +25,7 @@ classdef Neuron_basicDrawings <handle
         end
         
         function Three(neu,keyword)
+            % keyword可以是norm
             
             % draw three plot, using plt-data
             es = getAllEphysObject(neu);
@@ -49,7 +50,19 @@ classdef Neuron_basicDrawings <handle
             end
 
             figure('Position',PM.size1,'color','w');
-            neu.drawFirstWaveform;     % draw waveform
+            neu.waveform.draw1st;     % draw 第一个 waveform
+            frame = getframe(gcf);
+            I{length(I)+ 1} = frame.cdata;
+            close(gcf);
+
+            figure('Position',PM.size1,'color','w');
+            neu.waveform.drawAll;    % draw 所有的 waveform
+            frame = getframe(gcf);
+            I{length(I)+ 1} = frame.cdata;
+            close(gcf);
+
+            figure('Position',PM.size1,'color','w');
+            neu.waveform.drawSeparated;   % draw 所有的 waveform
             frame = getframe(gcf);
             I{length(I)+ 1} = frame.cdata;
             close(gcf);
@@ -73,7 +86,7 @@ classdef Neuron_basicDrawings <handle
             
         end
            
-        function drawFirstWaveform(neu)
+        function Deprecated_drawFirstWaveform(neu)
             
             % temporialriy neu.neurons{1}
             waveforms = neu.experiments{1}.waves.waveform;
@@ -86,7 +99,7 @@ classdef Neuron_basicDrawings <handle
             
         end
         
-        function drawAllWaveform(neu)
+        function Deprecated_drawAllWaveform(neu)
             % this function is used to draw waveform
             % what this works for concatenating all neurons together???
             for k = 1: length(neu.neurons)
@@ -102,7 +115,7 @@ classdef Neuron_basicDrawings <handle
             
         end
         
-        function drawSeparatedWaveform(neu,handle)
+        function Deprecated_drawSeparatedWaveform(neu,handle)
             
             fig = figure('Color','w');
             cmap = colormap(flip(hsv(5)));
@@ -349,7 +362,6 @@ classdef Neuron_basicDrawings <handle
             
         end
         
-  
         function deg_songnames = which_songs_are_targeted_for_further_modification(neu)
             
             degids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'deg|Deg')));

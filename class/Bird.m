@@ -11,11 +11,11 @@ classdef Bird < handle
     methods
 
         function b = Bird(~) % dirpath must be a char
-
+            diskletter = Utl.bucketletter;
             b.folders = Bird.birdsong;
 
-            pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx"
-            pathlist = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx"
+            pathlog = strcat(diskletter,":\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx");
+            pathlist = strcat(diskletter,":\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx");
 
             isoid = Bird.getIso(pathlog, pathlist); % 获取 isolated birdids  
             temp = arrayfun(@(x) find(~cellfun(@isempty, regexpi({b.folders.bnames}.', x))), isoid,'UniformOutput',0);
@@ -23,7 +23,22 @@ classdef Bird < handle
             morethan1bird_index = find(  cellfun(@length, regexp({b.folders.bnames}.', '[A-Za-z]+\d{3}'))~=1 );
             wierd_index = find(cellfun(@isempty, regexp({b.folders.bnames}.', '[OGBYR][a-zA-Z]*\d{3}')));
             juvonly_index = find(~[b.folders.adultsong].'); % 找到没有adult song的id
-            all_badindex = unique([iso_index;morethan1bird_index;wierd_index;juvonly_index]);
+
+            temp_gender = cellfun(@convertStringsToChars,{b.folders.gender}.','Uni',0);
+              temp_gender(cellfun(@isempty, temp_gender)) = {' '};
+            female_index = find(~cellfun(@isempty, regexp(cellstr(temp_gender),'♀'))); % ♀
+
+            temp_hatchdate = cellfun(@convertStringsToChars,{b.folders.hatchdate}.','Uni',0);
+            temp_hatchdate(cellfun(@isempty, temp_hatchdate)) = {' '};
+
+            temp_father = cellfun(@convertStringsToChars,{b.folders.father}.','Uni',0);
+            temp_father(cellfun(@isempty, temp_father)) = {' '};
+
+            bengalese_index = unique([find(~cellfun(@isempty, regexp(cellstr(temp_hatchdate),'BF')));...
+                find(~cellfun(@isempty, regexp(cellstr(temp_gender),'BF')));...
+                find(~cellfun(@isempty, regexp(cellstr(temp_father),'BF')))]); % 可能是Bengalese或者Beng-fostered
+
+            all_badindex = unique([iso_index;morethan1bird_index;wierd_index;juvonly_index;female_index;bengalese_index]);
 
             b.adultfolders = b.folders(setdiff(1:length(b.folders),all_badindex));
 % 
@@ -46,9 +61,9 @@ classdef Bird < handle
         function b = Deprecated_rmbad(input_dirs) % iso is a cell consists of isolated id
             input_dirs = Extract.folder("Z:\Yazaki-SugiyamaU\Bird-song").';
 
-            numVars = 5;
-            varNames = {'BirdID','Hatchdate','Gender','father','mother','isolate'} ;
-            varTypes = {'string','string','string','string','string','string'} ;
+            numVars = 7;
+            varNames = {'BirdID','Hatchdate','Gender','father','mother','parents','isolate'} ;
+            varTypes = {'string','string','string','string','string','string','string'} ;
             dataStartLoc = 'A2';
 
             opts = spreadsheetImportOptions('Sheet',1,'NumVariables',numVars,...
@@ -119,10 +134,10 @@ classdef Bird < handle
         function all_isoids = getIso(pathlog, pathlist)
             % 获取被隔离鸟的id
             % 被隔离的birdid可以从两个部分得到，一部分是birdlog，另一个是birdlist
-            
+            diskletter = Utl.bucketletter;
             dbstop if error
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%% 第一部分
-            pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx"
+            pathlog =  strcat(diskletter,":\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx");
             [~,sheets] = xlsfinfo(pathlog);
             sheetnum = length(sheets); % number of sheet in one xls file
 
@@ -162,9 +177,9 @@ classdef Bird < handle
         end
 
         function birdlist = readBirdlist(~)
-            numVars = 5;
-            varNames = {'BirdID','Hatchdate','Gender','father','mother','isolate'} ;
-            varTypes = {'string','string','string','string','string','string'} ;
+            numVars = 7;
+            varNames = {'BirdID','Hatchdate','Gender','father','mother','parents','isolate'} ;
+            varTypes = {'string','string','string','string','string','string','string'} ;
             dataStartLoc = 'A2';
 
             opts = spreadsheetImportOptions('Sheet',1,'NumVariables',numVars,...
@@ -259,18 +274,34 @@ classdef Bird < handle
             datestring2Date = @(x) datetime(x,'InputFormat','yyyy-MM-dd');
             pw = PoolWaitbar(length(folders), 'Checking bucket folders');
 
-            parfor k = 1: length(folders)
+           parfor k = 1: length(folders) % par
 
                 try
                     songstruct(k).raw_foldernames = Utl.fileparts(folders{k});
                     songstruct(k).bnames = Convert.bid(songstruct(k).raw_foldernames);
                     corresp_index = find(~cellfun(@isempty, regexp([birdlist.BirdID].',songstruct(k).bnames)));
+                    if length(corresp_index) > 1
+                        corresp_index = corresp_index(1); % 有时列表里有重复的行，这种时候只取第一个
+                    end
                     songstruct(k).hatchdate = birdlist.Hatchdate(corresp_index);
+                    if length(songstruct(k).hatchdate) > 1
+                        songstruct(k).hatchdate = unique(songstruct(k).hatchdate);
+                        if length(songstruct(k).hatchdate) > 1 || ~ischar(songstruct(k).hatchdate)% 如果是cell，取第一个
+                           songstruct(k).hatchdate = songstruct(k).hatchdate(1);
+                        end
+                    end
                     songstruct(k).gender = birdlist.Gender(corresp_index);
+                    if length(songstruct(k).gender) > 1
+                      songstruct(k).gender = vertcat(songstruct(k).gender{:}).'; 
+                    end
                     songstruct(k).father = birdlist.father(corresp_index);
                     if ismissing(songstruct(k).father)||isempty(songstruct(k).father)
                         songstruct(k).father = '0'; % 0 means unknown
+                    elseif length(songstruct(k).father)>1
+                        songstruct(k).father = songstruct(k).father{1};
                     end
+                    songstruct(k).mother = birdlist.mother(corresp_index);
+                    songstruct(k).parents = birdlist.parents(corresp_index);
                     corresp_log = readtable(fullfile(...
                         folders{k},sprintf('%s.log',songstruct(k).raw_foldernames)));
                     trick = corresp_log.Var3([1,2,height(corresp_log)-2,height(corresp_log)-1]); % trick to reduce time

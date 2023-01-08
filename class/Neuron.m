@@ -11,6 +11,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
         frag
         simsong % class to process similar song
         simatrix % A class store frag-frag distanced measured for different features
+        waveform
     end
 
     properties
@@ -84,7 +85,49 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
                 neu.getInfo_last;
                 neu.info.tags = neu.tags;
 
+                % 生成experiments
+                if length(neu.experiments)>1
+                    input = {};
+                    for k = 1:length(neu.experiments)
+                        input{k} = neu.experiments{k}.waves.waveform;
+                    end
+                    neu.waveform = SpikeWaveform(input,'multiple');
+
+                else
+                    input = struct;
+                    input.waveforms = neu.experiments{1}.waves.waveforms;
+                    input.times = neu.experiments{1}.waves.times;
+                    input.timedurations = neu.experiments{1}.waves.timedurations;
+
+                    neu.waveform = SpikeWaveform(input,'single or merge');
+
+
+                end
+                
+
               
+
+            end
+
+        end
+
+        function ZanShiDe_genExperiments(neu)
+
+            if length(neu.experiments)>1
+                input = {};
+                for k = 1:length(neu.experiments)
+                    input{k} = neu.experiments{k}.waves.waveform;
+                end
+                neu.waveform = SpikeWaveform(input,'multiple');
+
+            else
+                input = struct;
+                input.waveforms = neu.experiments{1}.waves.waveform;
+                input.times = neu.experiments{1}.waves.times;
+                input.timedurations = neu.experiments{1}.timeSections;
+
+                neu.waveform = SpikeWaveform(input,'single or merge');
+
 
             end
 
@@ -2154,15 +2197,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
         end
 
 
-        function neu = Deprecated_writeFigdata(neu)
-            % 生成这个Analysis的所有three plot的图片
-            figmat = {};
-            for k = 1: length(neu.experiments)
-                figmat{k} = neu.experiments{k}.writeFigdata
-            end
-            neu.figdata = horzcat(figmat{:});
-        end
-
+    
         
     end
 
@@ -2448,6 +2483,14 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
         end
 
 
+        function neu = Deprecated_writeFigdata(neu)
+            % 生成这个Analysis的所有three plot的图片
+            figmat = {};
+            for k = 1: length(neu.experiments)
+                figmat{k} = neu.experiments{k}.writeFigdata
+            end
+            neu.figdata = horzcat(figmat{:});
+        end
 
 
         function neu = Deprecated_splitStimuliResponsePairsToDifferentTypes(neu)

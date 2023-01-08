@@ -183,17 +183,17 @@ classdef MetaStimuli < handle
 
             tic
           
-            adultfilenames = Bird.getAdultSongs(singleFolder);
+            adultfilenames = Bird.getAdultSongs(singleFolder); % 首先，得到 adult songs
             if isempty(adultfilenames)
                 return
             end
             rawfiles = flip(sort(cellstr(adultfilenames)));
             %rawfiles = flip(sort(cellstr(Extract.filename(singleFolder,'*.wav')))); %(randperm(length(rawfiles)))
-            num_tosave = 10; % 30 files to copy for each folder
-            ampthres = 0.008;
-            minthres = 2;
-            maxthres = 15;
-            shortsig = 1.3; % longer than 1.5 seconds
+            num_tosave = 20; % 30 files to copy for each folder
+            ampthres = 0.008; %声信号振幅值是否足够
+            minthres = 2; %声文件最短时长
+            maxthres = 15;%声文件最长时长
+            shortsig = 1.3; %有声音的时间段的最短音长 % 之前使用过的threshold是1.5 seconds
             centroid_thres = 3200;
             redundancy = 0.3; % 0.5 seconds
             isi_dur_thres = 0.4; %  0.4 seconds : how long a duration will be regarded as separation of bouts
@@ -250,9 +250,9 @@ classdef MetaStimuli < handle
                     %<*>Judge Inter-segment-interval: Too strict criteria
 
                     interval = diff(sigpoints);
-                    index = find(interval> fs*isi_dur_thres); % ISI is the inter-syllable intervals
-                    isis = sort([sigpoints(index);sigpoints(index+1)],'ascend');
-                    edges =  [ min(sigpoints); isis;max(sigpoints)];
+                    index = find(interval> fs*isi_dur_thres); %  inter-syllable intervals 如果足够大的话就被认为是一个motif
+                    inter_motif_intervals = sort([sigpoints(index);sigpoints(index+1)],'ascend');
+                    edges =  [ min(sigpoints);inter_motif_intervals;max(sigpoints)];
 
                     subsets = struct([]);
                     internal_count = 0;
@@ -260,7 +260,7 @@ classdef MetaStimuli < handle
                         sectioned_signal = y(edges(2*kk-1) :edges(2*kk));
 
                         if length(sectioned_signal)/fs < 0.7... %如果这一段的song太短了
-                               ||mean(spectralCentroid(sectioned_signal,fs))<500
+                                ||mean(spectralCentroid(sectioned_signal,fs))<500
                             %fprintf('meanSpecCentroid is:%f',mean(spectralCentroid(sectioned_signal,fs)))
                             fprintf('sectioned signal not fit\r');
                             continue
@@ -268,6 +268,9 @@ classdef MetaStimuli < handle
 
                         fprintf('合格\r')
                         internal_count = internal_count + 1;
+
+                        multi_subsets{n} = subsets;
+                    end
 
                         % To be noticed that y and sectioned_signals are not equal
                         subsets(internal_count).y = y(max(1,edges(2*kk-1)-fs*redundancy):...
@@ -277,65 +280,62 @@ classdef MetaStimuli < handle
                         subsets(internal_count).terminal = edges(2*kk);
                         subsets(internal_count).sourcefile = rawfiles{n};
 
-                        % 这部分是为了判断motifs，以及对song syllable做分割
-                        subset_fiy = highpass(abs(subsets(internal_count).y),500,fs); %  to remove the noise generataed by low-frequency noise
-                        subset_ampenv = envelope(subset_fiy,320*3,'rms'); % amplitude envelope
-                        %figure; plot(ampenv); figure; Draw.spec(y,fs);% 1ms-32
-                        subset_sigpoints = find(subset_ampenv>ampthres); % sigs means significant signal points
+%                         % 这部分是为了判断motifs，以及对song syllable做分割
+%                         subset_fiy = highpass(abs(subsets(internal_count).y),500,fs); % filtered y, to remove the noise generataed by low-frequency noise
+%                         subset_ampenv = envelope(subset_fiy,320*3,'rms'); % amplitude envelope
+%                         %figure; plot(ampenv); figure; Draw.spec(y,fs);% 1ms-32
+%                         subset_sigpoints = find(subset_ampenv>ampthres); % sigs means significant signal points
+% 
+% 
+%                         subset_interval = diff(subset_sigpoints);
+%                         subset_index = find( subset_interval> 1); % ISI is the inter-syllable intervals
+%                         subset_isis = sort([subset_sigpoints(subset_index);subset_sigpoints(subset_index+1)],'ascend');
+%                         subset_edges =  [ min(subset_sigpoints); subset_isis;max(subset_sigpoints)];
+%                         %figure; plot(subset_fiy); hold on; xline(subset_edges)
+%                         raw_onset = subset_edges(1:2:length(subset_edges));
+%                         raw_offset = subset_edges(2:2:length(subset_edges));
+%                         raw_off_minus_on = raw_offset - raw_onset;
+%                         onset = raw_onset(find(raw_off_minus_on > 512));
+%                         offset = raw_offset(find(raw_off_minus_on > 512));
+%                         sim_mat = [];
+%                         for t = 1:length(onset)
+% 
+%                             frag1_y = subsets(internal_count).y(onset(t) :offset(t));
+%                             for tt = 1:length(onset)
+%                                 frag2_y = subsets(internal_count).y(onset(tt) :offset(tt));
+%                                 sound1 = SAT_sound(frag1_y,32000);
+%                                 sound2 = SAT_sound(frag2_y,32000);
+%                                 sim = SAT_similarity(sound1,sound2,0);
+%                                 sim.calculate_similarity;
+%                                 sim_mat(t,tt) = sim.score.accuracy;
+%                             end
+% 
+%                         end
+% 
+%                      %   calculate mfcc/stft similarity matrix
+%                      sat1 = SAT_sound(subset_fiy,fs);
+%                      sat2 = SAT_sound(subset_fiy,fs);
+%                      sim1 = SAT_similarity(sat1,sat2,0);
+%                      sim1.calculate_similarity;
+%                      sim1.score;
+%                      figure;
+%                      [coeffs,~,~,~] = mfcc(subset_fiy,fs);
+%                      figure; imagesc(sim_mat)
+% 
+%                      sim_mfcc = [];
+%                      for a = 1:size(coeffs,1)
+%                          vec1 = coeffs(a,:)
+%                          for aa = 1:size(coeffs,1)
+%                              vec2 = coeffs(aa,:);
+%                              sim_mfcc(a,aa) = 1- norm(vec1-vec2);
+%                          end
+%                      end
+% 
+%                      figure; imagesc(sim_mfcc);
+%                     end
 
 
-                        subset_interval = diff(subset_sigpoints);
-                        subset_index = find( subset_interval> 1); % ISI is the inter-syllable intervals
-                        subset_isis = sort([subset_sigpoints(subset_index);subset_sigpoints(subset_index+1)],'ascend');
-                        subset_edges =  [ min(subset_sigpoints); subset_isis;max(subset_sigpoints)];
-                        %figure; plot(subset_fiy); hold on; xline(subset_edges)
-                        raw_onset = subset_edges(1:2:length(subset_edges));
-                        raw_offset = subset_edges(2:2:length(subset_edges));
-                        raw_off_minus_on = raw_offset - raw_onset;
-                        onset = raw_onset(find(raw_off_minus_on > 512));
-                        offset = raw_offset(find(raw_off_minus_on > 512));
-                        sim_mat = [];
-                        for t = 1:length(onset)
-
-                            frag1_y = subsets(internal_count).y(onset(t) :offset(t));
-                            for tt = 1:length(onset)
-                                frag2_y = subsets(internal_count).y(onset(tt) :offset(tt));
-                                sound1 = SAT_sound(frag1_y,32000);
-                                sound2 = SAT_sound(frag2_y,32000);
-                                sim = SAT_similarity(sound1,sound2,0);
-                                sim.calculate_similarity;
-                                sim_mat(t,tt) = sim.score.accuracy;
-
-
-                            end
-
-                        end
-
-                        %calculate mfcc/stft similarity matrix
-                        figure; [coeffs,delta,deltaDelta,loc] = mfcc(subset_fiy,fs)
-                        figure; imagesc(sim_mat)
-
-                        sim_mfcc = []
-                        for a = 1:size(coeffs,1)
-                            vec1 = coeffs(a,:)
-                            for aa = 1:size(coeffs,1)
-                                vec2 = coeffs(aa,:);
-                                sim_mfcc(a,aa) = 1- norm(vec1-vec2);
-                            end
-                        end
-
-                        figure; imagesc(sim_mfcc)
-
-
-
-
-
-
-                    end
-
-
-                    multi_subsets{n} = subsets;
-                end
+        
 
                 toc
                 candidates = horzcat(candidates,horzcat(multi_subsets{:}));
@@ -343,16 +343,18 @@ classdef MetaStimuli < handle
                 if length(candidates) >= num_tosave
                     break
                 end
+                end
 
             end
 
             target_dir = '.\'; %bf.inout_dir; % "E:\WavsCollection" % destination
             [~,birdid,~] = fileparts(singleFolder);
-            mkdir(sprintf('%s\\%s',target_dir,birdid));
+            birdid = Convert.bid(birdid,1);
+            mkdir(sprintf('%s%s',target_dir,birdid));
 
 
             for a = 1: min(num_tosave,length(candidates) )
-                candidates(a).name = sprintf('%s\\%s\\%s-%u.wav',target_dir,birdid,birdid,a);
+                candidates(a).name = sprintf('%s%s\\%s-%u.wav',target_dir,birdid,birdid,a);
                 audiowrite(candidates(a).name,...
                     candidates(a).y,candidates(a).fs);
             end
@@ -367,7 +369,7 @@ classdef MetaStimuli < handle
 
         end
 
-        function pickupMotifsFromBucket2(singleFolder)
+        function Deprecated_pickupMotifsFromBucket2(singleFolder)
 
             % To Extract several song files from a target folder
             % singleFolder is the path of a single folder in bucket server
@@ -481,7 +483,7 @@ classdef MetaStimuli < handle
 
             target_dir = '.\'; %bf.inout_dir; % "E:\WavsCollection" % destination
             [~,birdid,~] = fileparts(singleFolder);
-            mkdir(sprintf('%s\\%s',target_dir,birdid));
+            mkdir(sprintf('%s\\%s',target_dir,Convert.bid(birdid,1)));
 
 
             for a = 1: min(num_tosave,length(candidates) )
@@ -500,7 +502,6 @@ classdef MetaStimuli < handle
             toc
 
         end
-
 
         function all_eleinf = getAllTwoMotifEleinf(two_motif_ele_dir)
             if ~exist('two_motif_ele_dir','var')
@@ -554,6 +555,39 @@ classdef MetaStimuli < handle
             end
 
             metadata_withcatego = metadata;
+
+        end
+
+        function catego = categorizeByBingyang(y,fs,bingyang)
+
+            featurespace = [];
+            for k = 1:length(bingyang)
+                bingyang(k).sat.meanfeatures.dur = length(bingyang(k).y); % 加上syllable duration试一试
+                featurespace(k,:) = cell2mat(struct2cell(bingyang(k).sat.meanfeatures));
+            end
+
+            test = SAT_sound(y,fs);
+            test.meanfeatures.dur = length(y); % 加上syllable duration
+            featurespace(k+1,:) = cell2mat(struct2cell(test.meanfeatures));
+
+            %由于每个feature绝对大小的区间不同，每个feature的比重不一样，所以要zscore一下
+            z_featurespace = zscore(featurespace,0,1); % zscore比 rescale为（0，1）更靠谱
+            test_coor = z_featurespace(k+1,:);
+
+            for a = 1:length(bingyang)
+                bingyang(a).coor = z_featurespace(a,:);
+                bingyang(a).disfeature = norm(bingyang(a).coor - test_coor);
+            end
+
+            %计算test（被测）与每个catego的兵样的平均距离
+            unique_categos = unique([bingyang.catego].');
+            distances = [];
+            for b = 1:length(unique_categos)
+                local_BY = bingyang([bingyang.catego].'== unique_categos(b)); % 同一个catego的兵样
+                distances(b) = mean([local_BY.disfeature].');
+            end
+
+            [~,catego] = min(distances); % 与哪个catego平均距离最小，就归为哪个catego
 
         end
 

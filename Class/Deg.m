@@ -157,10 +157,12 @@ classdef Deg < handle
             %ids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'deg'))); % find all norms
 
             for k = 1:length(dg.deglist) % 当有多个degsong target的时候
+                
                 locallist = dg.deglist{k};
 
 
                 ids_norm = find(~cellfun(@isempty, regexp(cellstr({locallist.stimuliname}.'),'norm')));
+                % ids_norm 有很多时取第一个吧？？ 2023.01.06 无法推进，暂停在此处
 
                 for m = 1: length(locallist) %setdiff([1: length(locallist)],ids_norm)
 

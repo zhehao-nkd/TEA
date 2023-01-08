@@ -9,13 +9,16 @@ classdef Frag < handle
         list
         formated_name
         simatrix
+        weird_fraglist %某些fraglist包含了一些经过了特殊modification的syllables
     end
     methods
         function fg = Frag(list)
             fg.list = list;
 
-            fragids = find(~cellfun(@isempty, regexp(cellstr({fg.list.stimuliname}.'),'frag|Frag') ));
-            list_contain_frags = fg.list(fragids);
+            include_weird_fragids = find(~cellfun(@isempty, regexp(cellstr({fg.list.stimuliname}.'),'frag|Frag') ));
+            pure_fagids = find(~cellfun(@isempty, regexp(cellstr({fg.list.stimuliname}.'),'^Frag') ));
+            fg.weird_fraglist = fg.list(setdiff(include_weird_fragids,pure_fagids));
+            list_contain_frags = fg.list(pure_fagids);
             frag_birdids = cellfun(@Convert.bid, cellstr({list_contain_frags.stimuliname}.'),'Uni',0);
             unique_frag_birdids = unique(frag_birdids);
             unpack = @(x) x{1};
@@ -984,6 +987,58 @@ classdef Frag < handle
         end
 
 
+
+    end
+
+    methods(Static)
+
+        function sorted_presented_eleinf = findDist2Target(presented_eleinf,targetname,all_eleinf)
+            % 根据与target之间的距离对eleinf进行排序
+            
+            % presented_eleinf = A.frag.fraglist;
+            % targetname = A.knowTarget{1}
+            % all_eleinf = all_eleinf
+
+            %首先把all_eleinf里的坐标值全部赋予presented_eleinf
+            for k = 1:length(presented_eleinf)
+                temp = erase(presented_eleinf(k).stimuliname,'Frag-');
+                purename = erase(temp,regexp(presented_eleinf(k).stimuliname,'-\d+Pulses','match'));
+                songname = erase(purename,regexp(purename,'-\d+$','match'));
+                fragid = str2num(regexp(purename,'(?<=-)\d+$','match'));
+
+                hitsongname = find(strcmp(songname,[all_eleinf.songname].'));
+                hitfragid = find(eq(fragid,[all_eleinf.fragid].'));
+                hitfinal = intersect(hitsongname,hitfragid);
+
+                presented_eleinf(k).coor = [all_eleinf(hitfinal).coor_1,all_eleinf(hitfinal).coor_2];
+
+            end
+
+            % 找到target并计算所有presented syllables与target之间的距离
+            targetid = find(~cellfun(@isempty,regexp([presented_eleinf.stimuliname].',targetname)));
+            if length(targetid)> 1
+                disp('@Frag.findDist2Target---presented frag stimuli可能有多个')
+                targetid = targetid(1); % targetid可能有多个，这时只取第一个
+            end
+            for k = 1:length(presented_eleinf)
+
+                try
+                    presented_eleinf(k).dist_with_target = norm(presented_eleinf(k).coor-presented_eleinf(targetid).coor);
+                catch
+                    presented_eleinf(k).dist_with_target = inf;  % 有的时候这个值不存在，那就设为inf
+                end
+
+               
+
+            end
+
+
+            [~,index] = sortrows([presented_eleinf.dist_with_target].');
+            sorted_presented_eleinf = presented_eleinf(index); % close id 是从相似度由高到低排列的
+            clear index
+
+
+        end
 
     end
 

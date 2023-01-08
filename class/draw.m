@@ -28,28 +28,22 @@ classdef Draw
         
         end
             
-        function spec6(y,fs)
-            
-            %             idx = find(y,1);
-            %             zpt = idx/fs; % zp means Zero Point
-            
-            try
-                spectrogram(y,hamming(512),512-round(fs/1e3),512,fs,'yaxis'); colorbar('off');
-                
-                axh = gca;                                             %add this
-                axh.Toolbar = matlab.ui.controls.AxesToolbar();       %add this
-                hold on;
-            catch Err
-                disp('Error!!')
-            end
-            
-            ylabel('Hz','FontSize',18);
-            xlabel('Time (s)');
-            ax.XLim             = [0 length(y)/fs];
-            
-            ydata = get(gca,'Ylim');
-            % line([idx/fs,idx/fs],[min(ydata),max(ydata)],'color','r');
-            
+        function specForPaper(y,fs) % 改自spec6
+
+           % figure('Position',[305 596 1413 492])
+            Draw.spec(y,fs);
+            set(gca,'FontSize',30);
+            xticks([0 1 2 3 4 5 6 7]);
+            xticklabels({'0','1','2','3','4','5','6','7'});
+            yticks([0 8000 16000]);
+            yticklabels({'0','8k','16k'});
+            %             ax= gca;
+            %             ax.YLabel.FontSize = 28;
+            %             ax.XLabel.FontSize = 28;
+            ylabel('F(Hz)','FontSize',35);
+
+         
+
         end
         
         function spec256(y,fs)  % windows size 256??????

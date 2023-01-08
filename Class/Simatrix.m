@@ -33,6 +33,7 @@ classdef Simatrix < handle
                 for kk = 1:length(thosefeatures)
                     eval(['s.features.',thosefeatures{kk},'(k)','= fraglist(k).meanfeatures.',thosefeatures{kk},';']);
                 end
+                s.features.dur = length(fraglist(k).y); % 计算input的长度，并把它作为一个feature
             end
 
 
@@ -76,55 +77,57 @@ classdef Simatrix < handle
 
 
             % 下面是关于best stimuli 的初始化
-            s.fraglist = table2struct( sortrows(struct2table(fraglist),'maxsdf','descend') ); % 这一步确定谁是best stimuli，十分重要
-            %
-            beststimuli = SAT_sound(s.fraglist(1).y,s.fraglist(1).fs);
-
-            try
-                [mfcc_beststimuli,~,~,~] = mfcc(s.fraglist(1).y,s.fraglist(1).fs);
-            catch % 如果fraglist y 太短的话，在后面补零试一试，补零之后再去掉补零部分的mfcc,但因为只有一帧所以没办法补
-                [mfcc_beststimuli,~,~,~] = mfcc([s.fraglist(1).y;zeros(s.fraglist(1).fs*0.03 -length(s.fraglist(1).y),1)],fraglist(1).fs);
-            end
-
-           
-
-            for k = 1:length(s.fraglist)
-                sim = SAT_similarity(beststimuli,SAT_sound(s.fraglist(k).y,s.fraglist(k).fs),0);
-                sim.calculate_similarity;
-                s.fraglist(k).accuracy = sim.score.accuracy;
-                s.fraglist(k).similarity = sim.score.similarity; % or accuracy
-                %calculate distance in different features
-
-                 feature_names = setdiff(fieldnames(s.features),'stimuliname');
-
-                 for kk = 1:length(feature_names)
-
-                     eval(['s.fraglist(k).',feature_names{kk},' = norm(fraglist(1).meanfeatures.',feature_names{kk},' - fraglist(k).meanfeatures.',feature_names{kk},');']);
-
-                 end
-
+            if isfield(fraglist,'maxsdf')
+                s.fraglist = table2struct( sortrows(struct2table(fraglist),'maxsdf','descend') ); % 这一步确定谁是best stimuli，十分重要
+                %
+                beststimuli = SAT_sound(s.fraglist(1).y,s.fraglist(1).fs);
 
                 try
-                    [mfcc_specific_stimuli,~,~,~] = mfcc(s.fraglist(k).y,s.fraglist(k).fs);
+                    [mfcc_beststimuli,~,~,~] = mfcc(s.fraglist(1).y,s.fraglist(1).fs);
                 catch % 如果fraglist y 太短的话，在后面补零试一试，补零之后再去掉补零部分的mfcc,但因为只有一帧所以没办法补
-                    [mfcc_specific_stimuli,~,~,~] = mfcc([s.fraglist(k).y;zeros(s.fraglist(k).fs*0.03 -length(s.fraglist(k).y),1)],fraglist(k).fs);
+                    [mfcc_beststimuli,~,~,~] = mfcc([s.fraglist(1).y;zeros(s.fraglist(1).fs*0.03 -length(s.fraglist(1).y),1)],fraglist(1).fs);
                 end
 
-                mfcc_matrix = [];
-                for a = 1:size(mfcc_beststimuli,1)
-                    vec1 = mfcc_beststimuli(a,:);
-                    for aa = 1:size(mfcc_specific_stimuli,1)
-                        vec2 = mfcc_specific_stimuli(aa,:);
-                        mfcc_matrix(a,aa) =  norm(vec1-vec2);
+
+                % For calculating similarities towards the best stimuli
+                for k = 1:length(s.fraglist)
+                    sim = SAT_similarity(beststimuli,SAT_sound(s.fraglist(k).y,s.fraglist(k).fs),0);
+                    sim.calculate_similarity;
+                    s.fraglist(k).accuracy = sim.score.accuracy;
+                    s.fraglist(k).similarity = sim.score.similarity; % or accuracy
+                    %calculate distance in different features
+
+                    feature_names = setdiff(fieldnames(s.features),'stimuliname');
+
+                    for kk = 1:length(feature_names)
+
+                        eval(['s.fraglist(k).',feature_names{kk},' = norm(fraglist(1).meanfeatures.',feature_names{kk},' - fraglist(k).meanfeatures.',feature_names{kk},');']);
+
                     end
+
+
+                    try
+                        [mfcc_specific_stimuli,~,~,~] = mfcc(s.fraglist(k).y,s.fraglist(k).fs);
+                    catch % 如果fraglist y 太短的话，在后面补零试一试，补零之后再去掉补零部分的mfcc,但因为只有一帧所以没办法补
+                        [mfcc_specific_stimuli,~,~,~] = mfcc([s.fraglist(k).y;zeros(s.fraglist(k).fs*0.03 -length(s.fraglist(k).y),1)],fraglist(k).fs);
+                    end
+
+                    mfcc_matrix = [];
+                    for a = 1:size(mfcc_beststimuli,1)
+                        vec1 = mfcc_beststimuli(a,:);
+                        for aa = 1:size(mfcc_specific_stimuli,1)
+                            vec2 = mfcc_specific_stimuli(aa,:);
+                            mfcc_matrix(a,aa) =  norm(vec1-vec2);
+                        end
+                    end
+                    mfcc_matrix = 1 - rescale(mfcc_matrix); % transfer dissimilarity matrix to similarity matrix
+                    fraglist(k).mfcc_meansim = mean(mean(mfcc_matrix));
+                    fraglist(k).perc_highsim = length(find(mfcc_matrix > 0.78))/(size(mfcc_matrix,1)*size(mfcc_matrix,2));
+
+                    %                 figure; imagesc(mfcc_matrix);
                 end
-                mfcc_matrix = 1 - rescale(mfcc_matrix); % transfer dissimilarity matrix to similarity matrix
-                fraglist(k).mfcc_meansim = mean(mean(mfcc_matrix));
-                fraglist(k).perc_highsim = length(find(mfcc_matrix > 0.78))/(size(mfcc_matrix,1)*size(mfcc_matrix,2));
 
-                %                 figure; imagesc(mfcc_matrix);
             end
-
 
 
         end

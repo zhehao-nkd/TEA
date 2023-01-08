@@ -17,7 +17,16 @@ classdef Repla < handle
             rp.judgeReplaResp; % judgeReplaResponse是在生成replalist之后的，所以应该比较方便修改
             
             for k = 1:length(rp.replalist)
-                rp.simatrix{k} = Simatrix(rp.replalist{k});
+
+                pseudo_list = struct('stimuliname',{rp.replalist{k}.stimuliname}.','y',{rp.replalist{k}.replaceparty}.',...
+                    'fs',{rp.replalist{k}.fs}.','label',{rp.replalist{k}.label}.'); % 把replalist变成fraglist的格式，以便计算simatrix
+                for kk = 1:length(pseudo_list)
+                    tempsat = SAT_sound(pseudo_list(kk).y,pseudo_list(kk).fs);
+                    pseudo_list(kk).features = tempsat.features;
+                    pseudo_list(kk).meanfeatures = tempsat.meanfeatures;
+
+                end
+                rp.simatrix{k} = Simatrix(pseudo_list);
             end
 
 
@@ -29,24 +38,36 @@ classdef Repla < handle
 
             replaids = find(~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),'repla|Repla') ));
             list_contain_replas = rp.list(replaids);
-            repla_birdid = cellfun(@(x) Convert.bid(x,2), cellstr({list_contain_replas.stimuliname}.'),'Uni',0);
-            unique_repla_birdids = unique(repla_birdid);
+
+            second_syl = {};
+            for k = 1:length(list_contain_replas)
+                second_syl{k} = regexp(list_contain_replas(k).stimuliname,'(?<=before-)\S+(?=-gapis-)','match'); % combination中的第二位
+            end
+            second_syl = cellstr(second_syl.');
+            unique_2ndsyl = unique(second_syl);
+            unique_2ndbird = cellfun(@(x) Convert.bid(x,1),unique_2ndsyl,'Uni',0);
+            %repla_birdid = cellfun(@(x) Convert.bid(x,2), cellstr({list_contain_replas.stimuliname}.'),'Uni',0);
+            %unique_repla_birdids = unique(repla_birdid);
             unpack = @(x) x{1};
 
-            for k = 1:length(unique_repla_birdids) % 筛选出repla stimuli构成list
-                correspids = strcmp(unique_repla_birdids{k},repla_birdid); % 找到有这个birdid的所有repla的ids,这ids是关于list_contain_replas的
+            for k = 1:length(unique_2ndsyl) % 筛选出repla stimuli构成list
+                correspids = strcmp(unique_2ndsyl{k},second_syl); % 找到有这个birdid的所有repla的ids,这ids是关于list_contain_replas的
                 rp.replalist{k} = list_contain_replas(correspids);
 
                 corresp_fid = unpack(unique({rp.replalist{k}.Fid}.')); % 找到repla stimuli对应的fid
 
-                corresp_norm = mintersect( find(~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),unique_repla_birdids{k}))),...
+                corresp_norm = mintersect( find(~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),unique_2ndbird{k}))),...
                     find(~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),'norm'))),...
                     find(~cellfun(@isempty, regexp(cellstr({rp.list.Fid}.'),corresp_fid))) );
 
                 if isempty(corresp_norm ) %如果因为实验中的疏漏没有在repla环节播放norm song， % 那么取其他次播放的norm song
-                    corresp_norm = min(intersect( find(~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),unique_repla_birdids{k}))),...
+                    corresp_norm = min(intersect( find(~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),unique_2ndbird{k}))),...
                         find(~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),'norm'))))); % 如果对应了多个值，那么取最小的那个
 
+                elseif length(corresp_norm)>1
+                    % 如果因为一些bug或者其他什么原因导致依旧有多个norm song的话，取序数最大的
+                    % （这个做法很武断，但是权宜之计，而如果merged file只有一个Fid的bug能够被成功修复的话，这种话情况不会发生）
+                    corresp_norm = max(corresp_norm);
                 end
 
                 rp.replalist{k} = vertcat(rp.list(corresp_norm).',rp.replalist{k}.');
@@ -80,7 +101,7 @@ classdef Repla < handle
                 % 最后填充norm song的信息
                 splited = split(Replst_fnames{k_of_norm},{'-before-','-gapis-'});
                 thislist(k_of_norm).bname1 = Convert.bid(splited{1});
-                thislist(k_of_norm).fid1 =  thislist(k_of_norm+1).fid2-1
+                thislist(k_of_norm).fid1 =  thislist(k_of_norm+1).fid2-1;
                 thislist(k_of_norm).bname2 = thislist(k_of_norm).bname1 ;
                 thislist(k_of_norm).fid2 = thislist(k_of_norm+1).fid2;
                 thislist(k_of_norm).concat1 = sprintf('%s-%02u',thislist(k_of_norm).bname1,thislist(k_of_norm).fid1);
@@ -122,10 +143,14 @@ classdef Repla < handle
                 for kk = 1:length(allids)
 
                     if allids(kk) == nid
-                        Ini_replay = unique(Ini_y_collect) + (find(sublist(nid).y(Ini_y_collect:end),1)-1);  
+
+                        convergentpoint = unique(Ini_y_collect); % 因为norm和本身没有分歧，所以他的分歧点要靠其他repla来确定
+            
+                        Ini_replay = unique(Ini_y_collect) + (find(sublist(nid).y(unique(Ini_y_collect):end),1)-1);  
                     else
 
                         [Ini_y,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla( sublist(nid).y,sublist(allids(kk)).y);
+                        %Ini_y是在y上的分歧点坐标，而Ini_replay是在replay上的分歧点坐标
                         %    figure; subplot(211);Draw.spec(sublist(nid).y,32000);subplot(212); Draw.spec(sublist(rids(kk)).y,32000);
                         if Ini_y == 0
                             Ini_y = 1; % dangerous code
@@ -135,19 +160,35 @@ classdef Repla < handle
                         end
 
                         num_of_zeros = find(sublist(nid).y(Ini_y:end),1)-1; % 在分歧点后多长一段是0
-                        Ini_y_collect(kk) = Ini_y + num_of_zeros;  % y of the responsive parts
+                        convergentpoint = unique(Ini_y_collect);
+                        Ini_y_collect(kk) = Ini_y; %+ num_of_zeros;  % y of the responsive parts
+                        raw_Ini_replay = Ini_replay;
                         Ini_replay = Ini_replay + num_of_zeros;
 
                     end
-               
-                    try
+
+                    try %不管当前是不是norm song都不影响的
                         sublist(allids(kk)).targety = sublist(allids(kk)).y(Ini_replay:Ini_replay + 0.2*sublist(allids(kk)).fs); % 截取200ms
-                        sublist(allids(kk)).replaceparty = sublist(allids(kk)).y(1:Ini_replay ); % 被替换的那一部分的y值
                     catch % if the second index overceed 当剩下的distance小于200ms时
                         sublist(allids(kk)).targety = sublist(allids(kk)).y(Ini_replay:end); % 截取到 end
-                        sublist(allids(kk)).replaceparty = sublist(allids(kk)).y(1:Ini_replay ); % 被替换的那一部分的y值
                         disp(' MEssage@Neuron.judgeReplaResp :Overceed');
                     end
+               
+                    if allids(kk) == nid % 如果当前是norm song的话
+                        frags = Segment.segNormalizedSong(sublist(nid).y(1:Ini_replay),sublist(nid).fs);
+
+                        last_initial = max([frags.initial].'); % 最末一个syllable的起始点
+                      
+                        sublist(allids(kk)).replaceparty = sublist(allids(kk)).y(last_initial:convergentpoint); % 被替换的那一部分的y值
+%                         figure;
+%                         plot(sublist(allids(kk)).y(1:Ini_replay))
+
+                    else
+                        sublist(allids(kk)).replaceparty = sublist(allids(kk)).y(1:raw_Ini_replay); % 被替换的那一部分的y值
+
+                    end
+                  
+                
                     sublist(allids(kk)).targetsptimes = Extract.sptimes_resetSP(sublist(allids(kk)).sptimes,Ini_replay/32000,(Ini_replay + 0.2*sublist(allids(kk)).fs)/sublist(allids(kk)).fs);
                     sublist(allids(kk)).replacepartsptimes = Extract.sptimes_resetSP(... % replacepart, sptimes
                         sublist(allids(kk)).sptimes,1,Ini_replay/sublist(allids(kk)).fs);
@@ -505,6 +546,32 @@ classdef Repla < handle
 
 
     methods(Static)
+
+        function result = getNumTestedNumResponsive(A,bingyang)
+            locallist = A.repla.replalist{1};%这里取{1}有些武断了
+            normid = find(~cellfun(@isempty, regexp(cellstr({locallist.stimuliname}.'),'norm')));
+
+            catego_norm = MetaStimuli.categorizeByBingyang(locallist(normid).replaceparty,32000, bingyang);
+
+            purelocallist = locallist(find(cellfun(@isempty, regexp(cellstr({locallist.stimuliname}.'),'norm'))));% 去掉了norm项
+
+            for k = 1:length(purelocallist)
+                purelocallist(k).catego = MetaStimuli.categorizeByBingyang(purelocallist(k).replaceparty,32000,bingyang);
+            end
+
+            % 同组
+            result.num_tested_simgroup = length(find([purelocallist.catego].'==catego_norm));
+            result.num_responsive_simgroup = length(find([purelocallist.catego].'==catego_norm & [purelocallist.label].'==1));
+
+            % 异组
+            result.num_tested_difgroup = length(find([purelocallist.catego].'~=catego_norm));
+            result.num_responsive_difgroup = length(find([purelocallist.catego].'~=catego_norm & [purelocallist.label].'==1));
+
+            %所有组
+            result.num_tested_allgroup = length(find([purelocallist.catego].'));
+            result.num_responsive_allgroup = length(find([purelocallist.label].'==1));
+
+        end
 
 
         function [ConvergentIndexY,ConvergentIndexReplaY] = findConergentPointBetwenNormAndRepla(y, yrepla) % find the correspoding initial timestamps by aliging two time series

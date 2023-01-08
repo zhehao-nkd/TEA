@@ -202,7 +202,11 @@ classdef Sultan < handle
 
             figure;
             temp = {ainf.fr_info}.';
-            fr_info = vertcat(temp{:});
+            fr_info = struct;
+            for k = 1:length(temp)
+                fr_info(k).mean_pre_fr = temp{k}.mean_pre_fr; % fr_info = vertcat(temp{:});
+            end
+%             
             scatter([fr_info.mean_pre_fr].',[ainf.wl].')
             xlabel('Spon FR')
             ylabel('Spike Width')
@@ -234,6 +238,13 @@ classdef Sultan < handle
             %             isspa = find([ainf.isSparse] == 1);
             %             notisspa = find([ainf.isSparse] == 0);
 
+
+            maskEmptyId = arrayfun(  @(a)isempty(a.sumsparseness),  ainf  );
+            [ainf(maskEmptyId).sumsparseness] = deal(nan); % 把ainf的sumsparseness空项设为零
+
+
+            maskEmptyId = arrayfun(  @(a)isempty(a.wl),  ainf  );
+            [ainf(maskEmptyId).wl] = deal(nan); % 把ainf的空项设为零
 
 
             xyzpoints = horzcat([ainf.sumsparseness].',[fr_info.mean_pre_fr].',[ainf.wl].')
@@ -712,57 +723,7 @@ classdef Sultan < handle
         end
 
 
-        function wlfr_info = plotWavelengthVsFiringRate(st)
-
-            wl_info = calWavelength(st);
-            fr_info = multiRepeatsFiringRate(st);
-
-            ids_in_fr = [];
-            for k = 1: length(wl_info)
-                ids_in_fr(k) = find(strcmp(wl_info(k).neuronname,{fr_info.neuronname}.'));
-            end
-
-            fr_info = fr_info(ids_in_fr); % re-order
-
-            fr_info = rmfield( fr_info,'neuronname');
-
-            wlfr_info = table2struct([struct2table(wl_info),struct2table(fr_info)]);
-
-            fig = figure;
-            h = scatter([wlfr_info.wl],[wlfr_info.mean_plt_fr]);
-            xlabel('Mean Spike width');
-            ylabel('Spontaneous Firing Rate');
-            title('Brush BS neurons!');
-            brush on
-            pause(10)
-            brush off
-            title('');
-            brushdata = logical(get(h, 'BrushData'));
-            brushed_ids = find(brushdata);
-            not_brushed_ids = find(brushdata == 0);
-            [wlfr_info(:).isBS] = deal(0);
-            for w = 1: length(brushed_ids)
-                wlfr_info(brushed_ids(w)).isBS = 1;
-            end
-            close(fig);
-
-
-
-            figure;
-            hold on
-            scatter([wlfr_info(brushed_ids).wl],[wlfr_info(brushed_ids).mean_plt_fr],[], [0.8500 0.3250 0.0980],'filled');
-            scatter([wlfr_info(not_brushed_ids).wl],[wlfr_info(not_brushed_ids).mean_plt_fr],[],[0 0.4470 0.7410],'filled');
-            xlabel('Mean Spike width');
-            ylabel('Spontaneous Firing Rate');
-
-            %disp(brushed);
-
-            %             figure;
-            %             scatter([wlfr_info.wl],[wlfr_info.mean_plt_fr]);
-            %             xlabel('Mean Spike width');
-            %             ylabel('Evoked Firing Rate');
-        end
-
+ 
         function allSongallNeurons_FolderOrder(st) % 顺序是源文件夹的顺序
 
             % Extract binarized neuron'st responses to CONs
@@ -2116,6 +2077,10 @@ classdef Sultan < handle
 
 
 
+    end
+
+    methods(Static) % 新的静态方法
+
         function conlist = plotWLvsFR(conlist)
 
 
@@ -2165,9 +2130,7 @@ classdef Sultan < handle
             %             xlabel('Mean Spike width');
             %             ylabel('Evoked Firing Rate');
         end
-    end
 
-    methods(Static) % 新的静态方法
 
         function writeCONSPEFig(matdir)
             anafiles = Extract.filename(matdir,'*.mat');
@@ -3545,6 +3508,58 @@ classdef Sultan < handle
 
         end
 
+        function wlfr_info = Deprecated_plotWavelengthVsFiringRate(st)
+            %这个似乎还在用先前使用的brush的方法，所以被弃用
+            % 这个函数的功能可以完全被How_Could_NCM_Neurons_Be_Splitted_By_WL_And_FR替代
+
+            wl_info = calWavelength(st);
+            fr_info = multiRepeatsFiringRate(st);
+
+            ids_in_fr = [];
+            for k = 1: length(wl_info)
+                ids_in_fr(k) = find(strcmp(wl_info(k).neuronname,{fr_info.neuronname}.'));
+            end
+
+            fr_info = fr_info(ids_in_fr); % re-order
+
+            fr_info = rmfield( fr_info,'neuronname');
+
+            wlfr_info = table2struct([struct2table(wl_info),struct2table(fr_info)]);
+
+            fig = figure;
+            h = scatter([wlfr_info.wl],[wlfr_info.mean_plt_fr]);
+            xlabel('Mean Spike width');
+            ylabel('Spontaneous Firing Rate');
+            title('Brush BS neurons!');
+            brush on
+            pause(10)
+            brush off
+            title('');
+            brushdata = logical(get(h, 'BrushData'));
+            brushed_ids = find(brushdata);
+            not_brushed_ids = find(brushdata == 0);
+            [wlfr_info(:).isBS] = deal(0);
+            for w = 1: length(brushed_ids)
+                wlfr_info(brushed_ids(w)).isBS = 1;
+            end
+            close(fig);
+
+
+
+            figure;
+            hold on
+            scatter([wlfr_info(brushed_ids).wl],[wlfr_info(brushed_ids).mean_plt_fr],[], [0.8500 0.3250 0.0980],'filled');
+            scatter([wlfr_info(not_brushed_ids).wl],[wlfr_info(not_brushed_ids).mean_plt_fr],[],[0 0.4470 0.7410],'filled');
+            xlabel('Mean Spike width');
+            ylabel('Spontaneous Firing Rate');
+
+            %disp(brushed);
+
+            %             figure;
+            %             scatter([wlfr_info.wl],[wlfr_info.mean_plt_fr]);
+            %             xlabel('Mean Spike width');
+            %             ylabel('Evoked Firing Rate');
+        end
 
 
 

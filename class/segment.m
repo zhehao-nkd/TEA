@@ -2,7 +2,7 @@
 
 % I will have to rewrite segment function to a much broader one which can
 % use either eleinf,autoseg, simpelseg algorithms
-classdef segment < handle
+classdef Segment < handle
     
     properties
         y
@@ -272,6 +272,70 @@ classdef segment < handle
         
     end
     
+
+    methods(Static)
+
+        function frag = segNormalizedSong(y,fs)
+            % suitable for already normalized signal
+            % 复制自 Segment.seg5;
+%              mingap = 0.0000;
+%             thres = 0.00056;
+%             env =  medfilt1(abs(s.y),700,'truncate');
+            y_pad0 = [y;zeros(100,1)];
+            mingap = 0.0001;
+            thres = 0.0000;
+            env = abs(y_pad0);
+            %env =  medfilt1(abs(y_pad0),750,'truncate');
+            env(env<=thres)= 0;
+            env(env>thres)= 1;
+            if env(1) == 1
+                env = [0;env]; % if the pre-gap is zero  % dangerous code!!!!!
+            end
+            allidx = find(env>0);
+            
+            initials = allidx(env(allidx-1)==0); % Find the initials of all the segements
+            ends = allidx(env(allidx+1)==0);  % Find the ends of all the segements
+            
+            
+            % Remove small gaps
+            
+            
+            for n = 1:length(ends)-1
+                if initials(n+1)-ends(n)< mingap*fs
+                    ends(n)= NaN;
+                    initials(n+1) = NaN;
+                end
+            end
+
+            initials (isnan(initials)) = [];
+            ends (isnan(ends)) = [];
+            
+            
+            % Remove small segments
+            minseg = 0.005; % larger than 5 miliseconds
+            
+            for n = 1:length(ends)
+                if ends(n)-initials(n)< minseg*fs
+                    ends(n)= NaN;
+                    initials(n) = NaN;
+                end
+            end
+            
+            initials (isnan(initials)) = [];
+            ends (isnan(ends)) = [];
+            
+            
+            % asemble calculated initials and ends back to struct frag
+            for idx = 1: length(initials)
+                frag(idx).initial = initials(idx);
+                frag(idx).terminal = ends(idx);
+                frag(idx).y = y_pad0(initials(idx):ends(idx));
+            end
+            
+        end
+        
+
+    end
 end
 
 
