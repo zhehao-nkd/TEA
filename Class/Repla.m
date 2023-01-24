@@ -38,12 +38,16 @@ classdef Repla < handle
 
             replaids = find(~cellfun(@isempty, regexp(cellstr({rp.list.stimuliname}.'),'repla|Repla') ));
             list_contain_replas = rp.list(replaids);
-
+            unpack = @(x) x{1};
             second_syl = {};
             for k = 1:length(list_contain_replas)
                 second_syl{k} = regexp(list_contain_replas(k).stimuliname,'(?<=before-)\S+(?=-gapis-)','match'); % combination中的第二位
+                if iscell(second_syl{k})
+                    second_syl{k} = unpack(second_syl{k});
+                end
             end
-            second_syl = cellstr(second_syl.');
+            tempo = cellstr(second_syl.');
+            second_syl = tempo;
             unique_2ndsyl = unique(second_syl);
             unique_2ndbird = cellfun(@(x) Convert.bid(x,1),unique_2ndsyl,'Uni',0);
             %repla_birdid = cellfun(@(x) Convert.bid(x,2), cellstr({list_contain_replas.stimuliname}.'),'Uni',0);
@@ -148,10 +152,17 @@ classdef Repla < handle
             
                         Ini_replay = unique(Ini_y_collect) + (find(sublist(nid).y(unique(Ini_y_collect):end),1)-1);  
                     else
-
-                        [Ini_y,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla( sublist(nid).y,sublist(allids(kk)).y);
                         %Ini_y是在y上的分歧点坐标，而Ini_replay是在replay上的分歧点坐标
-                        %    figure; subplot(211);Draw.spec(sublist(nid).y,32000);subplot(212); Draw.spec(sublist(rids(kk)).y,32000);
+                        [Ini_y,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla( sublist(nid).y,sublist(allids(kk)).y);
+                        if Ini_replay==1 && Ini_y>1
+                            %万一 Ini_replay为1，并且Ini_y大于1（说明不是norm song），说明原来song的syllable
+                            %first恰好替换到了syllable second 前面，等于是deg songs，没有发生改变，
+                            %此时，Ini_y和Ini_replay需要重新计算，一下是补丁算法：
+                            Ini_y = unique(Ini_y_collect);
+                            Ini_replay =length(sublist(allids(kk)).y) - (length(sublist(nid).y) - unique(Ini_y_collect));
+                        end
+                        
+                        %    figure; subplot(211);Draw.spec(sublist(nid).y,32000);subplot(212); Draw.spec(sublist(allids(kk)).y,32000);
                         if Ini_y == 0
                             Ini_y = 1; % dangerous code
                         end
@@ -175,12 +186,16 @@ classdef Repla < handle
                     end
                
                     if allids(kk) == nid % 如果当前是norm song的话
-                        frags = Segment.segNormalizedSong(sublist(nid).y(1:Ini_replay),sublist(nid).fs);
+                        if length(sublist(nid).y(1:Ini_replay)) < 2 %如果太短，说明替换发生在第一位
+                            sublist(allids(kk)).replaceparty = zeros(3000,1);%nan;
+                        else
+                            frags = Segment.segNormalizedSong(sublist(nid).y(1:Ini_replay),sublist(nid).fs);
+                            last_initial = max([frags.initial].'); % 最末一个syllable的起始点
+                            sublist(allids(kk)).replaceparty = sublist(allids(kk)).y(last_initial:convergentpoint); % 被替换的那一部分的y值
+                            %
+                        end
 
-                        last_initial = max([frags.initial].'); % 最末一个syllable的起始点
-                      
-                        sublist(allids(kk)).replaceparty = sublist(allids(kk)).y(last_initial:convergentpoint); % 被替换的那一部分的y值
-%                         figure;
+%                           figure;
 %                         plot(sublist(allids(kk)).y(1:Ini_replay))
 
                     else
@@ -547,9 +562,260 @@ classdef Repla < handle
 
     methods(Static)
 
+        function finalreport = permutationTest_4responsive(A)
+
+            multisims = A.repla.simatrix;
+            localreport = {};
+
+            for sim = 1:length(multisims)
+
+                s = multisims{sim}; % s is the local simatrix, "单一的这个simatrix"
+
+                if isempty(s.yesids) ||length(s.yesids) ==1||length(s.yesids)==length(s.fraglist)||length(s.yesids)==length(s.fraglist)-1 %如果根本没有syllables which trigger significant response
+                    continue
+                end
+
+                distances = struct;
+
+                %                 if length(s.yesids) == 0||length(s.yesids) == 1 %如果根本没有syllables which trigger significant response
+                %                     finalreport = [];
+                %                     return
+                %                 end
+                yespairs = nchoosek(s.yesids,2); % yes means response-eliciting
+                fnames = fieldnames(s.matrix);
+
+                for f = 1:length(fnames)
+
+                    for k = 1:size(yespairs,1)
+                        eval(['distances.yesdist.',fnames{f},'(k) = s.matrix.',fnames{f},'(yespairs(k,1),yespairs(k,2));']);
+                    end
+
+                    %总长度
+                    eval(['distances.yessum.',fnames{f},' = sum(distances.yesdist.',fnames{f},');']);
+
+                    for k = 1:length(s.compareids)
+                        local_comparepairs = nchoosek(s.compareids{k},2);
+                        local_distance = [];
+                        for kk = 1:size(local_comparepairs,1)
+                            eval(['local_distance(kk) = s.matrix.',fnames{f},'(local_comparepairs(kk,1),local_comparepairs(kk,2));']);
+                        end
+                        eval(['distances.comparedist.',fnames{f},'{k} = local_distance;']);
+                        eval(['distances.comparesum.',fnames{f},'(k) = sum(local_distance);']);
+
+                    end
+
+                    % calculate all the distances between syllables
+                    local_allpairs = nchoosek(1:length(s.fraglist),2);
+                    local_alldistance = [];
+                    for k = 1:length(local_allpairs)
+                        eval(['local_alldistance(k) = s.matrix.',fnames{f},'(local_allpairs(k,1),local_allpairs(k,2));']);
+                    end
+                    eval(['distances.alldist.',fnames{f},' = local_alldistance;']);
+
+                end
+
+
+
+
+                I = {};
+
+                summary = struct; % 总结p值大于0.05的值
+
+
+                for k = 1:length(fnames)
+                    %     subplot(2,length(fnames),k);
+                    figure('Position',[2036 736 608 376],'Color','w');
+                    summary(k).fname = fnames{k};
+
+                    set(gca,'LineWidth',1.2);
+                    set(gca,'TickLength',[0.001,0.001]);
+                    thres = distances.yessum.(fnames{k});
+                    allvalues = distances.comparesum.(fnames{k});
+                    summary(k).pvalue = Draw.Permutation(allvalues,thres);
+                    ax = gca;
+                    ax.FontSize = 13;
+                    xlabel('Sum of distances(normalized)','FontSize',15,'FontWeight','bold');
+                    ylabel('Percentage','FontSize',15,'FontWeight','bold');
+                    I{1,k} = getframe(gcf).cdata;
+                    close(gcf)
+
+                end
+
+                for k = 1:length(fnames)
+                    %     subplot(2,length(fnames),length(fnames) + k);
+                    figure('Position',[2036 736 608 376],'Color','w');
+
+                    set(gca,'LineWidth',1.2);
+                    set(gca,'TickLength',[0.001,0.001]);
+                    y1 = distances.yesdist.(fnames{k});
+                    y2 = distances.alldist.(fnames{k});
+                    Draw.swarmchart(y1,y2);
+                    set(gca,'TickDir','out');
+                    %ylim([-0.1,1])
+                    xticks([1 2]);
+                    set(gca,'xticklabels',{'Response-eliciting','All presented'});
+                    ax = gca;
+                    ax.FontSize = 13;
+                    ax.XAxis.FontSize = 15;
+                    set(get(gca, 'XAxis'), 'FontWeight', 'bold');
+                    ylabel(sprintf('Distances in %s',fnames{k}),'fontsize',15,'FontWeight','bold');
+                    set(ax,'defaultTextInterpreter','none');
+                    I{2,k} = getframe(gcf).cdata;
+                    close(gcf)
+
+                end
+
+                sumI = cell2mat(I);
+                imwrite(sumI,sprintf('幽州ReplaElicit%s.png',A.info.formated_name));
+
+                those_names = {summary.fname}.';
+                localreport{sim}.neuronname = A.info.formated_name;
+                localreport{sim}.simatrixid = sim;
+                localreport{sim}.sigfeatures = setdiff(those_names([summary.pvalue].'>=0.95),'global');
+                localreport{sim}.global = ismember('FM',those_names([summary.pvalue].'>=0.95));
+
+
+
+
+            end
+
+            finalreport = vertcat(localreport{:});
+
+        end
+
+
+        function finalreport = permutationTest_4not(A)
+
+            multisims = A.repla.simatrix;
+
+            localreport = {};
+
+            for sim = 1:length(multisims)
+
+                s = multisims{sim}; % s is the local simatrix, "单一的这个simatrix"
+
+                noids = setdiff(1:length(s.fraglist),s.yesids);
+                compareids = cell(500,1); % no ids 对应的compareids要重新取，因为 s.compareids是对应于yesids的
+                for k = 1:500 % 姑且取500次
+                    compareids{k} = randsample(1:length(s.fraglist),length(noids)); % 这个并不耗时
+                end
+
+                if isempty(noids)||length(noids) == 1  %如果根本没有syllables which trigger significant response
+                    continue
+                end
+
+                distances = struct;
+                nopairs = nchoosek(noids,2); % yes means response-eliciting
+                fnames = fieldnames(s.matrix);
+
+                for f = 1:length(fnames)
+
+                    for k = 1:size(nopairs,1)
+                        eval(['distances.nodist.',fnames{f},'(k) = s.matrix.',fnames{f},'(nopairs(k,1),nopairs(k,2));']);
+                    end
+
+                    %总长度
+                    eval(['distances.nosum.',fnames{f},' = sum(distances.nodist.',fnames{f},');']);
+
+                    for k = 1:length(compareids)
+                        local_comparepairs = nchoosek(compareids{k},2);
+                        local_distance = [];
+                        for kk = 1:size(local_comparepairs,1)
+                            eval(['local_distance(kk) = s.matrix.',fnames{f},'(local_comparepairs(kk,1),local_comparepairs(kk,2));']);
+                        end
+                        eval(['distances.comparedist.',fnames{f},'{k} = local_distance;']);
+                        eval(['distances.comparesum.',fnames{f},'(k) = sum(local_distance);']);
+
+                    end
+
+                    % calculate all the distances between syllables
+                    local_allpairs = nchoosek(1:length(s.fraglist),2);
+                    local_alldistance = [];
+                    for k = 1:length(local_allpairs)
+                        eval(['local_alldistance(k) = s.matrix.',fnames{f},'(local_allpairs(k,1),local_allpairs(k,2));']);
+                    end
+                    eval(['distances.alldist.',fnames{f},' = local_alldistance;']);
+
+                end
+
+
+
+
+                I = {};
+
+                summary = struct; % 总结p值大于0.05的值
+
+
+                for k = 1:length(fnames)
+                    %     subplot(2,length(fnames),k);
+                    figure('Position',[2036 736 608 376],'Color','w');
+                    summary(k).fname = fnames{k};
+
+                    set(gca,'LineWidth',1.2);
+                    set(gca,'TickLength',[0.001,0.001]);
+                    thres = distances.nosum.(fnames{k});
+                    allvalues = distances.comparesum.(fnames{k});
+                    summary(k).pvalue = Draw.Permutation(allvalues,thres);
+                    ax = gca;
+                    ax.FontSize = 13;
+                    xlabel('Sum of distances(normalized)','FontSize',15,'FontWeight','bold');
+                    ylabel('Percentage','FontSize',15,'FontWeight','bold');
+                    I{1,k} = getframe(gcf).cdata;
+                    close(gcf)
+
+                end
+
+                for k = 1:length(fnames)
+                    %     subplot(2,length(fnames),length(fnames) + k);
+                    figure('Position',[2036 736 608 376],'Color','w');
+
+                    set(gca,'LineWidth',1.2);
+                    set(gca,'TickLength',[0.001,0.001]);
+                    y1 = distances.nodist.(fnames{k});
+                    y2 = distances.alldist.(fnames{k});
+                    Draw.swarmchart(y1,y2);
+                    set(gca,'TickDir','out');
+                    %ylim([-0.1,1])
+                    xticks([1 2]);
+                    set(gca,'xticklabels',{'Response-prohibiting','All presented'});
+                    ax = gca;
+                    ax.FontSize = 13;
+                    ax.XAxis.FontSize = 15;
+                    set(get(gca, 'XAxis'), 'FontWeight', 'bold');
+                    ylabel(sprintf('Distances in %s',fnames{k}),'fontsize',15,'FontWeight','bold');
+                    set(ax,'defaultTextInterpreter','none');
+                    I{2,k} = getframe(gcf).cdata;
+                    close(gcf);
+
+                end
+
+                sumI = cell2mat(I);
+                imwrite(sumI,sprintf('云州ReplaProhibit%s.png',A.info.formated_name));
+
+                those_names = {summary.fname}.';
+                localreport{sim}.neuronname = A.info.formated_name;
+                localreport{sim}.simatrixid = sim;
+                localreport{sim}.sigfeatures = setdiff(those_names([summary.pvalue].'>=0.95),'global');
+                localreport{sim}.global = ismember('global',those_names([summary.pvalue].'>=0.95));
+
+
+            end
+
+
+            finalreport = vertcat(localreport{:});
+
+
+        end
+
         function result = getNumTestedNumResponsive(A,bingyang)
             locallist = A.repla.replalist{1};%这里取{1}有些武断了
             normid = find(~cellfun(@isempty, regexp(cellstr({locallist.stimuliname}.'),'norm')));
+
+            if sum(locallist(normid).replaceparty) == 0
+                result = [];
+                return
+
+            end
 
             catego_norm = MetaStimuli.categorizeByBingyang(locallist(normid).replaceparty,32000, bingyang);
 
@@ -559,6 +825,8 @@ classdef Repla < handle
                 purelocallist(k).catego = MetaStimuli.categorizeByBingyang(purelocallist(k).replaceparty,32000,bingyang);
             end
 
+          
+            result.neuronname = A.info.formated_name;
             % 同组
             result.num_tested_simgroup = length(find([purelocallist.catego].'==catego_norm));
             result.num_responsive_simgroup = length(find([purelocallist.catego].'==catego_norm & [purelocallist.label].'==1));
@@ -570,6 +838,12 @@ classdef Repla < handle
             %所有组
             result.num_tested_allgroup = length(find([purelocallist.catego].'));
             result.num_responsive_allgroup = length(find([purelocallist.label].'==1));
+
+            %比例
+            result.ratio_sim = result.num_responsive_simgroup/result.num_tested_simgroup;
+            result.ratio_dif = result.num_responsive_difgroup/result.num_tested_difgroup;
+            result.ratio_all = result.num_responsive_allgroup/result.num_tested_allgroup;
+
 
         end
 

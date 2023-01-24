@@ -10,13 +10,14 @@ classdef Simatrix < handle
         deviations % deviation between responsive frags' feature difference and random selected frags'
         formated_name
         pvalues
+        distances
 
     end
 
     methods
         function s = Simatrix(fraglist)
 
-
+            s.fraglist = fraglist;
             s.features = struct;
             if isempty(fraglist)
                 return
@@ -33,7 +34,7 @@ classdef Simatrix < handle
                 for kk = 1:length(thosefeatures)
                     eval(['s.features.',thosefeatures{kk},'(k)','= fraglist(k).meanfeatures.',thosefeatures{kk},';']);
                 end
-                s.features.dur = length(fraglist(k).y); % 计算input的长度，并把它作为一个feature
+                s.features.dur(k) = length(fraglist(k).y); % 计算input的长度，并把它作为一个feature
             end
 
 
@@ -44,6 +45,8 @@ classdef Simatrix < handle
             for kk = 1:length(featurenames)
                 eval(['s.matrix.',featurenames{kk},'= rescale(squareform( pdist(s.features.',featurenames{kk},''')));']);  % 验证过，与写一个nested循环得到的结果相同
             end
+
+            s.matrix.dur =  rescale(squareform(pdist(zscore(s.features.dur.')))); %标准化到【0，1】区间的距离矩阵
 
 
             %claculate global matrixes : accuracy and similarity
@@ -57,27 +60,31 @@ classdef Simatrix < handle
 %                 end
 %             end
             featurenames = fieldnames(s.matrix);   
-            global_matrix = zeros(size(s.matrix.(featurenames{1}))); % 初始化
+            temp_global_matrix = zeros(size(s.matrix.(featurenames{1}))); % 初始化
             for k = 1:length(featurenames)
-                global_matrix = global_matrix + s.matrix.(featurenames{k});
+                temp_global_matrix = temp_global_matrix + s.matrix.(featurenames{k}).^2;
             end
 
-            s.matrix.global = rescale(global_matrix/length(featurenames));
+            s.matrix.global = rescale(sqrt(temp_global_matrix));
             
 
 
-            % yes ids and compare ids
+            % yes ids and compare ids：使神经元反应的id和用来做permutation test的id
 
             s.yesids= find([fraglist.label].' == 1);
 
-            s.compareids = cell(120,1);
-            for k = 1:120
-                s.compareids{k} = randsample(1:length(fraglist),length(s.yesids));
+            s.compareids = cell(500,1);
+            
+            for k = 1:500 % 姑且取500次
+                s.compareids{k} = randsample(1:length(fraglist),length(s.yesids)); % 这个并不耗时
             end
+            
 
 
-            % 下面是关于best stimuli 的初始化
-            if isfield(fraglist,'maxsdf')
+            % 下面是关于best stimuli的部分，现在这部分暂时是去作用，所以被隐藏 （2023.01.08）
+            deprecated = 0; % 在修改代码之前永远不会被启动
+
+            if deprecated == 1
                 s.fraglist = table2struct( sortrows(struct2table(fraglist),'maxsdf','descend') ); % 这一步确定谁是best stimuli，十分重要
                 %
                 beststimuli = SAT_sound(s.fraglist(1).y,s.fraglist(1).fs);

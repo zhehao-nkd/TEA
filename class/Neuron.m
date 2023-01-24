@@ -44,18 +44,23 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
                 % 构造下属类 Song，Deg，Repla，Frag
                 neu.getInfo_pre;
                 neu.updatelist; % 生成 stimuli-response list
-                for k = 1:length(neu.list)
-                    hitbid = find(~cellfun(@isempty, regexp(cellstr({eleinf.bid}.'),Convert.bid(neu.list(k).stimuliname) )  ));
-                    hitfragid = find( [eleinf.fragid].'== Convert.fragid(neu.list(k).stimuliname) );
-                    hitrow = intersect(hitbid,hitfragid);
-                    neu.list(k).coor = [eleinf(hitrow).coor_1,eleinf(hitrow).coor_2];            
+
+                %为list加上feature space上的坐标信息，这个feature space是由 VRAE（by
+                %Dongqi）生成的
+                if exist('eleinf','var')
+                    for k = 1:length(neu.list)
+                        hitbid = find(~cellfun(@isempty, regexp(cellstr({eleinf.bid}.'),Convert.bid(neu.list(k).stimuliname) )  ));
+                        hitfragid = find( [eleinf.fragid].'== Convert.fragid(neu.list(k).stimuliname) );
+                        hitrow = intersect(hitbid,hitfragid);
+                        neu.list(k).coor = [eleinf(hitrow).coor_1,eleinf(hitrow).coor_2];
+                    end
                 end
 
 %                 for k = 1:length(eleinf)
 %                     eleinf(k).bid = Convert.bid(eleinf(k).songname);
 %                 end
 
-                % judege neuron's response
+                % judge neuron's response
                 neu.judgeConResp;
                 neu.judgeFragResp_FR;
 
@@ -95,17 +100,15 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
                 else
                     input = struct;
-                    input.waveforms = neu.experiments{1}.waves.waveforms;
+                    input.waveforms = neu.experiments{1}.waves.waveform;
                     input.times = neu.experiments{1}.waves.times;
-                    input.timedurations = neu.experiments{1}.waves.timedurations;
+                    input.timedurations = neu.experiments{1}.waves.times;
 
                     neu.waveform = SpikeWaveform(input,'single or merge');
 
 
                 end
                 
-
-              
 
             end
 
@@ -2092,7 +2095,6 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
             end
 
 
-
             % 其四，找到对应birdid的replas
             RONGYU = 0.5;
             normids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'(?!repla|Repla)norm|Norm') ));
@@ -2162,7 +2164,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
 
             % 其末 draw and save
-            neu.drawFirstWaveform;
+            neu.waveform.draw1st;
             temp = getframe(gcf);close(gcf);
             w_img = temp.cdata;
             I_WF{1} = w_img;

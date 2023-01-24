@@ -114,6 +114,9 @@ classdef MetaStimuli < handle
                 %                 end
                 %%%%%%%%%Extremeley bad and dangerous code shown above
 
+                if isfield(loaded.segdata,'motedge')
+                    loaded.segdata.motedge = sort(loaded.segdata.motedge);
+                end
                 if isfield(loaded.segdata,'eleedge')
                     two_eleedge = repmat(loaded.segdata.eleedge,[2,1]);
                     alledges = sort( vertcat(loaded.segdata.syledge(:),reshape(two_eleedge,[],1) ));
@@ -132,7 +135,7 @@ classdef MetaStimuli < handle
                 I = Cal.spec(fiy,fs);
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 initials = alledges(1:2:end)-0.008;
-                terminals = alledges(2:2:end)+ 0.008;
+                terminals = alledges(2:2:end)+ 0.008; %极度危险的代码，但只能日后再修改了 2023.01.22
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 %Extremely extremely dangerous code
                 song_eleinf = struct;
@@ -143,12 +146,13 @@ classdef MetaStimuli < handle
                     song_eleinf(w).songname = loaded.segdata.birdid;
 
                     try
-                        song_eleinf(w).motif = MetaStimuli.findMotif(loaded.segdata.motedge,initials(w),terminals(w));
+                        song_eleinf(w).motif = MetaStimuli.findMotif(loaded.segdata.motedge,initials(w)+0.008,terminals(w)-0.008);
                     catch
                         song_eleinf(w).motif = 0;
                     end
 
-                    hp_y = highpass(loaded.segdata.rawy,450,fs);
+                    hp_y = highpass(loaded.segdata.rawy,450,fs); %01.22.07.38 PM 这部分他娘的还是很有重大意义的，会极大影响到bingyang-based分类的结果
+                    %hp_y = loaded.segdata.rawy; %2023.01.22 没看出这一步highpass有什么意义，所以先去掉
                     if isfield(loaded.segdata,'rawy')
                         song_eleinf(w).y = hp_y(max(initials(w)*fs,1):terminals(w)*fs); % originally loaded.segdata.rawy
 
@@ -175,30 +179,30 @@ classdef MetaStimuli < handle
 
         end
 
-        function pickupMotifsFromBucket(singleFolder)
+        function pickupMotifsFromBucket(sourceFolder, target_dir)
 
             % To Extract several song files from a target folder
             % singleFolder is the path of a single folder in bucket server
             dbstop if error
 
             tic
-          
-            adultfilenames = Bird.getAdultSongs(singleFolder); % 首先，得到 adult songs
+            % 首先，得到 adult songs
+            adultfilenames = flip(sort(Bird.getAdultSongs(sourceFolder))); %一定要是新文件在先，旧文件在后
             if isempty(adultfilenames)
                 return
             end
             rawfiles = flip(sort(cellstr(adultfilenames)));
             %rawfiles = flip(sort(cellstr(Extract.filename(singleFolder,'*.wav')))); %(randperm(length(rawfiles)))
-            num_tosave = 20; % 30 files to copy for each folder
+            num_tosave = 40; % 30 files to copy for each folder
             ampthres = 0.008; %声信号振幅值是否足够
-            minthres = 2; %声文件最短时长
-            maxthres = 15;%声文件最长时长
-            shortsig = 1.3; %有声音的时间段的最短音长 % 之前使用过的threshold是1.5 seconds
+            minthres = 1.5; %声文件最短时长 原来是2和1.7
+            maxthres = 20;%声文件最长时长 原来是15
+            shortsig = 1.2; %有声音的时间段的最短音长 % 之前使用过的threshold是1.5 seconds和1.3seconds
             centroid_thres = 3200;
-            redundancy = 0.3; % 0.5 seconds
-            isi_dur_thres = 0.4; %  0.4 seconds : how long a duration will be regarded as separation of bouts
+            redundancy = 0.6; % 0.6 seconds
+            isi_dur_thres = 0.45; %  0.4 seconds : how long a duration will be regarded as separation of bouts
             candidates = struct([]);
-            max_session_num = 10; % 最大的 running session， 为了限制运行时间
+            max_session_num = 30;%18; % 最大的 running session， 为了限制运行时间
 
             % 为了提高运算速度，采用每次run 100 times 的方式
             num_parallel = 32;
@@ -208,7 +212,8 @@ classdef MetaStimuli < handle
 
                 feeded_rawfiles = rawfiles(num_parallel*(session-1)+1: min(num_parallel*session,length(rawfiles)));
 
-                multi_subsets = {};
+                summer = {}; % to sum sth.
+               
                 for n = 1: length(feeded_rawfiles) % 这一部分采用parfor
                     fprintf('Current id is %u \r',n);
                     try
@@ -250,7 +255,8 @@ classdef MetaStimuli < handle
                     %<*>Judge Inter-segment-interval: Too strict criteria
 
                     interval = diff(sigpoints);
-                    index = find(interval> fs*isi_dur_thres); %  inter-syllable intervals 如果足够大的话就被认为是一个motif
+                    index = find(interval> fs*isi_dur_thres); %  inter-bout intervals 
+                    % %如果足够大的话就被认为是一个motif，不然就视为一个bout，每个bout一个文件
                     inter_motif_intervals = sort([sigpoints(index);sigpoints(index+1)],'ascend');
                     edges =  [ min(sigpoints);inter_motif_intervals;max(sigpoints)];
 
@@ -269,103 +275,55 @@ classdef MetaStimuli < handle
                         fprintf('合格\r')
                         internal_count = internal_count + 1;
 
-                        multi_subsets{n} = subsets;
-                    end
-
                         % To be noticed that y and sectioned_signals are not equal
-                        subsets(internal_count).y = y(max(1,edges(2*kk-1)-fs*redundancy):...
-                            min(length(y), edges(2*kk)+fs*redundancy));
+                        subsets(internal_count).y = y(int64(max(1,edges(2*kk-1)-fs*redundancy)):...
+                            int64(min(length(y), edges(2*kk)+fs*redundancy))); %redundancy是在section_y的左右再找补回来一些
                         subsets(internal_count).fs = fs;
                         subsets(internal_count).initial = edges(2*kk-1);
                         subsets(internal_count).terminal = edges(2*kk);
-                        subsets(internal_count).sourcefile = rawfiles{n};
+                        subsets(internal_count).sourcefile = feeded_rawfiles{n};
+                        subsets(internal_count).session = session; % 为了判断bug和session是否有关
+                        subsets(internal_count).nvalue = n;
+                        subsets(internal_count).kkvalue = kk;
+                        
+                    end
 
-%                         % 这部分是为了判断motifs，以及对song syllable做分割
-%                         subset_fiy = highpass(abs(subsets(internal_count).y),500,fs); % filtered y, to remove the noise generataed by low-frequency noise
-%                         subset_ampenv = envelope(subset_fiy,320*3,'rms'); % amplitude envelope
-%                         %figure; plot(ampenv); figure; Draw.spec(y,fs);% 1ms-32
-%                         subset_sigpoints = find(subset_ampenv>ampthres); % sigs means significant signal points
-% 
-% 
-%                         subset_interval = diff(subset_sigpoints);
-%                         subset_index = find( subset_interval> 1); % ISI is the inter-syllable intervals
-%                         subset_isis = sort([subset_sigpoints(subset_index);subset_sigpoints(subset_index+1)],'ascend');
-%                         subset_edges =  [ min(subset_sigpoints); subset_isis;max(subset_sigpoints)];
-%                         %figure; plot(subset_fiy); hold on; xline(subset_edges)
-%                         raw_onset = subset_edges(1:2:length(subset_edges));
-%                         raw_offset = subset_edges(2:2:length(subset_edges));
-%                         raw_off_minus_on = raw_offset - raw_onset;
-%                         onset = raw_onset(find(raw_off_minus_on > 512));
-%                         offset = raw_offset(find(raw_off_minus_on > 512));
-%                         sim_mat = [];
-%                         for t = 1:length(onset)
-% 
-%                             frag1_y = subsets(internal_count).y(onset(t) :offset(t));
-%                             for tt = 1:length(onset)
-%                                 frag2_y = subsets(internal_count).y(onset(tt) :offset(tt));
-%                                 sound1 = SAT_sound(frag1_y,32000);
-%                                 sound2 = SAT_sound(frag2_y,32000);
-%                                 sim = SAT_similarity(sound1,sound2,0);
-%                                 sim.calculate_similarity;
-%                                 sim_mat(t,tt) = sim.score.accuracy;
-%                             end
-% 
-%                         end
-% 
-%                      %   calculate mfcc/stft similarity matrix
-%                      sat1 = SAT_sound(subset_fiy,fs);
-%                      sat2 = SAT_sound(subset_fiy,fs);
-%                      sim1 = SAT_similarity(sat1,sat2,0);
-%                      sim1.calculate_similarity;
-%                      sim1.score;
-%                      figure;
-%                      [coeffs,~,~,~] = mfcc(subset_fiy,fs);
-%                      figure; imagesc(sim_mat)
-% 
-%                      sim_mfcc = [];
-%                      for a = 1:size(coeffs,1)
-%                          vec1 = coeffs(a,:)
-%                          for aa = 1:size(coeffs,1)
-%                              vec2 = coeffs(aa,:);
-%                              sim_mfcc(a,aa) = 1- norm(vec1-vec2);
-%                          end
-%                      end
-% 
-%                      figure; imagesc(sim_mfcc);
-%                     end
+                    summer{n} = subsets;
 
-
+                    
         
+                end
 
                 toc
-                candidates = horzcat(candidates,horzcat(multi_subsets{:}));
+                candidates = horzcat(candidates,horzcat(summer{:}));
 
                 if length(candidates) >= num_tosave
                     break
                 end
-                end
+               
 
             end
 
-            target_dir = '.\'; %bf.inout_dir; % "E:\WavsCollection" % destination
-            [~,birdid,~] = fileparts(singleFolder);
+            if ~exist('target_dir','var')
+                target_dir = '.\'; %bf.inout_dir; % "E:\WavsCollection" % destination
+            end
+
+            [~,birdid,~] = fileparts(sourceFolder);
             birdid = Convert.bid(birdid,1);
-            mkdir(sprintf('%s%s',target_dir,birdid));
+            mkdir(sprintf('%s\\%s',target_dir,birdid));
 
 
             for a = 1: min(num_tosave,length(candidates) )
-                candidates(a).name = sprintf('%s%s\\%s-%u.wav',target_dir,birdid,birdid,a);
+                candidates(a).name = sprintf('%s\\%s\\%s-%02u.wav',target_dir,birdid,birdid,a);
                 audiowrite(candidates(a).name,...
                     candidates(a).y,candidates(a).fs);
             end
             candidates = rmfield(candidates,'y');
-            writetable(struct2table(candidates),sprintf('%s\\%s-%s.txt',birdid,birdid,'DataInfo'),'FileType','text');
-            time_used = toc;
-
+            writetable(struct2table(candidates),sprintf('%s\\%s\\%s-%s.csv',target_dir,birdid,birdid,'Datalist'));
             Running_info = struct;
             Running_info.files_processed = sprintf("%s:%u files are processed",birdid,session*num_parallel);
-            Running_info.time_used = sprintf("The whole running cost %f seconds ", time_used);
-            writetable(struct2table(Running_info),sprintf('%s\\%s-%s.txt',birdid,birdid,'RunInfo'),'FileType','text');
+            %Running_info.time_used = sprintf("The whole running cost %f seconds ", time_used);
+            writetable(struct2table(Running_info),sprintf('%s\\%s\\%s-%s.txt',target_dir,birdid,birdid,'Summary'),'FileType','text');
 
         end
 

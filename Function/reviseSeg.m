@@ -226,20 +226,20 @@ classdef reviseSeg
                 
                 if isfield(newsegdata,'eleedge')
                     if ~isempty(newsegdata.eleedge) % if ele is a field and is not empty
-                        sort(newsegdata.eleedge);
+                        newsegdata.eleedge = sort(newsegdata.eleedge);
                     end
                 end
-                
+
                 if isfield(newsegdata,'motedge') % motif
                     if ~isempty(newsegdata.motedge) % if ele is a field and is not empty
-                        sort(newsegdata.motedge);
+                        newsegdata.motedge =sort(newsegdata.motedge);
                     end
                 end
-                
+
                 if isfield(segdata,'syledge')
-                    sort(newsegdata.syledge);
+                    newsegdata.syledge =sort(newsegdata.syledge);
                 end
-                
+
                 if isfield(segdata,'y')
                     newsegdata.y = segdata.y;
                 end

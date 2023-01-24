@@ -4,13 +4,213 @@ classdef Bird < handle
     %               (2) finding candidate birds for surgery.
 
     properties
+        birdlist %读取的buckect里叫做birdlist的表格
+        songdirs % Birdsong directories
+
         folders
         adultfolders % 有正常的adult song的folders
     end
     % from the targeted folder to Extract syllables
     methods
 
-        function b = Bird(~) % dirpath must be a char
+        function bd = Bird(~)
+
+            bd.birdlist = Bird.readBirdlist;
+
+            fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
+            bd.songdirs = cellstr(Extract.folder(fdir).').';
+
+
+        end
+ 
+        function answer = findSons(bd,fathername,type)
+            %找到父鸟所有的子鸟
+            % configs for reading the table
+            %birdlist = bd.readBirdlist;
+
+
+            %如果鸟的名字是这种形式  "r-97 (O218)"，那么这名字应该被转化为O218这种格式
+
+            converted_fathername = regexp(convertCharsToStrings(fathername),'[OGBYR]\d{3}','match');
+
+
+            children_index = find(~cellfun(@isempty, regexp(bd.birdlist.father,converted_fathername)));
+            male_index = find(~cellfun(@isempty, regexp(bd.birdlist.Gender,"♂")));
+            sons_index = intersect(children_index, male_index);
+            sons_names = bd.birdlist.BirdID(sons_index);
+            hatch_dates =bd.birdlist.Hatchdate(sons_index);
+
+
+            summer = {};
+            for k = 1: length(sons_names)
+                summer{k} = bd.getRecordingSate(sons_names{k}); % recording state被分为[-1,0,0.5,1,1.5]这五种情况，0.5意思是只有juvenile song
+                fprintf('His song is:  %s, hatching date: %s, recording state: %.1f\n',sons_names{k},hatch_dates{k},summer{k}.identifier);
+                newline;
+            end
+
+            answer = vertcat(summer{:});%default结果
+
+            %如果只是找recorded songs,覆盖default结果
+            if exist('type','var') && ~isempty(answer)
+                if strcmp(type, 'recorded')
+                    answer = answer(find([answer.identifier].' >=1));
+                end
+            end
+
+
+        end
+
+
+        function answer = getRecordingSate(bd,birdname)
+            %判断输入的鸟ID是否有对应的"记录好的Adult Bird Song"
+            % Output: answer.birdname, answer.identifier, answer.dirpath
+
+            answer.birdname = birdname;
+            folders = bd.songdirs;
+            foldernames = cellfun(@Utl.fileparts,folders,'Uni',0);
+
+            color = regexp(birdname,'[OGBYR]','match');
+            number = regexp(birdname,'\d+','match');
+            colorids = find(~cellfun(@isempty, regexp(foldernames,color{1})));
+            numberids = find(~cellfun(@isempty, regexp(foldernames,number{1})));
+            hitindex = intersect(colorids,numberids); %如果压根没这个鸟对应的folder，recording state就是0
+
+            if isempty(hitindex)
+                answer.identifier = 0; %没有记录
+                answer.dirpath = [];
+                return
+            elseif length(hitindex) >1 %如果有多个hitfolder,取最晚创建的folder
+%                 date_created = {};
+                datetimes = NaT(length(hitindex),1);
+                for k = 1:length(hitindex)
+                    datetimes(k) = datetime(py.os.path.getctime(folders{hitindex(k)}),...
+                        'ConvertFrom','epochtime','TicksPerSecond',1,'Format','dd-MMM-yyyy HH:mm:ss.SSS');
+                end
+
+                [~,maxindex] = max(datetimes);
+                hitindex = hitindex(maxindex);
+            end
+
+
+            foldername = foldernames{hitindex}; % 对应于birdname的foldername，绝对路径
+            hitfolder = folders{hitindex};
+            pure_foldername = Utl.fileparts(foldername); % 只取文件夹名
+
+            bname = Convert.bid(pure_foldername); %鸟的ID编号
+
+            corresp_index = find(~cellfun(@isempty, regexp(bd.birdlist.BirdID,bname)));
+            if length(corresp_index) > 1
+                corresp_index = corresp_index(1); % 有时列表里有重复的行，这种时候只取第一个
+            end
+            hatchdate = regexp(convertCharsToStrings(bd.birdlist.Hatchdate(corresp_index)),'\d+','match');
+            if isempty(hatchdate) %如果没有hatchdate，多半是购买的，可被认定为adult song
+                answer.identifier = 1;
+                answer.dirpath = hitfolder;
+                return
+            end
+
+            rawformat_gender = bd.birdlist.Gender(corresp_index);
+            father = bd.birdlist.father(corresp_index);
+            if any(ismissing(father))||isempty(father)
+                father = '0'; % 0 means unknown
+            elseif length(father)>1
+                father = father{1};
+            end
+
+            %path_log = Extract.filename(folders{hitfolder},'*.log'); %
+            %corresp_log = readtable(path_log{1}); %一般情况下，一个鸟歌文件夹只会有一个log文件
+            path_log = fullfile(folders{hitindex},strcat(foldernames{hitindex},'.log'));
+            try
+                corresp_log = readtable(path_log);  %这个方法很慢，所以要直接合成path_log    
+            catch %如果有异常情况，认定为什么歌都没有记录
+
+                answer.identifier = -1;
+                answer.dirpath = hitfolder;
+                return
+            end
+                   
+            try
+                trick = corresp_log.Var3([1,2,3,height(corresp_log)-2,height(corresp_log)-1]); % trick to reduce time
+            catch ME
+                trick = corresp_log.Var3; % trick to reduce time
+            end
+            trick = trick(find(~cellfun(@isempty, regexp(trick,'\d{4}-\d{2}-\d{2}'))));
+
+            if isempty(trick)
+                answer.identifier = 0;
+                answer.dirpath = hitfolder;
+                return
+            end
+
+            filedates = cellfun (@(x) datetime(Utl.fileparts(x),'InputFormat','yyyy-MM-dd_HH-mm-ss'),trick,'Uni',0);
+            filedates =  sortrows( cell2table(filedates(~cellfun(@isempty,filedates))) ,'Var1','ascend');
+            thehatchdate = datetime(hatchdate,'InputFormat','yyMMdd');
+            juvsong = 0;
+            adultsong = 0; %判断标识
+            exception = 0;
+            if  days(filedates.Var1(1) - thehatchdate) <90 %如果最早记录的song小于90dph
+                juvsong = 1; % 有juv song
+            end
+            if  days(filedates.Var1(height(filedates))-thehatchdate) >= 90 ||isnat(thehatchdate) %如果最早记录的song大于90dph
+                adultsong = 1; % 有 adult song
+            end
+            if ~isempty(regexpi(pure_foldername,... %如果song的记录有特殊标记
+                    '|+|JK|iso|ps|female|PS|post|Surgery|old|new|mate|implant|WNS|Noise','match'))||...
+                    length(regexp(bname,'\d{3}','match')) ~= 1
+                exception = 1; % 一类异常，非正常song
+            end
+
+
+            if exception == 1
+                answer.identifier = -1; %如果有异常情况，认定为什么歌都没有记录
+            elseif juvsong == 0 && adultsong == 1 % 有成年歌，没有幼年歌
+                answer.identifier = 1;
+            elseif juvsong == 1 && adultsong == 1 % 有成年歌，同时也有幼年歌
+                answer.identifier = 1.5;
+            elseif juvsong == 1 && adultsong == 0 % 只有幼年歌
+                answer.identifier = 0.5;
+            else  % 除此以外，皆是零
+                answer.identifier = 0; 
+            end
+            answer.dirpath = hitfolder;
+
+        end
+
+
+        function fathername = findFather(bd,birdname)
+
+            % configs for reading the table
+            birdlist = bd.birdlist;
+
+            % get the corresponding index, set fathername
+            index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
+            fathername = birdlist.father(index);
+            if isempty(fathername)
+                fathername = string(missing);
+            end
+            if length(fathername)==2
+                fathername = fathername{1};
+            end
+
+
+        end
+
+ 
+
+        function date = getHatchdate(bd,birdname)
+            %找到鸟的孵化日
+            % the function to get hatch date
+            birdlist = bd.birdlist;
+            % get the corresponding index, set fathername
+            index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
+            date = birdlist.Hatchdate(index);
+            disp(date);
+        end
+
+
+
+
+        function b = Deprecated_Bird(~) % dirpath must be a char
             diskletter = Utl.bucketletter;
             b.folders = Bird.birdsong;
 
@@ -177,6 +377,7 @@ classdef Bird < handle
         end
 
         function birdlist = readBirdlist(~)
+            %统一的读取birdlist的方法，所有使用birdlist的函数都应该引用这个方法
             numVars = 7;
             varNames = {'BirdID','Hatchdate','Gender','father','mother','parents','isolate'} ;
             varTypes = {'string','string','string','string','string','string','string'} ;
@@ -458,63 +659,14 @@ classdef Bird < handle
 
         end
 
-        function fathername = findFather(birdname)
-
-            % configs for reading the table
-            birdlist = Bird.readBirdlist;
-
-            % get the corresponding index, set fathername
-            index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
-            fathername = birdlist.father(index);
-            if isempty(fathername)
-                fathername = string(missing);
-            end
-            if length(fathername)==2
-                fathername = fathername{1};
-            end
-
-
-        end
-
-        function answer = recording_state(birdname,mode)
-
-            fdir = "Z:\Yazaki-SugiyamaU\Bird-song";
-
-            folders = cellstr(Extract.folder(fdir).');
-            folernames = {};
-            for k = 1: length(folders)
-                temp = split(folders{k},'\');
-                foldernames{k} = temp{length(temp)};
-
-            end
-
-            color = regexp(birdname,'[A-Z]','match');
-            number = regexp(birdname,'\d+','match');
-
-            colorids = find(~cellfun(@isempty, regexp(foldernames,color{1})));
-            numberids = find(~cellfun(@isempty, regexp(foldernames,number{1})));
-
-            sharedids = intersect(colorids,numberids);
-
-            if isempty(sharedids)
-                answer = 'No';
-            elseif length(sharedids) == 1
-                answer = 'Yes';
-            elseif length(sharedids) >1
-                answer = 'More than one hits';
-            end
-
-            if exist('mode','var')&& mode == 1 % Mode1: care about whether the recorded song is adult or juvenile song
-
-            end
-        end
 
         function adultfilenames = getAdultSongs(input_birdname_or_dir)
+            %获取adult song的文件名们
             % Step-1 : Extract hacth date from the BIRDLIST
             birdlist = Bird.readBirdlist;
             corresp_list_index = find(~cellfun(@isempty, regexp([birdlist.BirdID].',input_birdname_or_dir)));
             hatchdate = birdlist.Hatchdate(corresp_list_index);
-
+            hatchdate = regexp(convertCharsToStrings(hatchdate),'\d+','match');
             thehatchdate = datetime(hatchdate,'InputFormat','yyMMdd');
 
             % Step-2 :get the earlist and the latest recording date from buckect dir storage
@@ -633,44 +785,6 @@ classdef Bird < handle
             end
         end
 
-        function date = getHatchdate(birdname)
-            %找到鸟的破壳日
-            % the function to get hatch date
-            birdlist = Bird.readBirdlist;
-            % get the corresponding index, set fathername
-            index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
-            date = birdlist.Hatchdate(index);
-            disp(date);
-        end
-
-
-        function sonnames = findSons(fathername)
-            %找到父鸟所有的子鸟
-            % configs for reading the table
-            birdlist = Bird.readBirdlist;
-
-            %             % get the corresponding index, set fathername
-            %             index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
-            %             fathername = birdlist.father(index);
-
-            %             if isempty(fathername)
-            %                 fathername = string(missing);
-            %             end
-
-            children_index = find(~cellfun(@isempty, regexp(birdlist.father,fathername)));
-            male_index = find(~cellfun(@isempty, regexp(birdlist.Gender,"♂")));
-            sons_index = intersect(children_index, male_index);
-            sons_names = birdlist.BirdID(sons_index);
-            hatch_dates =birdlist.Hatchdate(sons_index);
-
-            for k = 1: length(sons_names)
-                disp(sprintf('His song is:  %s, hatching date: %s, recording state: %s',sons_names{k},hatch_dates{k},Bird.recording_state(sons_names{k})));
-                newline;
-            end
-
-
-
-        end
 
         function allnames = allFathers(~)
             %找到birdlist里所有曾经产生过后代的雄鸟

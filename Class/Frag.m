@@ -113,7 +113,11 @@ classdef Frag < handle
 
 
             % 与target接近的syllable的反应/测试比例
+            if isempty(fg.close_fraglist)
+                percentage.numerator_close = 0;
+            else
             percentage.numerator_close = length(find([fg.close_fraglist.label].' == 1));
+            end
             percentage.denominator_close = length(fg.close_fraglist);
             percentage.ratio_close =  percentage.numerator_close /percentage.denominator_close ;
 
@@ -991,6 +995,45 @@ classdef Frag < handle
     end
 
     methods(Static)
+
+        function result = getNumTestedNumResponsive(A,bingyang)
+            temp = A.knowTarget;
+            locallist  = A.frag.allfraglist_nonorm;
+            if ~isempty(temp)
+                targetname = temp{1};% 这个{1}也似乎比较武断
+                % 找到targetid
+                targetid = find(~cellfun(@isempty,regexp(cellstr({locallist.stimuliname}.'),targetname)));
+            else
+                [~,targetid] = max([locallist.maxsdf].');
+
+            end
+
+            catego_target = MetaStimuli.categorizeByBingyang(locallist( targetid).y,32000, bingyang);
+            purelocallist = locallist; % 不去掉target本身
+
+            for k = 1:length(purelocallist)
+                purelocallist(k).catego = MetaStimuli.categorizeByBingyang(purelocallist(k).y,32000,bingyang);
+            end
+
+            % 同组
+            result.num_tested_simgroup = length(find([purelocallist.catego].'==catego_target));
+            result.num_responsive_simgroup = length(find([purelocallist.catego].'==catego_target & [purelocallist.label].'==1));
+
+            % 异组
+            result.num_tested_difgroup = length(find([purelocallist.catego].'~=catego_target));
+            result.num_responsive_difgroup = length(find([purelocallist.catego].'~=catego_target & [purelocallist.label].'==1));
+
+            %所有组
+            result.num_tested_allgroup = length(find([purelocallist.catego].'));
+            result.num_responsive_allgroup = length(find([purelocallist.label].'==1));
+
+            %比例
+            result.ratio_sim = result.num_responsive_simgroup/result.num_tested_simgroup;
+            result.ratio_dif = result.num_responsive_difgroup/result.num_tested_difgroup;
+            result.ratio_all = result.num_responsive_allgroup/result.num_tested_allgroup;
+
+
+        end
 
         function sorted_presented_eleinf = findDist2Target(presented_eleinf,targetname,all_eleinf)
             % 根据与target之间的距离对eleinf进行排序

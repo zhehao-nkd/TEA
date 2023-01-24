@@ -725,7 +725,8 @@ classdef Archon
 
         function  genAnalysis(sourcedir,birdname,ZPid,channelname,unit,whether_to_save) % generate Neuron
             %  arch = Archon(sourcedir);%Archon('D:/');
-            temp = Extract.folder(sourcedir); % Extract.foldersAllLevel
+            unpack = @(x) x{1};
+            temp = Extract.folder(unpack(sourcedir)); % Extract.foldersAllLevel
             bird_folders  = {temp{find(~cellfun(@isempty,regexp(temp,'[ZP]\d+$')))}}.'; % folders ended with ZP and number
             if isempty(bird_folders)
                 temp = Extract.foldersAllLevel(sourcedir);
@@ -803,8 +804,9 @@ classdef Archon
                 experiments{k} = Exp;
 
             end
-            eleinf = load("F:\S01_GeneratedNeurons_20221209\all_eleinf.mat").eleinf;
-            A = Neuron(experiments,eleinf);
+            %eleinf = load("F:\S01_GeneratedNeurons_20221209\all_eleinf.mat").eleinf;
+            %A = Neuron(experiments,eleinf);
+            A = Neuron(experiments);
             % A.calHarmRatio;
             info = A.info;
 
@@ -857,9 +859,7 @@ classdef Archon
 
 
             D = parallel.pool.DataQueue;
-            h = waitbar(0, '开始生成 Neuron objects');
-            Utl.UpdateParforWaitbar(length(rest_roster), h);
-            afterEach(D, @Utl.UpdateParforWaitbar);
+            wb = PoolWaitbar(length(rest_roster),'开始生成 Neuron objects');
 
             if length(rest_roster) == 0
                 rest_roster = [];
@@ -868,8 +868,8 @@ classdef Archon
 
             birddirs = Extract.folder(diskname);
             
-           parfor k = from_where: length(rest_roster) % par
-                try
+           for k = from_where: length(rest_roster) % par
+%                 try
                     birdname = rest_roster(k).birdname;
                     ZPid = rest_roster(k).neuronid;
                     channelname = rest_roster(k).channelname;
@@ -882,14 +882,14 @@ classdef Archon
 
                         Archon.genAnalysis(hitted_birddirs,birdname,ZPid,channelname,unit);
                     end
-                catch ME
-                    %                   pause
-                    rest_roster(k).ME = ME;
-                    rest_roster(k).identifier = ME.identifier;
-                    disp(ME);
-                end
+%                 catch ME
+%                     %                   pause
+%                     rest_roster(k).ME = ME;
+%                     rest_roster(k).identifier = ME.identifier;
+%                     disp(ME);
+%                 end
 
-                send(D, 1);
+                increment(wb);
             end
 
             toc

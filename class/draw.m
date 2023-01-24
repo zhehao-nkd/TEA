@@ -1,5 +1,43 @@
 classdef Draw
     methods(Static)
+
+        function swarmchart(y1,y2)
+            % swarmchart for two groups of data
+
+
+            x1 = ones(size(y1));
+            x2 = 2*ones(size(y2));
+
+            swarmchart(x1,y1,10)
+            hold on
+            swarmchart(x2,y2,10)
+            hold off
+
+        end
+
+
+
+        function pvalue = Permutation(allvalues,thres)
+            [bins,edges] =histcounts(allvalues,60,'Normalization','probability')
+            centers = edges(1:end-1) + mean(diff(edges))/2;
+
+
+            hold on
+            set(gca,'TickDir','out');
+            bar(centers(centers<thres),bins(centers<thres),'r','BarWidth', 1)
+            bar(centers(centers>=thres),bins(centers>=thres),'b','BarWidth', 1)
+            xline(thres,':k','LineWidth',1.35)
+           
+            xL=xlim;
+            yL=ylim;
+           % pvalue = round(1-sum(bins(centers<thres)),2); %或许不应该round也有可能，
+           % round的话会有更多阳性结果(不太对，因为用的是bin的percentage）
+           pvalue = round(1- sum(allvalues<thres)/length(allvalues),2); % 应该直接算percentage
+
+            text(xL(1) + 0.95*(xL(2)-xL(1)),0.95*yL(2),sprintf('P = %.2f',pvalue),...
+                'HorizontalAlignment','right','VerticalAlignment','top','FontSize', 18)
+
+        end
            
         function oscillo(y,fs)
             x = linspace(1,length(y),length(y))/fs;
