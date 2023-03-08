@@ -90,7 +90,7 @@ classdef MetaStimuli < handle
         function metadata = read2ele(file_or_dir)  % read to elements
             % 功能：读取鸟歌的分割数据到element
 
-            if exist(file_or_dir,'dir')
+            if length(file_or_dir) == 1 && exist(file_or_dir,'dir')
                 matfiles = Extract.filesAllLevel(file_or_dir,'*.mat');
             else
                 matfiles = file_or_dir;
@@ -98,21 +98,9 @@ classdef MetaStimuli < handle
 
             song_collect = {};
 
-            for m = 1: length(matfiles) % parfor here
+            for m = 1: length(matfiles) % parfor here m = 85
 
                 loaded = load(matfiles{m});
-
-                % Very dangerous bad code, temporarilary used
-                %                 if isfield(loaded.segdata,'eleedge')
-                %                     loaded.segdata.eleedge = loaded.segdata.eleedge -0.008;
-                %                 end
-                %                 if isfield(loaded.segdata,'syledge')
-                %                     loaded.segdata.syledge = loaded.segdata.syledge -0.008;
-                %                 end
-                %                 if isfield(loaded.segdata,'motedge')
-                %                     loaded.segdata.motedge = loaded.segdata.motedge -0.008;
-                %                 end
-                %%%%%%%%%Extremeley bad and dangerous code shown above
 
                 if isfield(loaded.segdata,'motedge')
                     loaded.segdata.motedge = sort(loaded.segdata.motedge);
@@ -134,8 +122,11 @@ classdef MetaStimuli < handle
                 fiy = bandpass(loaded.segdata.rawy,[900 6000],fs); %% It is very important that here the y should be fiy !!!!! filtered y instead of the raw y
                 I = Cal.spec(fiy,fs);
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                initials = alledges(1:2:end)-0.008;
-                terminals = alledges(2:2:end)+ 0.008; %极度危险的代码，但只能日后再修改了 2023.01.22
+                initials = alledges(1:2:end);
+                terminals = alledges(2:2:end); % 2023.01.22
+
+%                 initials = alledges(1:2:end)-0.008;
+%                 terminals = alledges(2:2:end)+ 0.008; %极度危险的代码，但只能日后再修改了 2023.01.22
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 %Extremely extremely dangerous code
                 song_eleinf = struct;
@@ -146,7 +137,7 @@ classdef MetaStimuli < handle
                     song_eleinf(w).songname = loaded.segdata.birdid;
 
                     try
-                        song_eleinf(w).motif = MetaStimuli.findMotif(loaded.segdata.motedge,initials(w)+0.008,terminals(w)-0.008);
+                        song_eleinf(w).motif = MetaStimuli.findMotif(loaded.segdata.motedge,initials(w),terminals(w));
                     catch
                         song_eleinf(w).motif = 0;
                     end
@@ -155,7 +146,6 @@ classdef MetaStimuli < handle
                     %hp_y = loaded.segdata.rawy; %2023.01.22 没看出这一步highpass有什么意义，所以先去掉
                     if isfield(loaded.segdata,'rawy')
                         song_eleinf(w).y = hp_y(max(initials(w)*fs,1):terminals(w)*fs); % originally loaded.segdata.rawy
-
                     end
                     if isempty(song_eleinf(w).y)
                         disp('Pause')
@@ -492,10 +482,13 @@ classdef MetaStimuli < handle
             % 功能说明：generate figures for streamlit app classification from input_eleinf
             targetdir = 'Figs';
             mkdir(targetdir);
-            for k = 1:length(meta_ele)
-                figure('Position',[681 403 length(meta_ele(k).y)*187/2305 543]);
-                Draw.spec(meta_ele(k).y,meta_ele(k).fs)
-                saveas(gcf,fullfile(targetdir,sprintf('%s.png',meta_ele(k).fullname)))
+            parfor k = 1:length(meta_ele)
+
+                padded_y = [zeros(300,1);meta_ele(k).y;zeros(300,1)];
+
+                figure('Position',[681 403 length(padded_y)*187/2305 543]);
+                Draw.spec(padded_y,meta_ele(k).fs)
+                saveas(gcf,fullfile(targetdir,sprintf('%s.png',meta_ele(k).stimuliname)))
                 close(gcf)
             end
 
@@ -516,7 +509,7 @@ classdef MetaStimuli < handle
 
         end
 
-        function catego = categorizeByBingyang(y,fs,bingyang)
+        function [catego,min_distance] = categorizeByBingyang(y,fs,bingyang)
 
             featurespace = [];
             for k = 1:length(bingyang)
@@ -542,12 +535,61 @@ classdef MetaStimuli < handle
             distances = [];
             for b = 1:length(unique_categos)
                 local_BY = bingyang([bingyang.catego].'== unique_categos(b)); % 同一个catego的兵样
-                distances(b) = mean([local_BY.disfeature].');
+                distances(b) = mean(rmoutliers([local_BY.disfeature].'));
             end
 
-            [~,catego] = min(distances); % 与哪个catego平均距离最小，就归为哪个catego
+            [min_distance,catego] = min(distances); % 与哪个catego平均距离最小，就归为哪个catego
+            
+            if min_distance > 6 % 之前是5
+                catego = 0; % 最小距离太大无法分类
+
+            end
 
         end
+
+        function [catego,min_distance] = categorizeByBingyangOldData(y,fs,bingyang,distance_thres)
+
+             % 不再使用平均距离，而是最小距离
+
+            featurespace = [];
+            for k = 1:length(bingyang)
+                bingyang(k).sat.meanfeatures.dur = length(bingyang(k).y); % 加上syllable duration试一试
+                featurespace(k,:) = cell2mat(struct2cell(bingyang(k).sat.meanfeatures));
+            end
+
+            test = SAT_sound(y,fs);
+            test.meanfeatures.dur = length(y); % 加上syllable duration
+            featurespace(k+1,:) = cell2mat(struct2cell(test.meanfeatures));
+
+            %由于每个feature绝对大小的区间不同，每个feature的比重不一样，所以要zscore一下
+            z_featurespace = zscore(featurespace,0,1); % zscore比 rescale为（0，1）更靠谱
+            test_coor = z_featurespace(k+1,:);
+
+            for a = 1:length(bingyang)
+                bingyang(a).coor = z_featurespace(a,:);
+                bingyang(a).disfeature = norm(bingyang(a).coor - test_coor);
+            end
+
+            %计算test（被测）与每个兵样的最小距离
+
+      
+            [min_distance,index] = min([bingyang.disfeature].'); % 与哪个catego平均距离最小，就归为哪个catego
+
+            if ~exist('distance_thres','var')
+                distance_thres = 2; % Default value
+            end
+
+            
+            if min_distance > distance_thres% 之前是5
+                catego = 10; % 最小距离太大无法分类
+            else
+                catego = bingyang(index).catego;
+
+            end
+
+         end
+
+
 
     end
 

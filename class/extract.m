@@ -220,6 +220,7 @@ classdef Extract
         end
         
         function new_sptimes = sptimes_resetSP(spike_times, initial, terminal)
+            %似乎是截取sptimes种的一段并以新起点为零点
             new_sptimes = {};
             for k = 1: length(spike_times)
                 local_spt = spike_times{k};

@@ -1,62 +1,59 @@
 %%% a class to generate Stimuli
 
-% segment songs to get a syllable table
-% generate normalized songs
-% generate reversed songs
-% generate single syllables
-% generate mirrored songs
-% generate context replaced songs
-% select syllable from different clusters
-% add trigger channel
 
-% the name of this class will be Stimuli??? ort other names???
-
-classdef StimCore < handle
+classdef Substimuli < handle
 
     properties
-        raw % infment information struct
+
+%         raw % infment information struct
+        rawfraglist
+        preprocessed
+        songname
         fs
         %splited % splited is a struct for each song, by modifying the splited, like delete a syllable or, replace the y to the normalize y, or even replace the syllable to other syllables, ne wStimuli will be gnerated
         %%% That is to say, function normalize should be renewed to
         %%% become a general function. Used by all other fucntions to
         %%% assemble the syllable/elemnt within songs into a single song
-        responded  % it is the collection of songs that can activate a neurons
-        selected11 % selected songs that can activate a neuron
-        selected01    %not responded  ??????
-        selectedsplited %% splited data, but not full, instead , it is selected
-
-        prepro % preprocessed info, which is firstly highpass-filtered and then normalized
-        songnames  % song names within info
-        songnum  % number of songs within info
-        outdir
-        num_of_near
-        num_of_far
-        num_of_sim
-        repla_pregap % pre_gap for replacement
-        initial_pregap  %pre_gap of the first elements % seconds
+%         responded  % it is the collection of songs that can activate a neurons
+%         selected11 % selected songs that can activate a neuron
+%         selected01    %not responded  ??????
+%         selectedsplited %% splited data, but not full, instead , it is selected
+% 
+%         prepro % preprocessed info, which is firstly highpass-filtered and then normalized
+%         songnames  % song names within info
+%         songnum  % number of songs within info
+%         outdir
+%         num_of_near
+%         num_of_far
+%         num_of_sim
+%         repla_pregap % pre_gap for replacement
+%         initial_pregap  %pre_gap of the first elements % seconds
 
 
     end
 
     methods  % 底层算法，不为产生wav文件
 
-        function s = StimCore(info)
-            %initialize the eleinf's uniqueid        
-            s.fs = unique([info.fs].');  % a single value
-            s.prepro = StimCore.getprepro(info);
-            s.initial_pregap = 0.05;
+        function s = Substimuli(fraglist)
+
+            s.rawfraglist = fraglist % 输入数据
+            s.songname = fraglist(1).songname;
+            s.preprocessed = Substimuli.getPrepro(fraglist); % 预处理（filtering,normalization)后的数据
+   
+            s.fs = unique([fraglist.fs].');  % a single value
+  
+%             s.initial_pregap = 0.05;
+
+%             s.songnames = unique(cellstr( {fraglist.songname}.'));
+%             s.songnum = length(s.songnames);
+
 
             % judge whether those infos are from a single song or multiple
             % song
 
-            s.songnames = unique(cellstr( {info.songname}.'));
-            s.songnum = length(s.songnames);
-
-
-
         end
 
-        function new = normalize2(s,old,tarrms)
+        function new = Deprecated_normalize2(s,old,tarrms)
             % this normalize all element/syllable to have the same rms
             %old = s.splited;
             new = {};
@@ -74,336 +71,90 @@ classdef StimCore < handle
 
         end
 
-        function set_num_of_sim(s,num_of_sim)
-            s.num_of_sim = num_of_sim; % set the number of similar frags(just the same elements in different motifs
-        end
+%         function set_num_of_sim(s,num_of_sim)
+%             s.num_of_sim = num_of_sim; % set the number of similar frags(just the same elements in different motifs
+%         end
 
 
     end
 
-    methods  % 直接产生wav文件的方法
+    methods  % 生成声信号，可被上级Class Substimuli调用
 
-        function summer = getnormy(s)
+        function song = getSong(s)
             %得到 purified song data
-            summer = s.assemble(s.prepro);
+            song.y = s.assemble(s.preprocessed);
+            song.fs = s.fs;
+            song.songname = s.songname;
         end
 
-        function motify = getmotify(s, motifindex)
+        function motify = getMotify(s, motifindex)
             %得到 purified motif data
             thismotif = s.prepro([s.prepro.motif].' == motifindex);
             motify = s.assemble(thismotif);
         end
-
-
-
-
-    end
-
-    methods % 作图方法
-        function draw_frag_scatter_from_folder(s,dirpath)
-
-
-        end
         
-        function draw_spec_in_space(s,imagename)
-            % 把频谱图按照其坐标展现在二维空间中, 速度非常快，new version
+        function degs = getDegs(s,terminal)
+            %terminal是截断，其后的syllables不会被写入
 
-            mergedeleinf = s.prepro;
-
-            isize = 12000;
-            kuanchangbi = 0.6;
-
-            coor_1 = [mergedeleinf.coor_1].'; coor_2 = [mergedeleinf.coor_2].';
-            coor_1 = rescale(coor_1, isize*0.03*kuanchangbi, isize*0.97*kuanchangbi);
-            coor_2 = rescale(coor_2, isize*0.03, isize*0.97);
-
-            %             parentimg = ones([isize,isize]);
-            %             figure('Position',[202 155 1400 1000]);
-            %             h = image(parentimg);
-            %             hold on
-            %             scale = 30; % scale = 50;
-            %             for w = 1:length(mergedeleinf)%1: 100
-            %                 img = rescale(Cal.spec(mergedeleinf(w).y,mergedeleinf(w).fs),0,1);
-            %                 %                 [alpha,beta] = size(img);
-            %                 %                 img = imresize(flip(img,1),[alpha,beta*2]);
-            %                 image([coor_1(w),coor_1(w) + size(img,2)], [coor_2(w),coor_2(w) + size(img,1)], img, 'CDataMapping', 'scaled');
-            %
-            %             end
-
-            parentimg = zeros([isize*kuanchangbi,isize]);
-            %             scale = 30; % scale = 50;
-            for w = 1:length(mergedeleinf)%1: 100
-                img = rescale(Cal.spec(mergedeleinf(w).y,mergedeleinf(w).fs),0,1);
-                [alpha,beta] = size(img);
-                img = imresize(img,[alpha*0.6,beta*1.8]);
-                parentimg(round(coor_1(w)):round(coor_1(w))+ size(img,1)-1,round(coor_2(w)):round(coor_2(w)) + size(img,2)-1) = img;
-                % image([coor_1(w),coor_1(w) + size(img,2)], [coor_2(w),coor_2(w) + size(img,1)], img, 'CDataMapping', 'scaled');
-
+            if ~exist('terminal','var')
+                terminal = length(s.preprocessed);
             end
 
-            parentimg = im2uint8(parentimg);
-
-            cmap = hot(128); % Or whatever one you want.
-            parentimg = ind2rgb(parentimg, cmap);
-            parentimg = im2uint8(parentimg);
-
-            % configure tiff
-            t = Tiff(imagename,'w8');
-            setTag(t,'ImageWidth',isize);
-            setTag(t,'ImageLength',isize*(kuanchangbi+0.005));
-            setTag(t,'Photometric',Tiff.Photometric.RGB);
-            setTag(t,'PlanarConfiguration',Tiff.PlanarConfiguration.Chunky);
-            setTag(t,'BitsPerSample',8);
-            setTag(t,'SamplesPerPixel',3);
-
-            % write data
-            write(t,parentimg);
-            close(t);
-
-        end % plot spectrogram in scatter space
-
-        function draw_songtrace_in_space(s, inputnames,filename)
-            mergedeleinf = s.prepro;
-
-            isize = 12000;
-            kuanchangbi = 0.6;
-
-            coor_1 = [mergedeleinf.coor_1].'; coor_2 = [mergedeleinf.coor_2].';
-            coor_1 = rescale(coor_1, isize*0.03*kuanchangbi, isize*0.97*kuanchangbi);
-            coor_2 = rescale(coor_2, isize*0.03, isize*0.97);
-
-            for k = 1:length(mergedeleinf)
-                mergedeleinf(k).coor_1 = coor_1(k);
-                mergedeleinf(k).coor_2 = coor_2(k);
+            degs = struct;
+            for k = 1: terminal-1
+                
+                unessembled_deg = s.preprocessed(k+1:end);
+                degs(k).y = Substimuli.assemble(unessembled_deg);
+                degs(k).songname = unessembled_deg(1).songname;
+                degs(k).rank = k;
             end
-
-            parentimg = ones([isize*kuanchangbi,isize]);
-            %             figure('Position', get(0, 'Screensize'));
-            figure('Position', [15,15,1910,1190]);
-            h = image(parentimg);
-            hold on
-
-            axis off
-            ax = gca;
-            outerpos = ax.OuterPosition;
-            ti = ax.TightInset;
-            left = outerpos(1) + ti(1);
-            bottom = outerpos(2) + ti(2);
-            ax_width = outerpos(3) - ti(1) - ti(3);
-            ax_height = outerpos(4) - ti(2) - ti(4);
-            ax.Position = [left bottom ax_width ax_height];
-
-
-
-            %             scale = 30; % scale = 50;
-            for w = 1:length(mergedeleinf)%1: 100
-                img = rescale(Cal.spec(mergedeleinf(w).y,mergedeleinf(w).fs),0,1);
-                [alpha,beta] = size(img);
-                img = imresize(img,[alpha*0.6,beta*1.8]);
-                image([coor_2(w)-size(img,1)/2,coor_2(w) + size(img,1)/2], [coor_1(w)-size(img,2)/2,coor_1(w) + size(img,2)/2], img, 'CDataMapping', 'scaled');
-
-            end
-
-            linecmap = colormap('lines');
-            for k = 1:length(inputnames)
-                correspid = find(~cellfun(@isempty, regexp(cellstr({mergedeleinf.songname}.'),inputnames(k))));
-                thissong_eleinf = mergedeleinf(correspid);
-                [~,index] = sortrows([thissong_eleinf.fragid].');
-                thissong_eleinf = thissong_eleinf(index); clear index % sort by fragid
-                plot([thissong_eleinf.coor_2].',[thissong_eleinf.coor_1].','Color',linecmap(k,:),'LineWidth',2);
-
-            end
-            colormap('hot');
-            saveas(gcf,filename);
-            close(gcf)
-            %             parentimg = zeros([isize*kuanchangbi,isize]);
-            %             %             scale = 30; % scale = 50;
-            %             for w = 1:length(mergedeleinf)%1: 100
-            %                 img = rescale(Cal.spec(mergedeleinf(w).y,mergedeleinf(w).fs),0,1);
-            %                 [alpha,beta] = size(img);
-            %                 img = imresize(img,[alpha*0.9,beta*1.8]);
-            %                 parentimg(round(coor_1(w)):round(coor_1(w))+ size(img,1)-1,round(coor_2(w)):round(coor_2(w)) + size(img,2)-1) = img;
-            %                 % image([coor_1(w),coor_1(w) + size(img,2)], [coor_2(w),coor_2(w) + size(img,1)], img, 'CDataMapping', 'scaled');
-            %
-            %             end
-
-            %             parentimg = im2uint8(parentimg);
-            %
-            %             cmap = jet(128); % Or whatever one you want.
-            %             parentimg = ind2rgb(parentimg, cmap);
-            %             parentimg = im2uint8(parentimg);
-            %
-            %             % configure tiff
-            %             t = Tiff(imagename,'w8');
-            %             setTag(t,'ImageWidth',isize);
-            %             setTag(t,'ImageLength',isize*(kuanchangbi+0.005));
-            %             setTag(t,'Photometric',Tiff.Photometric.RGB);
-            %             setTag(t,'PlanarConfiguration',Tiff.PlanarConfiguration.Chunky);
-            %             setTag(t,'BitsPerSample',8);
-            %             setTag(t,'SamplesPerPixel',3);
-            %
-            %             % write data
-            %             write(t,parentimg);
-            %             close(t);
 
         end
 
-        function draw_scatter(s,ids_green,ids_blue,ids_red)
-
-            mergedeleinf = s.prepro;
-            coor_1 = [mergedeleinf.coor_1].'; coor_2 = [mergedeleinf.coor_2].';
-            coordinate = horzcat(coor_1,coor_2);
-
-            % set initial state as black
-            for h = 1:length(mergedeleinf)
-                mergedeleinf(h).imagehandle = 0; % 2 means braod
-            end
-
-            if exist('ids_green','var')
-                for h = ids_green(:).'
-                    mergedeleinf(h).imagehandle = -1;
-                end
-            end
-
-            if exist('ids_blue','var')
-                for h = ids_blue(:).'
-                    mergedeleinf(h).imagehandle = 2; % 2 means braod
-                end
-            end
-
-            if exist('ids_red','var')
-                for h = ids_red(:).'
-                    mergedeleinf(h).imagehandle = 1;
-                end
-            end
-
-            figure;
-            hold on
-
-            for f = 1: length(mergedeleinf)
-
-                if mergedeleinf(f).imagehandle == 0
-                    scatter(mergedeleinf(f).coor_1,mergedeleinf(f).coor_2,[],'k','filled'); % not used
-                elseif mergedeleinf(f).imagehandle == 2
-                    scatter(mergedeleinf(f).coor_1,mergedeleinf(f).coor_2,[],'b','filled'); % broad-blue
-                elseif mergedeleinf(f).imagehandle == 1
-                    scatter(mergedeleinf(f).coor_1,mergedeleinf(f).coor_2,[],'r','filled'); % near-red
-                elseif mergedeleinf(f).imagehandle == -1
-                    scatter(mergedeleinf(f).coor_1,mergedeleinf(f).coor_2,[],'g','filled'); % target_ele-green
-                end
-                %drawnow
-            end
-        end
-
-        function draw_conscatter(s,ids_green,ids_blue,ids_red) % These ids are global
-            mergedeleinf = s.prepro;
-
-            con_ids = find(~cellfun(@isempty,regexp([mergedeleinf(:).songname].','CON|SPE')));
-
-            con_eleinf = mergedeleinf(con_ids);
-
-
-            coor_1 = [con_eleinf.coor_1].'; coor_2 = [con_eleinf.coor_2].';
-            coordinate = horzcat(coor_1,coor_2);
-
-            % set initial state as black
-            for h = 1:length(con_eleinf)
-                con_eleinf(h).imagehandle = 0; % 2 means broad
-            end
-
-            if exist('ids_green','var')
-                for h = ids_green(:).'
-                    target_id = find(con_ids == h);
-                    con_eleinf( target_id).imagehandle = -1;
-                end
-            end
-
-            if exist('ids_blue','var')
-                for h = ids_blue(:).'
-                    target_id = find(con_ids == h);
-                    con_eleinf(target_id).imagehandle = 2; % 2 means braod
-                end
-            end
-
-            if exist('ids_red','var')
-                for h = ids_red(:).'
-                    target_id = find(con_ids == h);
-                    con_eleinf(target_id).imagehandle = 1;
-                end
-            end
-
-            figure;
-            hold on
-
-            for f = 1: length(con_eleinf)
-
-                if con_eleinf(f).imagehandle == 0
-                    scatter(con_eleinf(f).coor_1,con_eleinf(f).coor_2,[],'k','filled'); % not used
-                elseif con_eleinf(f).imagehandle == 2
-                    scatter(con_eleinf(f).coor_1,con_eleinf(f).coor_2,[],'b','filled'); % broad-blue
-                elseif con_eleinf(f).imagehandle == 1
-                    scatter(con_eleinf(f).coor_1,con_eleinf(f).coor_2,[],'r','filled'); % near-red
-                elseif con_eleinf(f).imagehandle == -1
-                    scatter(con_eleinf(f).coor_1,con_eleinf(f).coor_2,[],'g','filled'); % target_ele-green
-                end
-                %drawnow
-            end
-
-
-
+        function syls = getSamesongSyllables(s)
+            % get all the syllables from the same song
+            syls = s.preprocessed;
 
         end
 
-        function draw_conspace(s,global_target)
+        function replas = getReplas(s,replasourcelist,whichsyl,gap_before_target)
+            % target 是使神经元反应的syllable名称或者是使神经元反应的combination中的第二个
+            % 从target syllable到target syllable + 0
+            front_removed = s.preprocessed(whichsyl:whichsyl+0);
+            
+            % 如果target之前的gap不是原始context里的，那么需要在assemble之前改变它
+            if exist('gap_before_target','var')&& ~isnan(gap_before_target)
+                front_removed(1).pregap = gap_before_target;
+            end
+            if isinf(front_removed(1).pregap)
+                front_removed(1).pregap = 0;
+            end
 
-            % get random
-            global_eleinf = s.prepro;
-            senatus_ids = find(~cellfun(@isempty,regexp([global_eleinf(:).songname].','CON|SPE'))); % ids of CON/SPE songs in all_eleinf
-            senatus_eleinf = global_eleinf(senatus_ids);
-
-            %randomize the senatus
-            rng(1);
-            random_ids = senatus_ids(randperm(length(senatus_ids))); % randomize mergedeleinf
-
-
-            %get ids
-            far_ids = random_ids(1:s.num_of_far);
-            nearby_ids = Stimuli.findnearby(senatus_eleinf,s.num_of_near,global_target);
-            global_far_ids = [global_eleinf(far_ids).uniqueid].';
-            global_nearby_ids = [global_eleinf(nearby_ids).uniqueid].';
-            %draw
-            %             s.draw_conscatter(far_ids);
-            %             s.draw_scatter();
-            s.draw_conscatter(global_far_ids,global_nearby_ids,global_target);
-
-        end
-
-        function draw_allspace(s,global_target)
-
-            % get random
-            global_eleinf = s.prepro;
-            rng(1);
-            random_ids = randperm (numel(global_eleinf));
-
-            %get ids
-            far_ids = random_ids(1:s.num_of_far);
-            nearby_ids = Stimuli.findnearby(global_eleinf,s.num_of_near,global_target);
-
-            %draw
-            s.draw_scatter(far_ids,nearby_ids,global_target);
+            for k = 1:length(replasourcelist)
+                replasourcelist(k).dur = length(replasourcelist(k).y)/replasourcelist(k).fs;
+                replasourcelist(k).pregap = Inf;
+                replasourcelist(k).uniqueid = nan;
+                tobe_assmbled =  vertcat(replasourcelist(k),front_removed);
+                replas(k).y = Substimuli.assemble(tobe_assmbled);
+                replas(k).contextname = replasourcelist(k).unifragnames;
+                replas(k).targetname = front_removed(1).unifragnames;
+                replas(k).gapduration = front_removed(1).pregap;
+                replas(k).catego = replasourcelist(k).catego;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+                replas(k).fs = replasourcelist(k).fs;
+            end
 
         end
-
 
     end
-    
+
+
     methods % Frozen or Deprecated
 
-        function s = Frozen_set_near(s,num_of_near) % number of near_Stimuli to generate
+        function s = Deprecated_Frozen_set_near(s,num_of_near) % number of near_Stimuli to generate
             s.num_of_near = num_of_near;
         end
 
-        function s = Frozen_set_far(s,num_of_far) % number of far_Stimuli to generate
+        function s = Deprecated_Frozen_set_far(s,num_of_far) % number of far_Stimuli to generate
             s.num_of_far = num_of_far;
         end
 
@@ -492,7 +243,6 @@ classdef StimCore < handle
 
             end
         end % plot spectrogram in scatter space
-
 
         function Deprecated_draw_Stimuli_space_unique_ele_only(s,number)
 
@@ -701,9 +451,7 @@ classdef StimCore < handle
 
     methods(Static)
 
-
-
-        function prepro = getprepro(info)
+        function prepro = getPrepro(info)
 
             for k = 1: length(info)
                 info(k).dur = length(info(k).y)/info(k).fs;
@@ -717,14 +465,17 @@ classdef StimCore < handle
                 end
             end
 
-            temp = StimCore.highpass(info,450);
-            temp = StimCore.normalize(temp, 0.05);
+            temp = Substimuli.highpass(info,450);
+            temp = Substimuli.normalize(temp, 0.05);
 
-            prepro = table2struct(sortrows(struct2table(temp),'fragid','ascend')); % re-order
+            try
+                prepro = table2struct(sortrows(struct2table(temp),'fragid','ascend')); % re-order
+            catch
+                prepro = temp; % 如果temp只有一行的话
+            end
             % already highpass-filtered and normalized for each song
         
         end  
-
 
         function new = highpass(fraginf,hpf) % 重要hpf is the high pass frequency
             % this normalize all element/syllable to have the same rms
@@ -764,16 +515,11 @@ classdef StimCore < handle
 
         end
 
-        function new = normalize(fraginf,trms)  % 重要this normalize works for every song
+        function new = normalize(fraginf,trms)  
+            % 重要this normalize works for every song
 
             if ~exist('trms','var')
                 trms = 0.05;
-            end
-
-            %             new= TempStimcore.normalize(fraginf,trms);
-            % normalize to make the song have the same rms
-            if ~exist('tarrms','var')
-                tarrms = 0.05; % default high-pass filter
             end
 
             old = fraginf;
@@ -782,7 +528,7 @@ classdef StimCore < handle
             sumy = vertcat(ys{:});
 
             sumrms = rms(sumy);
-            ratio = tarrms/sumrms;
+            ratio = trms/sumrms;
             for k = 1: length(old)
                 new(k).y = ratio*old(k).y;
             end
@@ -810,37 +556,8 @@ classdef StimCore < handle
 
         end
 
-        function deg = degressive(fraginf, initial, terminal) % initial-end
-            deg = struct;
-            diff = terminal - initial + 1;
-            for k = 1: diff
-                rank =k - 1;
-                shortensylinf = fraginf(initial+rank:end);
-                deg(k).y = Stimuli.assemble(shortensylinf);
-                deg(k).rank = rank;
-            end
 
-        end
-
-        function [same,localidx] = samesong(fraginf,idx) % get all the syllables from the same song
-
-            splited = Stimuli.split(fraginf);
-
-            songnames = {};
-            for k = 1: length(splited)
-                songnames{k} = splited{k}(1).songname;
-            end
-
-            splitidx = find(strcmp(cellstr(songnames),fraginf(idx).songname));
-
-            same = splited{splitidx};
-
-            localidx = find([same.fragid].'== fraginf(idx).fragid);
-
-
-        end
-
-        function closeids = findnearby(mergedeleinf,how_many_close,number)
+        function closeids = Deprecated_findnearby(mergedeleinf,how_many_close,number)
             eleinf = mergedeleinf;
             coor_1 = [eleinf.coor_1].'; coor_2 = [eleinf.coor_2].';
             coordinate = horzcat(coor_1,coor_2);
@@ -877,7 +594,7 @@ classdef StimCore < handle
 
         end
 
-        function newinf = unique_it(mergedeleinf)
+        function newinf = Deprecated_unique_it(mergedeleinf)
             % 每个category取一个syllable时用此方法unique一下
             % based on categories to unique the mergedeleinf
             concat = {};
@@ -892,7 +609,7 @@ classdef StimCore < handle
 
         end
 
-        function fromConRespCopyResponsiveFrags(conresp_siginfo)
+        function Deprecated_fromConRespCopyResponsiveFrags(conresp_siginfo)
             % 这个方法是为了快速产生下一阶段的测试需要的stimuli
             dbstop if error
             % 找到所有在EachSongFrags里的文件的path
@@ -929,7 +646,7 @@ classdef StimCore < handle
 
         end
 
-        function  wavTransformer(audiopath)
+        function  Deprecated_wavTransformer(audiopath)
             % 这个方法生成改变了某些feature的stimuli
             outdir = './transformed'
 
@@ -966,8 +683,6 @@ classdef StimCore < handle
         end
    
     end
-
-
 
 
 end

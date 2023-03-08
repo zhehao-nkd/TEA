@@ -44,7 +44,7 @@ classdef AutoSeg
                     wavpath = filenames{idx};
                     [y,fs] = audioread(wavpath);
                     [~,birdid,~] = fileparts(wavpath);
-                    [~,~,I,syledge,eleedge] = autoseg.main(y,fs,birdid);
+                    [~,~,I,syledge,eleedge] = AutoSeg.main(y,fs,birdid);
                     segdata.rawy = y;  % this might be useful
                     segdata.fs = fs;
                     segdata.I = I;
@@ -178,8 +178,8 @@ classdef AutoSeg
             envy = rescale(smooth(abs(fiy),150)); % amplitude envelope of y
             %powery = downsample(fiy.^2/length(fiy),fs/1000);
             %downy = downsample(abs(fiy),fs/1000);
-            I = Cal.spec(fiy,fs); % I is the image of the whole song
-            [S,F,T] = spectrogram(2*fiy,hamming(512),512-round(fs/1e3),512,fs);
+            I = Cal.spec256(fiy,fs); % I is the image of the whole song
+            [S,F,T] = spectrogram(2*fiy,hamming(256),256-round(fs/1e3),256,fs); %I和T要保持一致
             % if the input stimuli is white noise
             if regexp(birdid,'WNS|wns|Wns')
                 eleedge = [];
@@ -292,10 +292,8 @@ classdef AutoSeg
 %             close gcf
 
             % 2023.01.20改动，将initials稍微人工提前，而将ends稍微人工提后
-%             initials = edges(1:2:end);
-%             ends = edges(2:2:end);
-            initials = edges(1:2:end)-5;
-            ends = edges(2:2:end)+5;
+            initials = edges(1:2:end)-4;
+            ends = edges(2:2:end)+4;
             edges = sort([initials,ends]);
 
 
@@ -305,6 +303,7 @@ classdef AutoSeg
 
             % @-------------------@ This section is for finding the similar fragments
             % and only segment the first one of each cluster
+            % 这样就可以使每个motif的segmentation非常相似
 
             for u = 1: length(initials)
                 frag_img{u} = imresize( I(:,initials(u):ends(u)),[257,50]);
@@ -718,7 +717,7 @@ classdef AutoSeg
 
             title(sprintf('%s.png',birdid));
 
-            figdir = 'Segmentation_of_Target_Songs';
+            figdir = '对TargetSongs进行自动分割';
             mkdir(figdir);
 
             if exist(sprintf('%s\\FinalResult-%s.png',figdir,birdid),'file')

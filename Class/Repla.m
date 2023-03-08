@@ -10,11 +10,25 @@ classdef Repla < handle
 
     methods
 
-        function rp = Repla(list)
+        function rp = Repla(list,latency)
             % 从 Neuron 文件中提取neuron对replas的反应，已经具体的replas的名称
             rp.list = list;
             rp.genReplalist
-            rp.judgeReplaResp; % judgeReplaResponse是在生成replalist之后的，所以应该比较方便修改
+            if ~exist('latency','var')
+                latency = 0; % default
+            end
+          %  rp.judgeReplaResp; % judgeReplaResponse是在生成replalist之后的，所以应该比较方便修改
+
+            for k = 1:length(rp.replalist)
+                sublist = rp.replalist{k};
+                if  length(find(~cellfun(@isempty, regexp(cellstr({sublist.stimuliname}.'),'Type')))) >0 % 说明是新的stimuli
+                    rp.replalist{k} = Repla.judgeReplaRespNewStimuli(sublist,latency);
+                else
+                    rp.replalist{k} = Repla.judgeReplaRespOldStimuli(sublist,latency);
+
+                end
+
+            end
             
             for k = 1:length(rp.replalist)
 
@@ -28,6 +42,8 @@ classdef Repla < handle
                 end
                 rp.simatrix{k} = Simatrix(pseudo_list);
             end
+
+            rp.list = []; % 为了节省存储，在最后一步把此项设为零
 
 
         end
@@ -83,7 +99,8 @@ classdef Repla < handle
                 thislist = rp.replalist{a};
 
                 Replst_fnames = {thislist.stimuliname}.';
-                locY = @(x,y) x{y}; % get element in location y
+                %locY = @(x,y) x{y}; % get element in location y
+                unpack = @(x) x{1};
                 k_of_norm = [];
                 for k = 1:length(thislist)
                     splited = split(Replst_fnames{k},{'-before-','-gapis-'});
@@ -93,9 +110,9 @@ classdef Repla < handle
                         continue %暂时跳过，目的是利用后续行的fid填充norm song的fid 
                     else
                         thislist(k).bname1 = Convert.bid(splited{1});
-                        thislist(k).fid1 = str2num(locY(split(splited{1},'-'),4));
+                        thislist(k).fid1 = str2num(unpack(regexp(splited{1},'(?<=[OGBYRE]\w*\d{3}\w*-)\d+','match')));
                         thislist(k).bname2 = Convert.bid(splited{2});
-                        thislist(k).fid2 = str2num(locY(split(splited{2},'-'),3));
+                        thislist(k).fid2 = str2num(unpack(regexp(splited{2},'(?<=[OGBYRE]\w*\d{3}\w*-)\d+','match')));
                         thislist(k).concat1 = sprintf('%s-%02u',thislist(k).bname1,thislist(k).fid1);
                         thislist(k).concat2 = sprintf('%s-%02u',thislist(k).bname2,thislist(k).fid2);
                         thislist(k).fullrepla = sprintf('%s-%02u-%s-%02u',thislist(k).bname1,thislist(k).fid1,thislist(k).bname2,thislist(k).fid2);
@@ -119,122 +136,71 @@ classdef Repla < handle
 
 
         end
-        
-        function  rp = judgeReplaResp(rp)
-            % 为什么会有V1和V2，写的时候没有注意，导致有两个版本，有些许区别，但似乎V1更正确
-            % 如果需要对比，可使用 online code difference comparision 的工具
-            dbstop if error
 
-            % evaluate the responsiveness of song replacements
-            % Find out that the repla stimuliname correspond to how many natrual songs
-            %             bnames = unique(cellfun(@(x)Convert.bid(x,2),[rp.list(replaids).stimuliname].','Uni',0));
-            %
-            %             findCorrespConID = @(x) intersect(find( ~cellfun(@isempty, regexp([rp.list.stimuliname].','norm') )),...
-            %                 find( ~cellfun(@isempty, regexp([rp.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
-            %
-            %             findCorrespReplaID = @(x) intersect(find( ~cellfun(@isempty, regexp([rp.list.stimuliname].','Repla') )),...
-            %                 find( ~cellfun(@isempty, regexp([rp.list.stimuliname].',x) )) ); % function handle to get corresponding norm ids
+        function img = saveDrawSortedRespToReplas(rp) %非常难以找到这个function
 
 
-            for k = 1:length(rp.replalist) % 对于每组replacement来说！ 一组针对一个目标syllables
+            for index = 1:length(rp.replalist)
 
-                sublist = rp.replalist{k};
-                rids = find( ~cellfun(@isempty, regexp(cellstr({sublist.stimuliname}.'),'Repla|repla') ));
-                nid = find( ~cellfun(@isempty, regexp(cellstr({sublist.stimuliname}.'),'norm') ));
+                locallist = rp.replalist{index};
 
-                Ini_y_collect = [];
-                allids = [rids;nid];
-                for kk = 1:length(allids)
 
-                    if allids(kk) == nid
+                ids1 = find(~cellfun(@isempty, regexp(cellstr({locallist.stimuliname}.'),'Repla')));
+                %ids2 = find(~cellfun(@isempty, regexp(cellstr({locallist.stimuliname}.'),'Type')));
+                %ids = intersect(ids1,ids2);
+                ids = ids1; % 暂时的
 
-                        convergentpoint = unique(Ini_y_collect); % 因为norm和本身没有分歧，所以他的分歧点要靠其他repla来确定
-            
-                        Ini_replay = unique(Ini_y_collect) + (find(sublist(nid).y(unique(Ini_y_collect):end),1)-1);  
-                    else
-                        %Ini_y是在y上的分歧点坐标，而Ini_replay是在replay上的分歧点坐标
-                        [Ini_y,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla( sublist(nid).y,sublist(allids(kk)).y);
-                        if Ini_replay==1 && Ini_y>1
-                            %万一 Ini_replay为1，并且Ini_y大于1（说明不是norm song），说明原来song的syllable
-                            %first恰好替换到了syllable second 前面，等于是deg songs，没有发生改变，
-                            %此时，Ini_y和Ini_replay需要重新计算，一下是补丁算法：
-                            Ini_y = unique(Ini_y_collect);
-                            Ini_replay =length(sublist(allids(kk)).y) - (length(sublist(nid).y) - unique(Ini_y_collect));
-                        end
-                        
-                        %    figure; subplot(211);Draw.spec(sublist(nid).y,32000);subplot(212); Draw.spec(sublist(allids(kk)).y,32000);
-                        if Ini_y == 0
-                            Ini_y = 1; % dangerous code
-                        end
-                        if isempty(Ini_y)|| Ini_y>length(sublist(nid).y)
-                            continue  % another dangerous code
-                        end
+                sublist = locallist(ids);
+                if isempty(sublist)
+                    return
+                end
 
-                        num_of_zeros = find(sublist(nid).y(Ini_y:end),1)-1; % 在分歧点后多长一段是0
-                        convergentpoint = unique(Ini_y_collect);
-                        Ini_y_collect(kk) = Ini_y; %+ num_of_zeros;  % y of the responsive parts
-                        raw_Ini_replay = Ini_replay;
-                        Ini_replay = Ini_replay + num_of_zeros;
+                sorted_fraglist = table2struct(sortrows( struct2table(sublist) ,'maxsdf','descend'));
 
+
+                I = {}; % collection of frag-response-three images
+                for k = 1: length(sorted_fraglist)
+
+                    if sorted_fraglist(k).label == 0
+                        h =  figure('Position',[681 403 523 696],'Color','w');
+                    elseif sorted_fraglist(k).label == 1
+                        h =  figure('Position',[681 403 523 696],'Color','y');
                     end
 
-                    try %不管当前是不是norm song都不影响的
-                        sublist(allids(kk)).targety = sublist(allids(kk)).y(Ini_replay:Ini_replay + 0.2*sublist(allids(kk)).fs); % 截取200ms
-                    catch % if the second index overceed 当剩下的distance小于200ms时
-                        sublist(allids(kk)).targety = sublist(allids(kk)).y(Ini_replay:end); % 截取到 end
-                        disp(' MEssage@Neuron.judgeReplaResp :Overceed');
-                    end
-               
-                    if allids(kk) == nid % 如果当前是norm song的话
-                        if length(sublist(nid).y(1:Ini_replay)) < 2 %如果太短，说明替换发生在第一位
-                            sublist(allids(kk)).replaceparty = zeros(3000,1);%nan;
-                        else
-                            frags = Segment.segNormalizedSong(sublist(nid).y(1:Ini_replay),sublist(nid).fs);
-                            last_initial = max([frags.initial].'); % 最末一个syllable的起始点
-                            sublist(allids(kk)).replaceparty = sublist(allids(kk)).y(last_initial:convergentpoint); % 被替换的那一部分的y值
-                            %
-                        end
-
-%                           figure;
-%                         plot(sublist(allids(kk)).y(1:Ini_replay))
-
-                    else
-                        sublist(allids(kk)).replaceparty = sublist(allids(kk)).y(1:raw_Ini_replay); % 被替换的那一部分的y值
-
-                    end
-                  
-                
-                    sublist(allids(kk)).targetsptimes = Extract.sptimes_resetSP(sublist(allids(kk)).sptimes,Ini_replay/32000,(Ini_replay + 0.2*sublist(allids(kk)).fs)/sublist(allids(kk)).fs);
-                    sublist(allids(kk)).replacepartsptimes = Extract.sptimes_resetSP(... % replacepart, sptimes
-                        sublist(allids(kk)).sptimes,1,Ini_replay/sublist(allids(kk)).fs);
-                    % corresponding pre (targety) data
-                    sublist(allids(kk)).pretargety = zeros(length(sublist(allids(kk)).targety),1);%sublist(nid).prey(end - 0.1*32000:end); % 截取100ms
-                    sublist(allids(kk)).pretargetsptimes = Extract.sptimes_resetSP(...
-                        sublist(allids(kk)).presptimes,length(sublist(allids(kk)).pretargety)/sublist(allids(kk)).fs -0.2*sublist(allids(kk)).fs,length(sublist(allids(kk)).pretargety)/32000 );%length(sublist(rids(kk)).prey)/32000 -0.1*32000
-                    %calculate and judege whether the neuron respond to the target area or not
-                    temp = Neuron.UseMaxSdfToJudegeRespOrNot(sublist(allids(kk)).targety,sublist(allids(kk)).targetsptimes,...
-                        sublist(allids(kk)).pretargety,sublist(allids(kk)).pretargetsptimes,sublist(allids(kk)).fs);
-                    sublist(allids(kk)).label = temp.label;
-                    sublist(allids(kk)).replaPvalue = temp.pvalue;
-                    sublist(allids(kk)).maxsdf = temp.maxsdf;
-                    %                     [sublist(rids(kk)).label,sublist(rids(kk)).replaPvalue] = Neuron.UseTtestToJudegeRespOrNot(...
-                    %                         sublist(rids(kk)).targety,sublist(rids(kk)).targetsptimes,... % 查看对replaced song的反应是否明显大于对pre period的response
-                    %                         sublist(rids(kk)).pretargety ,sublist(rids(kk)).pretargetsptimes ,sublist(rids(kk)).fs);
-                    sublist(allids(kk)).targetfr = length(vertcat(sublist(allids(kk)).targetsptimes{:}))/200; % per milisecond
+                    %h.WindowState = 'maximized';
+                    Draw.two(sorted_fraglist(k).plty,sorted_fraglist(k).fs,sorted_fraglist(k).pltsptimes);
+                    xlabel(sprintf('%s-maxsdf: %f',sorted_fraglist(k).stimuliname,sorted_fraglist(k).maxsdf));
+                    temp = getframe(gcf);
+                    I{k} = temp.cdata;
 
 
-
+                    close(h)
                 end
 
 
+                % draw blank white
+                lieshu = 10;
+                hangshu = ceil(length(I)/lieshu);
+                rest = lieshu*hangshu - length(I);
+                white = uint8(255*ones(size(I{1})));
 
-                % do the same analysi for norm song
-                rp.replalist{k} = sublist;
+                if rest > 0
+                    for k = 1:rest
+                        I = [I,white];
+                    end
+                end
+
+                reshapedI = reshape(I, lieshu,[])';
+                clear I;
+                img = cell2mat(reshapedI);
+                imwrite(img,sprintf('江州RespToReplas_%s.png',rp.formated_name));
 
             end
+            %非常难以找到这个function
 
+%            
+          end
 
-        end
 
         function toCheck(rp)
             % 功能说明：把replalist的神经元反应结果作图，进而探明到底哪些replacement可以使神经元反应
@@ -244,7 +210,7 @@ classdef Repla < handle
 
                 current_replalist = rp.replalist{index}; % let us make replalist as an internal variable
 
-                purerepla = current_replalist(2:end);
+                purerepla = current_replalist(find(cellfun(@isempty, regexp(cellstr({current_replalist.stimuliname}.'),'norm')))); % 去掉norm ids
                 purerepla = table2struct(sortrows(struct2table(purerepla),'targetfr','descend')); % rank by firing rate
 
 
@@ -256,7 +222,7 @@ classdef Repla < handle
                     figure('Position',[2189 255 560 1000])
                     Draw.two(purerepla(k).targety, 32000,purerepla(k).targetsptimes); % something wrong with the getReplallist
                     xlabel(sprintf(...
-                        'mFR (target dur): %f, Result: % u ',purerepla(k).targetfr,purerepla(k).replaresp));%???? big problem here
+                        'mFR (target dur): %f, Result: % u ',purerepla(k).targetfr,purerepla(k).label));%???? big problem here
                     replacepartfig {k} = getframe(gcf).cdata;
                     replafig{k} = getframe(gcf).cdata;
 
@@ -281,7 +247,7 @@ classdef Repla < handle
 
                 %imwrite(sum_two,sprintf('%s_Sum_repla_fig.png',A.formated_name));
 
-                imwrite(sum_all,sprintf('晋%s_Sum_preNreplaceNtarget.png',rp.formated_name));
+                imwrite(sum_all,sprintf('晋%s_RespTpReplas_第%u.png',rp.formated_name,index));
 
 
             end
@@ -290,7 +256,9 @@ classdef Repla < handle
         end
 
 
-        function weather_response_eliciting_syllables_are_similar
+        function calProhibitedRatioForEachGroup(rp)
+
+            % 计算出（对于每组syllabe）能使神经元反应抑制的context占所有被测试的context之间的比例
 
         end
 
@@ -370,6 +338,123 @@ classdef Repla < handle
 
         end
 
+
+        function drawAligned(rp) % align replas and draw
+            dbstop if error
+            tic
+            RONGYU = 0.5;
+
+            for index = 1:length(rp.replalist)
+
+                locallist = rp.replalist{index};
+                fucklist = locallist;
+                normlist = fucklist(find(~cellfun(@isempty, regexp(cellstr({fucklist.stimuliname}.'),'(?!repla|Repla)norm|Norm'))));
+
+                for k = 1: length(normlist)
+                    normlist(k).pady = [zeros(RONGYU*normlist(k).fs,1);normlist(k).plty];
+                    normlist(k).padsptimes = cellfun( @(x) x + RONGYU, normlist(k).pltsptimes,'uni',0);
+                end
+
+                % About Repla
+                replaids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'Repla|repla|catego|Catego') ));
+                if isempty(replaids); disp('No replas'); return; end
+                if ~isempty(replaids)
+                    fraglist = neu.list(replaids);
+                    ids_norm_collecting_box = [];
+                    for m = 1: length(fraglist)
+
+                        afterBefore = regexp(fraglist(m).stimuliname,'(?<=before-)\S*','match');
+                        afterBefore = afterBefore{1};
+                        birdid = Convert.bid(afterBefore);
+                        ids_norm = find(~cellfun(@isempty, regexp(cellstr({normlist.stimuliname}.'),birdid) ) );
+
+                        if ~isempty(ids_norm)%& length(ids_norm) == 1
+                            ids_norm_1st = ids_norm(1);
+                            ids_norm_collecting_box = [ids_norm_collecting_box, ids_norm];
+                            afterpad_length = length(normlist(ids_norm_1st).plty) + RONGYU*normlist(ids_norm_1st).fs;  % +0.5s
+
+                            fraglist(m).pady = [zeros(afterpad_length- length(fraglist(m).plty),1);fraglist(m).plty];
+                            fraglist(m).padsptimes = cellfun( @(x) x + length(zeros(afterpad_length- length(fraglist(m).plty),1))/fraglist(m).fs, fraglist(m).pltsptimes,'uni',0);
+                        end
+                    end
+                else
+                    return
+                end
+
+                ids_norm_collecting_box = unique(ids_norm_collecting_box); % Very important!
+
+
+                % merge the new fraglist and the deglist with the selected_normlist
+                selected_normlist = normlist(ids_norm_collecting_box);
+
+                for w = 1: length(selected_normlist)
+
+                    if ~isempty(replaids)
+                        birdid = Convert.bid(selected_normlist(w).stimuliname);
+                        ids_infrag = find(~cellfun(@isempty, regexp(cellstr({fraglist.stimuliname}.'),birdid) ) );
+                        selected_fraglist = fraglist(ids_infrag);
+                    end
+
+
+                    % draw the basic figure
+                    Icollect = {};
+                    figure('Color','w','Position',[406 675 1378 420]);
+
+                    Draw.two(selected_normlist(w).pady,selected_normlist(w).fs,selected_normlist(w).padsptimes);
+                    xlabel(selected_normlist(w).stimuliname);
+                    frame = getframe(gcf);
+                    Icollect{1} = frame.cdata;
+                    close(gcf)
+
+
+                    frozen_Icollect_len = length(Icollect);
+
+                    if ~isempty(replaids)
+                        for bb = 1: length(selected_fraglist)
+
+                            figure('Color','w','Position',[406 675 1378 420]);
+                            Draw.two(selected_fraglist(bb).pady,selected_fraglist(bb).fs,selected_fraglist(bb).padsptimes);
+                            xlabel(selected_fraglist(bb).stimuliname);
+                            frame = getframe(gcf);
+                            Icollect{frozen_Icollect_len + bb} = frame.cdata;
+                            close(gcf);
+
+                        end
+                    end
+
+                    I_of_each_column{w} = vertcat(Icollect{:});
+                end
+
+                neu.drawFirstWaveform;
+                temp = getframe(gcf);
+                w_img = temp.cdata;
+                I_of_each_column{length(I_of_each_column)+ 1} = w_img;
+
+                % padding each I based on the maximum size of local I
+                size1 = [];
+
+                for oo = 1: length(I_of_each_column)
+                    size1(oo) = size(I_of_each_column{oo},1);
+                end
+
+                [max_size1,max_oo] = max(size1);
+
+                Ipad = {};
+                for oo = 1: length(I_of_each_column)
+                    localI = I_of_each_column{oo};
+                    Ibase= uint8(256*ones(size(I_of_each_column{max_oo})));
+                    Ibase(1:size(localI,1),1:size(localI,2),1:size(localI,3)) = localI;
+                    Ipad{oo} = Ibase;
+                end
+
+                Iall = horzcat(Ipad{:});
+
+
+                %imwrite(Iall,sprintf('韩AlignedRepla_第%u_%s.png',rp.formated_name));
+
+            end
+
+        end
 
     end
 
@@ -555,12 +640,703 @@ classdef Repla < handle
         end
 
 
+
     end
 
-
-
-
     methods(Static)
+
+        function   sortedThree(A)
+            thelist = A.repla.replalist{1};
+
+            gap = [];
+
+            raw_replace_id = [];
+            for k = 1:length(thelist)
+                gap(k) = str2double(regexp(thelist(k).stimuliname,'(?<=gapis-)\d+','match'));
+
+                parts = split(thelist(k).stimuliname,'before');
+                bid1 = Convert.bid(parts{1},1);
+                fragid1 = str2double(regexp(convertCharsToStrings(parts{1}),'(?<=[OGBYR]\d{3}-)\d+','match'));
+                bid2 = Convert.bid(parts{2},1);
+                fragid2 = str2double(regexp(convertCharsToStrings(parts{2}),'(?<=[OGBYR]\d{3}-)\d+','match'));
+
+                if strcmp(bid1,bid2)&& fragid1 == fragid2 - 1 % 原始syllable替换
+                    raw_replace_id =[raw_replace_id,k] ; % append
+
+                end
+            end
+
+
+            goodids = find(gap == mode(gap));
+            if length(goodids) == 121
+                goodids = setdiff(goodids,raw_replace_id);
+            end
+
+            goodlist = thelist(goodids);
+            for k = 1:length(goodlist)
+
+                parts = split(goodlist(k).stimuliname,'before');
+
+                goodlist(k).catego1 = str2double(regexp(convertCharsToStrings(parts{1}),'(?<=Type)\d+','match'));
+
+                goodlist(k).catego2 = str2double(regexp(convertCharsToStrings(parts{2}),'(?<=Type)\d+','match'));
+
+            end
+
+            % Sorting !!!!!!!!!!!!!!
+            [~,index] = sortrows([goodlist.catego1].'); goodlist = goodlist(index); clear index
+
+
+             for idx = 1: length(goodlist)
+                figure('Color','w');
+                Draw.three(goodlist(idx).plty,goodlist(idx).fs,goodlist(idx).pltsptimes);
+                frame = getframe(gcf);
+                I{idx} = frame.cdata;
+                close(gcf);
+            end
+            
+            
+            % draw blank white
+
+            lieshu = 15;
+          
+            hangshu = ceil(length(I)/lieshu);
+            rest = lieshu*hangshu - length(I);
+            white = uint8(255*ones(size(I{1})));
+            
+            if rest > 0
+                for k = 1:rest
+                    I = [I,white];
+                    %                     ax = gcf;
+                    %                     ax.Position(3) = 560;
+                    %                     ax.Position(4) = 420;
+                end
+            end
+            
+            reshapedI = reshape(I, lieshu,[])';
+            %clear I
+            IMG = cell2mat(reshapedI);
+            imwrite(IMG,sprintf('SortedThreeReplas_%s.png',A.info.formated_name));
+
+
+
+
+
+        end
+
+        function  outputlist = judgeReplaRespOldStimuli(inputlist)
+            % 为什么会有V1和V2，写的时候没有注意，导致有两个版本，有些许区别，但似乎V1更正确
+            % 如果需要对比，可使用 online code difference comparision 的工具
+            dbstop if error
+
+            % evaluate the responsiveness of song replacements
+            % Find out that the repla stimuliname correspond to how many natrual songs
+
+            % for k = 1:length(rp.replalist) % 对于每组replacement来说！ 一组针对一个目标syllables
+
+            %sublist = rp.replalist{k};
+            sublist = inputlist;
+            rids = find( ~cellfun(@isempty, regexp(cellstr({sublist.stimuliname}.'),'Repla|repla') ));
+            nid = find( ~cellfun(@isempty, regexp(cellstr({sublist.stimuliname}.'),'norm') ));
+
+            Ini_y_collect = [];
+            allids = [rids;nid];
+            for kk = 1:length(allids)
+
+                if allids(kk) == nid
+
+                    convergentpoint = unique(Ini_y_collect); % 因为norm和本身没有分歧，所以他的分歧点要靠其他repla来确定
+                    if max(diff(convergentpoint)) < 2 % 如果分歧点差异很小，说明可能只是微小的误差导致了这种差异
+                        convergentpoint = convergentpoint(1);
+                    end
+
+                    Ini_replay = convergentpoint + (find(sublist(nid).y(convergentpoint:end),1)-1);
+                else
+                    %Ini_y是在y上的分歧点坐标，而Ini_replay是在replay上的分歧点坐标
+                    [Ini_y,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla( sublist(nid).y,sublist(allids(kk)).y);
+                    if Ini_replay==1 && Ini_y>1
+                        %万一 Ini_replay为1，并且Ini_y大于1（说明不是norm song），说明原来song的syllable
+                        %first恰好替换到了syllable second 前面，等于是deg songs，没有发生改变，
+                        %此时，Ini_y和Ini_replay需要重新计算，一下是补丁算法：
+                        Ini_y = unique(Ini_y_collect);
+                        Ini_replay =length(sublist(allids(kk)).y) - (length(sublist(nid).y) - unique(Ini_y_collect));
+                    end
+
+                    %    figure; subplot(211);Draw.spec(sublist(nid).y,32000);subplot(212); Draw.spec(sublist(allids(kk)).y,32000);
+                    if Ini_y == 0
+                        Ini_y = 1; % dangerous code
+                    end
+                    if isempty(Ini_y)|| Ini_y>length(sublist(nid).y)
+                        continue  % another dangerous code
+                    end
+
+                    num_of_zeros = find(sublist(nid).y(Ini_y:end),1)-1; % 在分歧点后多长一段是0
+                    convergentpoint = unique(Ini_y_collect);
+                    Ini_y_collect(kk) = Ini_y; %+ num_of_zeros;  % y of the responsive parts
+                    raw_Ini_replay = Ini_replay;
+                    Ini_replay = Ini_replay + num_of_zeros;
+
+                end
+
+                try %不管当前是不是norm song都不影响的
+                    sublist(allids(kk)).targety = sublist(allids(kk)).y(Ini_replay:Ini_replay + 0.2*sublist(allids(kk)).fs); % 截取200ms
+                catch % if the second index overceed 当剩下的distance小于200ms时
+                    sublist(allids(kk)).targety = sublist(allids(kk)).y(Ini_replay:end); % 截取到 end
+                    disp(' MEssage@Neuron.judgeReplaResp :Overceed');
+                end
+
+                temp_y = sublist(allids(kk)).y(Ini_replay:end);
+                temp_frags = Segment.segNormalizedSong(temp_y,sublist(allids(kk)).fs);
+                sublist(allids(kk)).realtargety = temp_y(temp_frags(1).initial:min(temp_frags(1).terminal,length(temp_y)));
+
+                
+
+                if allids(kk) == nid % 如果当前是norm song的话
+                    if length(sublist(nid).y(1:Ini_replay)) < 2 %如果太短，说明替换发生在第一位
+                        sublist(allids(kk)).replaceparty = zeros(3000,1);%nan;
+                    else
+                        frags = Segment.segNormalizedSong(sublist(nid).y(1:Ini_replay),sublist(nid).fs);
+                        last_initial = max([frags.initial].'); % 最末一个syllable的起始点
+                        sublist(allids(kk)).replaceparty = sublist(allids(kk)).y(last_initial:convergentpoint); % 被替换的那一部分的y值
+                        %
+                    end
+
+                    %                           figure;
+                    %                         plot(sublist(allids(kk)).y(1:Ini_replay))
+
+                else
+                    sublist(allids(kk)).replaceparty = sublist(allids(kk)).y(1:raw_Ini_replay); % 被替换的那一部分的y值
+
+                end
+
+
+                sublist(allids(kk)).targetsptimes = Extract.sptimes_resetSP(sublist(allids(kk)).sptimes,Ini_replay/32000,(Ini_replay + 0.2*sublist(allids(kk)).fs)/sublist(allids(kk)).fs);
+                sublist(allids(kk)).replacepartsptimes = Extract.sptimes_resetSP(... % replacepart, sptimes
+                    sublist(allids(kk)).sptimes,1,Ini_replay/sublist(allids(kk)).fs);
+                % corresponding pre (targety) data
+                sublist(allids(kk)).pretargety = zeros(length(sublist(allids(kk)).targety),1);%sublist(nid).prey(end - 0.1*32000:end); % 截取100ms
+                sublist(allids(kk)).pretargetsptimes = Extract.sptimes_resetSP(...
+                    sublist(allids(kk)).presptimes,length(sublist(allids(kk)).pretargety)/sublist(allids(kk)).fs -0.2*sublist(allids(kk)).fs,length(sublist(allids(kk)).pretargety)/32000 );%length(sublist(rids(kk)).prey)/32000 -0.1*32000
+                %calculate and judege whether the neuron respond to the target area or not
+                temp = Neuron.UseMaxSdfToJudgeRespOrNot(sublist(allids(kk)).targety,sublist(allids(kk)).targetsptimes,...
+                    sublist(allids(kk)).pretargety,sublist(allids(kk)).pretargetsptimes,sublist(allids(kk)).fs);
+                sublist(allids(kk)).label = temp.label;
+                sublist(allids(kk)).replaPvalue = temp.pvalue;
+                sublist(allids(kk)).maxsdf = temp.maxsdf;
+                %                     [sublist(rids(kk)).label,sublist(rids(kk)).replaPvalue] = Neuron.UseTtestToJudegeRespOrNot(...
+                %                         sublist(rids(kk)).targety,sublist(rids(kk)).targetsptimes,... % 查看对replaced song的反应是否明显大于对pre period的response
+                %                         sublist(rids(kk)).pretargety ,sublist(rids(kk)).pretargetsptimes ,sublist(rids(kk)).fs);
+                sublist(allids(kk)).targetfr = length(vertcat(sublist(allids(kk)).targetsptimes{:}))/0.2; % per milisecond
+
+
+
+            end
+
+
+
+            % do the same analysi for norm song
+            %  rp.replalist{k} = sublist;
+            outputlist = sublist;
+
+            %end
+
+
+        end
+
+
+        function outputlist = judgeReplaRespNewStimuli(inputlist,latency)
+             % 为什么会有V1和V2，写的时候没有注意，导致有两个版本，有些许区别，但似乎V1更正确
+            % 如果需要对比，可使用 online code difference comparision 的工具
+            dbstop if error
+
+            % evaluate the responsiveness of song replacements
+            % Find out that the repla stimuliname correspond to how many natrual songs
+
+            % for k = 1:length(rp.replalist) % 对于每组replacement来说！ 一组针对一个目标syllables
+
+            %sublist = rp.replalist{k};
+            withnorm_sublist = inputlist;
+%             rids = find( ~cellfun(@isempty, regexp(cellstr({withnorm_sublist.stimuliname}.'),'Repla|repla') ));
+%             nid = find( ~cellfun(@isempty, regexp(cellstr({withnorm_sublist.stimuliname}.'),'norm') ));
+
+            rponly_ids = find(~cellfun(@isempty, regexp(cellstr({withnorm_sublist.stimuliname}.'),'Repla|repla') ));
+
+            sublist = withnorm_sublist(rponly_ids);
+
+
+            firsty = sublist(1).y;
+            secondy = sublist(2).y;
+
+
+            for kk = 1:length(sublist)
+
+                % 找到分歧点
+                if kk == 1
+                     [~,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla(secondy,sublist(kk).y);
+
+                else
+                     [~,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla(firsty,sublist(kk).y);
+                     % figure; subplot(211); Draw.spec(firsty,32000);
+                     % subplot(212); Draw.spec(sublist(kk).y,32000);
+
+                end
+
+
+                try %不管当前是不是norm song都不影响的
+                    sublist(kk).targety = sublist(kk).y(Ini_replay:Ini_replay + 0.3*sublist(kk).fs); % 截取300ms
+                catch % if the second index overceed 当剩下的distance小于300ms时
+                    sublist(kk).targety = sublist(kk).y(Ini_replay:end); % 截取到 end
+                    disp(' MEssage@Neuron.judgeReplaResp :Overceed');
+                end
+
+                sublist(kk).replaceparty = sublist(kk).y(1:Ini_replay); % 被替换的那一部分的y值
+
+ 
+                notZeros = find(sublist(kk).y~= 0);
+                convergentP = min(notZeros(notZeros>Ini_replay)); % 不知道计算时，convergent point是第一个变异值还是最后一个共享值
+                % figure; subplot(211); Draw.spec(sublist(kk).plty,32000);
+                if exist('latency','var')
+                    sublist(kk).targetsptimes = Extract.sptimes_resetSP(sublist(kk).rawsptimes,convergentP/sublist(kk).fs + latency+sublist(kk).zpt,(convergentP+0.3*sublist(kk).fs)/sublist(kk).fs+latency+sublist(kk).zpt);
+                else
+                    sublist(kk).targetsptimes = Extract.sptimes_resetSP(sublist(kk).rawsptimes,convergentP/sublist(kk).fs +sublist(kk).zpt,(convergentP+0.3*sublist(kk).fs)/sublist(kk).fs+sublist(kk).zpt);
+                end
+               % 300 ms
+
+               sublist(kk).replacepartsptimes = Extract.sptimes_resetSP(... % replacepart, sptimes
+                    sublist(kk).sptimes,1,convergentP/sublist(kk).fs);
+                % corresponding pre (targety) data
+                sublist(kk).pretargety = zeros(0.3*sublist(kk).fs,1);%sublist(nid).prey(end - 0.1*32000:end); % 截取100ms
+                sublist(kk).pretargetsptimes = Extract.sptimes_resetSP(...
+                    sublist(kk).presptimes,length(sublist(kk).pretargety)/sublist(kk).fs -0.3*sublist(kk).fs,length(sublist(kk).pretargety)/32000 );%length(sublist(rids(kk)).prey)/32000 -0.1*32000
+                %calculate and judege whether the neuron respond to the target area or not
+                temp = Neuron.UseMaxSdfToJudgeRespOrNot(sublist(kk).targety,sublist(kk).targetsptimes,...
+                    sublist(kk).pretargety,sublist(kk).pretargetsptimes,sublist(kk).fs);
+                sublist(kk).label = temp.label;
+                sublist(kk).replaPvalue = temp.pvalue;
+                sublist(kk).maxsdf = temp.maxsdf;
+                %                     [sublist(rids(kk)).label,sublist(rids(kk)).replaPvalue] = Neuron.UseTtestToJudegeRespOrNot(...
+                %                         sublist(rids(kk)).targety,sublist(rids(kk)).targetsptimes,... % 查看对replaced song的反应是否明显大于对pre period的response
+                %                         sublist(rids(kk)).pretargety ,sublist(rids(kk)).pretargetsptimes ,sublist(rids(kk)).fs);
+                sublist(kk).targetfr = length(vertcat(sublist(kk).targetsptimes{:}))/0.3; % per seconds
+
+
+
+            end
+
+
+
+            % do the same analysi for norm song
+            %  rp.replalist{k} = sublist;
+            outputlist = sublist;
+
+            %end
+
+
+         end
+
+         function [summer,global_result] = getResponse2CategoriesNewStimuli(A,bingyang)
+
+             thelist = A.repla.replalist{1};
+
+             gap = [];
+
+             raw_replace_id = [];
+             for k = 1:length(thelist)
+                 gap(k) = str2double(regexp(thelist(k).stimuliname,'(?<=gapis-)\d+','match'));
+
+                 parts = split(thelist(k).stimuliname,'before');
+                 bid1 = Convert.bid(parts{1},1);
+                 fragid1 = str2double(regexp(convertCharsToStrings(parts{1}),'(?<=[OGBYR]\d{3}-)\d+','match'));
+                 bid2 = Convert.bid(parts{2},1);
+                 fragid2 = str2double(regexp(convertCharsToStrings(parts{2}),'(?<=[OGBYR]\d{3}-)\d+','match'));
+
+                 if strcmp(bid1,bid2)&& fragid1 == fragid2 - 1 % 原始syllable替换
+                     raw_replace_id =[raw_replace_id,k] ; % append
+
+                 end
+             end
+
+
+             goodids = find(gap == mode(gap));
+             if length(goodids) > 120
+                 goodids = setdiff(goodids,raw_replace_id);
+             end
+
+             goodlist = thelist(goodids);
+             for k = 1:length(goodlist)
+
+                 goodlist(k).catego1 = MetaStimuli.categorizeByBingyangOldData(goodlist(k).replaceparty, goodlist(k).fs,bingyang);
+
+                 goodlist(k).calculated_catego2 = MetaStimuli.categorizeByBingyangOldData(goodlist(k).targety, goodlist(k).fs,bingyang);
+
+                 parts = split(goodlist(k).stimuliname,'before');
+                 %                  goodlist(k).catego1 = str2double(regexp(convertCharsToStrings(parts{1}),'(?<=Type)\d+','match'));
+                 goodlist(k).catego2 = str2double(regexp(convertCharsToStrings(parts{2}),'(?<=Type)\d+','match'));
+
+             end
+
+
+             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+             unique_categos = 1:8;
+             %             maxsdfs = {};
+             %             frs = {};
+             summer = struct;
+
+             for k = 1:length(unique_categos)
+                 summer(k).neuronname = A.info.formated_name;
+                 summer(k).catego = unique_categos(k);
+                 summer(k).targetcatego = unique([goodlist.catego2].');
+                 summer(k).calculated_targetcatego = unique([goodlist.calculated_catego2].');
+                 corresp_ids = find([goodlist.catego1].' == unique_categos(k));
+                 summer(k).maxsdfs = [goodlist(corresp_ids).maxsdf].'; % maximum SDF
+                 summer(k).frs = [goodlist(corresp_ids).targetfr].'; % firing rate
+                 summer(k).label = [goodlist(corresp_ids).label].'; % 是否反应的label
+                 summer(k).positiveratio =  length(find(summer(k).label == 1))/length(summer(k).label); % 阳性率
+                 %summer(k).meanfrs = mean(summer(k).frs);  % mean firing rate
+             end
+
+             cell_frs = {summer.frs}.';
+             all_std = std(vertcat(cell_frs{:}));
+             all_mean = mean(vertcat(cell_frs{:}));
+
+             % calculate normalized rate
+             for k = 1:length(unique_categos)
+                 summer(k).zscored_frs = (summer(k).frs-all_mean)/all_std;%(summer(k).frs)/all_std; % 半zscore 指不去掉all_mean
+                 summer(k).mean_zfrs = mean(summer(k).zscored_frs);
+             end
+
+             % global result for this neuron
+             global_result = struct;
+             global_result.neuronname = A.info.formated_name;
+             [~,best_index] = max([summer.mean_zfrs].');
+             global_result.bestcatego = summer(best_index).catego;
+             global_result.best_response = summer(best_index).mean_zfrs;
+             [~,worst_index] = min([summer.mean_zfrs].');
+             global_result.worstcatego = summer(worst_index).catego;
+             global_result.worst_response = summer(worst_index).mean_zfrs;
+             global_result.targetcatego = unique([goodlist.catego2].');
+             global_result.calculated_targetcatego = unique([goodlist.calculated_catego2].');
+
+             global_result.frs = [summer.frs].';
+             global_result.maxsdfs = [summer.maxsdfs].';
+
+             [~,highestratio_index] = max([summer.positiveratio].');
+             global_result.bestcatego_positiverate = summer(highestratio_index).catego;
+             global_result.best_positiveratio = summer(highestratio_index).positiveratio;
+
+
+             %计算selectivity index
+             response_rmmising = rmmissing([summer.mean_zfrs].');
+             n = length(response_rmmising);
+             global_result.sparseness = (1 - (sum(response_rmmising) / n)^2 / (sum(response_rmmising.^2) / n)) / (1 - 1/n);
+             % Based on A090
+             % selectivity 阳性率
+             response_rmmising = rmmissing([summer.positiveratio].');
+             n = length(response_rmmising);
+             global_result.sparseness_positiveratio = (1 - (sum(response_rmmising) / n)^2 / (sum(response_rmmising.^2) / n)) / (1 - 1/n);
+
+             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+           % Draw boxplot
+
+           todraw = 1;
+           if todraw == 1
+               figure('Position',[1463 146 1596 849],'Color','w');
+               subplot(2,2,1)
+               hold on
+               for k = 1:length(summer)
+                   xs = summer(k).catego*ones(size(summer(k).maxsdfs));
+                   if ~isempty( xs )
+                       boxchart(xs,summer(k).maxsdfs);
+                   end
+               end
+               xlabel('Max-SDF');
+
+               subplot(2,2,2)
+               hold on
+               for k = 1:length(summer)
+                   xs = summer(k).catego*ones(size(summer(k).frs));
+                   if ~isempty( xs )
+                       boxchart(xs,summer(k).frs);
+                   end
+               end
+               xlabel('Firing rate');
+
+               % Draw swarmchart
+               subplot(2,2,3)
+               hold on
+               for k = 1:length(summer)
+                   xs = summer(k).catego*ones(size(summer(k).maxsdfs));
+                   if ~isempty( xs )
+                       swarmchart(xs,summer(k).maxsdfs);
+                   end
+               end
+               xlabel('Max-SDF');
+
+               subplot(2,2,4)
+               hold on
+               for k = 1:length(summer)
+                   xs = summer(k).catego*ones(size(summer(k).frs));
+                   if ~isempty( xs )
+                       swarmchart(xs,summer(k).frs);
+                   end
+               end
+               xlabel('Firing rate');
+
+               sgtitle(A.info.formated_name);
+               set(gcf,'defaultTextInterpreter','none');
+               saveas(gcf,sprintf('Repla群散点箱图%s.png',A.info.formated_name));
+               close(gcf);
+
+           end
+
+         end
+
+        function result = UseMaxSdfToJudgeRespOrNot(y,sptimes,prey,presptimes,fs)
+            dbstop if error
+            %             presdf = Cal.sdf(presptimes,prey,fs,0.001,0.02);
+            sdf = Cal.sdf(sptimes,y,fs,0.001,0.02); % 0.001,0.004
+            %             [maxpresdf,~] = max(presdf);
+            [maxsdf,~] = max(sdf);
+
+            multi_maxpresdf = [];
+            for k = 1:length(presptimes)
+                multi_maxpresdf(k) = max(Cal.sdf({presptimes{k}},prey,fs,0.001,0.02));
+            end
+
+            multi_maxsdf = [];
+            for k = 1:length(sptimes)
+                multi_maxsdf(k) = max(Cal.sdf(sptimes,y,fs,0.001,0.02));
+            end
+
+            pre_frs = Cal.eachTrialFiringRate(presptimes,length(y)/fs);
+            sti_frs = Cal.eachTrialFiringRate(sptimes,length(y)/fs);
+
+%             [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
+            
+            [h,p] = ttest(multi_maxsdf,multi_maxpresdf,'Tail','Right','Alpha',0.05);
+            result.pvalue = p;
+            result.label = 0; % 初始化
+            result.sti_frs = mean(sti_frs);
+            result.pre_frs = mean(pre_frs);
+            result.maxsdf = maxsdf;
+            if h == 1
+                result.label = 1;
+
+                %                     if (num_of_not_empty_trials/length(neu.list(thisi).pltsptimes)<0.5)||(num_of_not_empty_trials<5) % if not 60% of the trails are not empty
+                %                         neu.list(thisi).label = 0;
+                %                     end
+            elseif maxsdf > 18 && maxsdf > maxpresdf % neu rescue
+                result.label = 1;
+
+            end
+
+        end
+
+        function [summer,global_result] = getResponse2CategoriesOldStimuli(A,bingyang)
+
+            %查看神经元对不同类别的syllable combination的反应
+
+            
+            locallist_withnorm = A.repla.replalist{1}; % zhejuyaogai
+            goodlist = locallist_withnorm(find(cellfun(@isempty, regexp(cellstr({locallist_withnorm.stimuliname}.'),'norm'))));
+
+%             for k = 1:length(locallist)
+%                 locallist(k).contextcatego = MetaStimuli.categorizeByBingyang(locallist(k).replaceparty,locallist(k).fs,bingyang);
+%             end
+            for k = 1:length(goodlist)
+                goodlist(k).contextcatego = MetaStimuli.categorizeByBingyangOldData(goodlist(k).replaceparty, goodlist(k).fs,bingyang);
+            end
+            % 对每一个neuron，关于每一个category，得到相应的数据
+            catego_response_info = struct;
+
+            unique_categos = 1:8;
+
+            summer = struct;
+            for k = 1:length(unique_categos)
+                summer(k).neuronname = A.info.formated_name;
+                summer(k).contextcatego = unique_categos(k);
+                corresp_ids = find([goodlist.contextcatego].' == unique_categos(k));
+                summer(k).maxsdf = [goodlist(corresp_ids).maxsdf].'; % maximum SDF
+                summer(k).frs = [goodlist(corresp_ids).targetfr].'; % firing rate
+                summer(k).label = [goodlist(corresp_ids).label].'; % 是否反应的label
+                summer(k).positiveratio =  length(find(summer(k).label == 1))/length(summer(k).label); % 阳性率
+                summer(k).positiveratio = 1- length(find(summer(k).label == 1))/length(summer(k).label); % yin性率
+                %summer(k).meanfrs = mean(summer(k).frs);  % mean firing rate
+            end
+
+            cell_frs = {summer.frs}.';
+            all_std = std(vertcat(cell_frs{:}));
+            all_mean = mean(vertcat(cell_frs{:}));
+
+            % calculate normalized rate
+            for k = 1:length(unique_categos)
+                summer(k).zscored_frs = (summer(k).frs - all_mean)/all_std;
+                summer(k).mean_zfrs = mean(summer(k).zscored_frs);
+            end
+
+            % global result for this neuron
+            global_result = struct;
+            global_result.neuronname = A.info.formated_name;
+            [~,best_index] = max([summer.mean_zfrs].');
+            global_result.bestcatego = summer(best_index).contextcatego;
+            global_result.best_response = summer(best_index).mean_zfrs;
+
+            [~,highestratio_index] = max([summer.positiveratio].');
+            global_result.bestcatego_positiverate = summer(highestratio_index).contextcatego;
+            global_result.best_positiveratio = summer(highestratio_index).positiveratio;
+
+
+            %计算selectivity index
+            response_rmmising = rmmissing([summer.mean_zfrs].');
+            n = length(response_rmmising);
+            global_result.sparseness = (1 - (sum(response_rmmising) / n)^2 / (sum(response_rmmising.^2) / n)) / (1 - 1/n);
+            % Based on A090
+
+            % selectivity 阳性率
+            response_rmmising = rmmissing([summer.positiveratio].');
+            n = length(response_rmmising);
+            global_result.sparseness_positiveratio = (1 - (sum(response_rmmising) / n)^2 / (sum(response_rmmising.^2) / n)) / (1 - 1/n);
+
+%             for k = 1:length(unique_categos)
+% 
+%                 hitted = find( [locallist.contextcatego].' == unique_categos(k));
+% 
+%                 sublist = locallist(hitted);
+%                 yesids = find([sublist.label].' == 1); % Those triggering response
+%                 noids = find([sublist.label].' == 0); % Those not triggering response
+% 
+%                 catego_response_info(k).neuronname = A.info.formated_name;
+%                 catego_response_info(k).catego = unique_categos(k);
+%                 catego_response_info(k).numtested = length(sublist);
+%                 catego_response_info(k).numyes = length(yesids);
+%                 catego_response_info(k).numno = length(noids);
+%                 catego_response_info(k).FR = [sublist.targetfr].';
+%                 catego_response_info(k).FR_yes = [sublist(yesids).targetfr].';
+%                 catego_response_info(k).FR_no = [sublist(noids).targetfr].';
+%                 catego_response_info(k).maxsdf = [sublist.maxsdf].';
+%                 catego_response_info(k).maxsdf_yes = [sublist(yesids).maxsdf].';
+%                 catego_response_info(k).maxsdf_no = [sublist(noids).maxsdf].';
+%                 catego_response_info(k).ratio_yes = catego_response_info(k).numyes/catego_response_info(k).numtested;
+%                 catego_response_info(k).ratio_no = catego_response_info(k).numno/catego_response_info(k).numtested;
+% 
+%             end
+
+
+             % Draw boxplot
+             figure('Position',[1463 146 1596 849],'Color','w');
+             subplot(2,2,1)
+             hold on
+             for k = 1:length(summer)
+                 xs = summer(k).contextcatego*ones(size(summer(k).maxsdf));
+                 if ~isempty(xs)
+                 boxchart(xs,summer(k).maxsdf);
+                 end
+             end
+             xlabel('Max-SDF');
+
+             subplot(2,2,2)
+             hold on
+             for k = 1:length(summer)
+                 xs = summer(k).contextcatego*ones(size(summer(k).frs));
+                 if ~isempty(xs)
+                     boxchart(xs,summer(k).frs);
+                 end
+             end
+             xlabel('Firing rate');
+
+             % Draw swarmchart
+             %              figure('Position',[1948 310 974 547],'Color','w');
+             subplot(2,2,3)
+             hold on
+             for k = 1:length(summer)
+                 xs = summer(k).contextcatego*ones(size(summer(k).maxsdf));
+                 if ~isempty(xs)
+                     swarmchart(xs,summer(k).maxsdf);
+                 end
+             end
+             xlabel('Max-SDF');
+
+             subplot(2,2,4)
+             hold on
+             for k = 1:length(summer)
+                 xs = summer(k).contextcatego*ones(size(summer(k).frs));
+                 if ~isempty(xs)
+                     swarmchart(xs,summer(k).frs);
+                 end
+             end
+             xlabel('Firing rate');
+             sgtitle(A.info.formated_name);
+             set(gcf,'defaultTextInterpreter','none')
+             saveas(gcf,sprintf('群箱图Replas%s.png',A.info.formated_name));
+             close(gcf);
+
+
+
+        end
+
+        function result = getNumTestedNumProhibited(A,bingyang)
+            locallist = A.repla.replalist{1};%这里取{1}有些武断了
+            noresponse_ids = find([locallist.label].' == 0);
+            noresponse_locallist = locallist(noresponse_ids);
+            [~,index] = sortrows([noresponse_locallist.maxsdf].');
+            noresponse_locallist = noresponse_locallist(index); clear index
+            %找到反向的best stimuli
+            [~,index] = sortrows([locallist.maxsdf].');
+            locallist = locallist(index); clear index
+
+            prohibitid = 1; %因为排过序，所以反向的best stimuli的id就是1
+
+            if sum(locallist(prohibitid).replaceparty) == 0
+                result = [];
+                return
+
+            end
+            if ~isempty(noresponse_ids)
+                catego_worst = MetaStimuli.categorizeByBingyang(noresponse_locallist(prohibitid).replaceparty,32000, bingyang);
+            else
+                catego_worst = 0; % 十分冒失的设置
+            end
+
+           % catego_worst = MetaStimuli.categorizeByBingyang(locallist(prohibitid).replaceparty,32000, bingyang);
+
+            purelocallist = locallist(find(cellfun(@isempty, regexp(cellstr({locallist.stimuliname}.'),'norm'))));% 去掉了norm项
+
+            for k = 1:length(purelocallist)
+                purelocallist(k).catego = MetaStimuli.categorizeByBingyang(purelocallist(k).replaceparty,32000,bingyang);
+            end
+
+
+            result.neuronname = A.info.formated_name;
+            % 同组
+            result.num_tested_simgroup = length(find([purelocallist.catego].'==catego_worst));
+            result.num_prohibited_simgroup = length(find([purelocallist.catego].'==catego_worst & [purelocallist.label].'==0));
+
+            % 异组
+            result.num_tested_difgroup = length(find([purelocallist.catego].'~=catego_worst));
+            result.num_prohibited_difgroup = length(find([purelocallist.catego].'~=catego_worst & [purelocallist.label].'==0));
+
+
+            %随机抽取的异组
+            rand_sampled_ids = randsample(find([purelocallist.catego].'~=catego_worst),result.num_tested_simgroup);
+            rand_diff_locallist = purelocallist(rand_sampled_ids);
+            result.num_tested_desampled_difgroup = length(rand_diff_locallist);
+            result.num_prohibited_desampled_difgroup = length(find([rand_diff_locallist.label].'==0));
+
+
+            
+            %所有组
+            result.num_tested_allgroup = length(find([purelocallist.catego].'));
+            result.num_prohibited_allgroup = length(find([purelocallist.label].'==0));
+
+            %比例
+            result.ratio_sim = result.num_prohibited_simgroup/result.num_tested_simgroup;
+            result.ratio_dif = result.num_prohibited_difgroup/result.num_tested_difgroup;
+            result.ratio_all = result.num_prohibited_allgroup/result.num_tested_allgroup;
+
+
+        end
 
         function finalreport = permutationTest_4responsive(A)
 
@@ -807,8 +1583,12 @@ classdef Repla < handle
 
         end
 
+
         function result = getNumTestedNumResponsive(A,bingyang)
             locallist = A.repla.replalist{1};%这里取{1}有些武断了
+            %             not_response_ids = find([locallist.label].' == 0);
+            %             not_response_locallist = locallist(not_response_ids);
+            %找到反向的best stimuli
             normid = find(~cellfun(@isempty, regexp(cellstr({locallist.stimuliname}.'),'norm')));
 
             if sum(locallist(normid).replaceparty) == 0
@@ -825,7 +1605,7 @@ classdef Repla < handle
                 purelocallist(k).catego = MetaStimuli.categorizeByBingyang(purelocallist(k).replaceparty,32000,bingyang);
             end
 
-          
+
             result.neuronname = A.info.formated_name;
             % 同组
             result.num_tested_simgroup = length(find([purelocallist.catego].'==catego_norm));
@@ -846,6 +1626,7 @@ classdef Repla < handle
 
 
         end
+
 
 
         function [ConvergentIndexY,ConvergentIndexReplaY] = findConergentPointBetwenNormAndRepla(y, yrepla) % find the correspoding initial timestamps by aliging two time series
@@ -953,15 +1734,16 @@ classdef Repla < handle
         function [transition_statics,relation_map] = get_trans_statics(sequential_song_meta)
             % @功能说明： 生成transition statics
             % remove those with catego num as 0
-            idsnot0 = find([sequential_song_meta.catego].' ~= 0);
-            sequential_song_meta = sequential_song_meta(idsnot0);
+%             idsnot0 = find([sequential_song_meta.catego].' ~= 0);
+%             sequential_song_meta = sequential_song_meta(idsnot0);
             disp('Remove those with catego num as 0');
             splited = MetaStimuli.split(sequential_song_meta); % 把大的struct分解成对单个song的
             collect_transfering = {};
             for k = 1: length(splited) % 对每个song计算transfering的计数
                 transfering = {};
-                parfor kk = 1: length(splited{k})-1
+                for kk = 1: length(splited{k})-1
                     transfering{kk} = [splited{k}(kk).catego,splited{k}(kk+1).catego];
+                    disp([k,kk]);
                 end
                 collect_transfering{k} = transfering;
             end
@@ -975,7 +1757,7 @@ classdef Repla < handle
             end
 
             % 对每对可能的catego transition统计对应的频数
-            all_categos = unique([sequential_song_meta .catego].');
+            all_categos = [1:8];%unique([sequential_song_meta .catego].');
             relation_map = zeros(length(all_categos),length(all_categos)); % initialization
             transition_statics = struct;
 
@@ -991,6 +1773,7 @@ classdef Repla < handle
                     transition_statics(count).secondsyllable = kk;
                     transition_statics(count).firstsecond = [k,kk];
                     transition_statics(count).counts = relation_map(k,kk);
+                    disp([k,kk]);
                 end
             end
 
@@ -1001,7 +1784,23 @@ classdef Repla < handle
             for k = 1:length(transition_statics)
                 transition_statics(k).rank = k; % rank越小， transition越常见
                 transition_statics(k).chance =  transition_statics(k).counts/all_counts;
+                transition_statics(k).chance_percentage =   transition_statics(k).chance*100;
             end
+
+
+            % calculate rank when the second syllable is the same
+            summer_sublist = {};
+            for k = 1:length(unique([transition_statics.firstsyllable].'))
+                sublist =transition_statics(find([transition_statics.secondsyllable].' == k));
+                [~,index] = sortrows([sublist.chance_percentage].'); sublist = sublist(index(end:-1:1)); clear index
+                for kk = 1:length(sublist)
+                    sublist(kk).same_second_rank = kk; % when the second syllable is the same
+                end
+                summer_sublist{k} = sublist;
+            end
+
+            transition_statics = vertcat(summer_sublist{:});
+            [~,index] = sortrows([transition_statics.chance].'); transition_statics = transition_statics(index(end:-1:1)); clear index
 
         end
 
@@ -1115,13 +1914,14 @@ classdef Repla < handle
             for k = 1:length(subdirs)
 
                 [~,categoname,~] = fileparts(subdirs{k});
-                categonum = int16(str2double(categoname));
+                categonum = int16(str2double(regexp(categoname,'\d+','match')));
                 files = Extract.filename(subdirs{k},'*.png');
                 for kk = 1:length(files)
                     count = count + 1;
                     [~,name,ext] = fileparts(files{kk});
                     figstruct(count).name = strcat(name, ext);
                     figstruct(count).catego = categonum;
+                    figstruct(count).description = categoname;
                 end
 
             end

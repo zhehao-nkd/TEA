@@ -380,7 +380,7 @@ classdef Archon
 
         end
 
-        function [error,error2] =  batch_genAnalysisSameRecordingFile(input_roster, start_from)
+        function [error,error2] =  Deprecated_batch_genAnalysisSameRecordingFile(input_roster, start_from)
             dbstop if error
             % 从同一批原始pl2数据中生成所有的analysis文件
             %采用此方法的好处是不用一次又一次地调用plexon读取方法，可以节省非常多的时间
@@ -411,7 +411,7 @@ classdef Archon
                     continue
                 end
 
-                for k = 1: length(ndir_id) % par
+                parfor k = 1: length(ndir_id) % par
 
                     try
                         % do stuff
@@ -596,7 +596,7 @@ classdef Archon
                 neuroster(k).birdneuron = strcat(neuroster(k).birdname,neuroster(k).neuronid);
                 neuroster(k).channelname = unpack(regexp(neuroster(k).fullname,'SPKC\d+','match'));
                 neuroster(k).unit = str2num(unpack(regexp(neuroster(k).fullname,'(?<=_)\d+','match')));
-                stimulidir = fullfile(neurondir{kk},'Stimuli');
+                stimulidir = fullfile(neuroster(k).neurondir,'Stimuli');
                 stimuli_filenames = Extract.filesAllLevel(stimulidir,'*.wav');
 
                 neuroster(k).frag = 0;  % 判断是否有frag
@@ -605,12 +605,12 @@ classdef Archon
                 end
 
                 neuroster(k).deg = 0;  % 判断是否有deg
-                if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'deg')), 1))
+                if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Deg|deg')), 1))
                     neuroster(k).deg = 1;
                 end
 
                 neuroster(k).repla = 0;  % 判断是否有repla
-                if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Repla')), 1))
+                if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Repla|repla')), 1))
                     neuroster(k).repla = 1;
                 end
 
@@ -620,10 +620,11 @@ classdef Archon
                 end
 
 
-                neuroster(k).allexist = 0;  % 判断是否同时存在 frag deg repla
-                if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Frag')), 1)) &&...
-                        ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'deg')), 1)) &&...
-                        ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Repla')), 1))
+                neuroster(k).allexist = 0;  % 判断是否同时存在 norm frag deg repla
+                if ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Norm|norm')), 1)) &&...
+                        ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Frag|frag')), 1)) &&...
+                        ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'deg|Deg')), 1)) &&...
+                        ~isempty(find(~cellfun(@isempty,regexp(stimuli_filenames,'Repla|repla')), 1))
                     neuroster(k).allexist = 1;
                 end
 
@@ -851,7 +852,7 @@ classdef Archon
                 diskname = whichDisk;
             else
 
-                diskname = regexp(rest_roster(1).neurondir,'[A-Z]:','match');
+                diskname = regexp(input_roster(1).neurondir,'[A-Z]:','match');
                 diskname = diskname{1};
 
             end
@@ -869,25 +870,25 @@ classdef Archon
             birddirs = Extract.folder(diskname);
             
            for k = from_where: length(rest_roster) % par
-%                 try
-                    birdname = rest_roster(k).birdname;
-                    ZPid = rest_roster(k).neuronid;
-                    channelname = rest_roster(k).channelname;
-                    unit = rest_roster(k).unit;
+              % try
+                   birdname = rest_roster(k).birdname;
+                   ZPid = rest_roster(k).neuronid;
+                   channelname = rest_roster(k).channelname;
+                   unit = rest_roster(k).unit;
 
-                    hitted_birddirs = birddirs(find(~cellfun(@isempty, regexp(birddirs,birdname))));
+                   hitted_birddirs = birddirs(find(~cellfun(@isempty, regexp(birddirs,birdname))));
 
 
-                    if ~isfile(sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))
+                   if ~isfile(sprintf('%s_%s_%s_%u.mat',birdname,ZPid,channelname,unit))
 
-                        Archon.genAnalysis(hitted_birddirs,birdname,ZPid,channelname,unit);
-                    end
-%                 catch ME
-%                     %                   pause
-%                     rest_roster(k).ME = ME;
-%                     rest_roster(k).identifier = ME.identifier;
-%                     disp(ME);
-%                 end
+                       Archon.genAnalysis(hitted_birddirs,birdname,ZPid,channelname,unit);
+                   end
+%                catch ME
+%                    %                   pause
+%                    rest_roster(k).ME = ME;
+%                    rest_roster(k).identifier = ME.identifier;
+%                    disp(ME);
+%                end
 
                 increment(wb);
             end

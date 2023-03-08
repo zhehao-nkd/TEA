@@ -71,7 +71,7 @@ classdef Song < handle
             I = {};
             for idx = 1: length(sg.normlist)
                 figure('Color','w','Position', [1933 672 673 497]);
-                Draw.three(sg.normlist(normids(idx)).plty,sg.normlist(normids(idx)).fs,sg.normlist(normids(idx)).pltsptimes);
+                Draw.three(sg.normlist(idx).plty,sg.normlist(idx).fs,sg.normlist(idx).pltsptimes);
                 frame = getframe(gcf);
                 I{idx} = frame.cdata;
                 close(gcf);
@@ -98,7 +98,7 @@ classdef Song < handle
             reshapedI = reshape(I, lieshu,[])';
             clear I
             img = cell2mat(reshapedI);
-            imwrite(img,sprintf('燕NormThree_%s.png',neu.formated_name));
+            imwrite(img,sprintf('燕NormThree_%s.png',sg.formated_name));
 
 
         end

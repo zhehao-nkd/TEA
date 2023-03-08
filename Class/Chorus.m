@@ -252,12 +252,13 @@ classdef Chorus < handle
 
     methods(Static)
 
-        function neuronlist = pipline(path_txt,path_pl2,path_folder)
+        function neuronlist = pipline(path_pl2,path_folder)
             dbstop if error
             addpath(genpath("C:\Users\Zhehao\Dropbox (OIST)\My_Matlab\TEA"))
-            cho = Chorus(path_txt,path_pl2,path_folder);
+            cho = Chorus(path_pl2,path_folder);
             cho.select;
-            neuronlist = cho.getn;
+            neuronlist = cho.getExperiments;
+            %neuronlist = cho.getn;
 
             for k = 1: length(neuronlist)
                 thisn = neuronlist{k};

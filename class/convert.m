@@ -135,21 +135,21 @@ classdef Convert
         function rename(dirpath,ext,old,new)
             % 重命名文件
             % 注意使用中的危险，一旦出现错误的命名就很难恢复，需要先拷贝一两个文件测试一下
+            %只针对一个词汇出现了一次的情况
             
             files = dir(sprintf('%s%s%s',dirpath,'\',ext));
             % Loop through each
             for id = 1:length(files)
                 % Get the file name (minus the extension)
-                [~, f,ext] = fileparts(files(id).name);
+                [~, fname,ext] = fileparts(files(id).name);
                 % replace _ with -
                 
-                targets = regexp(f,old);
+
+                splited = split(fname,old);
+
+                reconcated = strcat(splited{1},new,splited{2:end});
                 
-                if ~isempty(targets)
-                    f(targets) = new;
-                end
-                
-                newname = sprintf('%s%s',f,ext);
+                newname = sprintf('%s%s',reconcated ,ext);
                 
                 % If not the same, rename
                 if ~strcmp(fullfile(files(id).folder,files(id).name), fullfile(files(id).folder,newname))

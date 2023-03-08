@@ -61,7 +61,33 @@ classdef Bird < handle
         end
 
 
-        function answer = getRecordingSate(bd,birdname)
+
+        function siblings_names = findSiblings(bd,birdname)
+            % configs for reading the table
+            birdlist = Bird.readBirdlist;
+
+            % get the corresponding index, set fathername
+            index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
+            fathername = birdlist.father(index);
+
+            if isempty(fathername)
+                fathername = string(missing);
+            end
+
+            children_index = find(~cellfun(@isempty, regexp(birdlist.father,fathername)));
+            siblings_index = setdiff(children_index, index);
+            siblings_names = birdlist.BirdID(siblings_index);
+            hatch_dates =birdlist.Hatchdate(siblings_index);
+
+            for k = 1: length(siblings_names)
+                disp(sprintf('sibling is:  %s, hatching date: %s, recording state: %s',siblings_names{k},hatch_dates{k},bd.getRecordingState(siblings_names{k}).identifier));
+                newline;
+            end
+
+        end
+
+
+        function answer = getRecordingState(bd,birdname)
             %判断输入的鸟ID是否有对应的"记录好的Adult Bird Song"
             % Output: answer.birdname, answer.identifier, answer.dirpath
 
@@ -197,14 +223,17 @@ classdef Bird < handle
 
  
 
-        function date = getHatchdate(bd,birdname)
+        function date = getHatchdate(bd,birdname,disp_state)
             %找到鸟的孵化日
             % the function to get hatch date
             birdlist = bd.birdlist;
             % get the corresponding index, set fathername
             index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
             date = birdlist.Hatchdate(index);
-            disp(date);
+            if exist('disp_state','var') && disp_state == 0
+            else
+                disp(date);
+            end
         end
 
 
@@ -567,6 +596,8 @@ classdef Bird < handle
         end
 
         function findCandidates
+
+            bd = Bird;
             % A script to find out candidate birds for Piece experiments
             pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx";
             pathlist = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx";
@@ -630,36 +661,12 @@ classdef Bird < handle
 
             for b = 1:length(shortlist)
                 fprintf('Candidate%u----%s-----%u dph----Father: %s-------Cage%u--------%s---——-备注：%s\n',...
-                    b,shortlist(b).id,shortlist(b).age,Bird.findFather(shortlist(b).id),shortlist(b).cage,shortlist(b).recordingState,shortlist(b).annotation);
+                    b,shortlist(b).id,shortlist(b).age,bd.findFather(shortlist(b).id),shortlist(b).cage,shortlist(b).recordingState,shortlist(b).annotation);
             end
 
         end
 
-        function siblings_names = findSiblings(birdname)
-            % configs for reading the table
-            birdlist = Bird.readBirdlist;
-
-            % get the corresponding index, set fathername
-            index = find(~cellfun(@isempty, regexp(birdlist.BirdID,birdname)));
-            fathername = birdlist.father(index);
-
-            if isempty(fathername)
-                fathername = string(missing);
-            end
-
-            children_index = find(~cellfun(@isempty, regexp(birdlist.father,fathername)));
-            siblings_index = setdiff(children_index, index);
-            siblings_names = birdlist.BirdID(siblings_index);
-            hatch_dates =birdlist.Hatchdate(siblings_index);
-
-            for k = 1: length(siblings_names)
-                disp(sprintf('sibling is:  %s, hatching date: %s, recording state: %s',siblings_names{k},hatch_dates{k},Bird.recording_state(siblings_names{k})));
-                newline;
-            end
-
-        end
-
-
+ 
         function adultfilenames = getAdultSongs(input_birdname_or_dir)
             %获取adult song的文件名们
             % Step-1 : Extract hacth date from the BIRDLIST

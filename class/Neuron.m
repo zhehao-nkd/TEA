@@ -66,8 +66,8 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
                 neu.song = Song(neu.list); %如果大于19的实验数为零或者大于1，姑且让它报错
                 neu.song.formated_name = neu.info.formated_name;
-                neu.repla = Repla(neu.list);
-                neu.repla.formated_name = neu.info.formated_name;
+
+
                 neu.deg = Deg(neu.list);
                 neu.deg.formated_name = neu.info.formated_name;
                 neu.frag = Frag(neu.list);
@@ -76,6 +76,9 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
                 neu.frag.knowCloseAndFarFrags(neu.targets);
                 neu.simsong = Simsong(neu.list);
                 neu.simsong.formated_name = neu.info.formated_name;
+                latency = neu.calLatency;  % 计算 latency
+                neu.repla = Repla(neu.list,latency.latency_halfweight);
+                neu.repla.formated_name = neu.info.formated_name;
 
                
                  % 计算 tags
@@ -189,10 +192,15 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
                 neu.sectionsMFR = []; % 初始化 % mean firing rate
                 for k = 1:length(neu.experiments)                 % 这里不一定对
+                    try
+                        neu.sectionsMFR(k) = length(neu.experiments{k}.sameChannelSpikes.timestamp)...
+                            /(sum(neu.experiments{k}.nSections)/neu.experiments{k}.adfreq); % might not be correct !!!!!!! 这个有可能拯救shifted data
+                        % 2022.12.13
+                    catch
 
-                    neu.sectionsMFR(k) = length(neu.experiments{k}.sameChannelSpikes.timestamp)...
-                        /(sum(neu.experiments{k}.nSections)/neu.experiments{k}.adfreq); % might not be correct !!!!!!! 这个有可能拯救shifted data
-                    % 2022.12.13 
+                        neu.sectionsMFR(k) = 0; % 非常差的权宜之计
+
+                    end
                 end
 
                 if max(abs(diff(neu.sectionsMFR)))/max(neu.sectionsMFR) > 0.5 % max_rate_diff/max_firing_rate
@@ -287,7 +295,8 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
 
             neu.info = struct;
-            temp = regexp(neu.experiments{1}.info.pl2name,'[RBOYRG]\d{3}','match');
+            temp = regexp(neu.experiments{1, 1}.inputs.folder_wav,'[OGBYR]\d{3}','match','once');
+            %temp = regexp(neu.experiments{1}.info.pl2name,'[RBOYRG]\d{3}','match');
             % set birdid uniqueid and formated_name
             if ~isempty(temp)
                 neu.info.birdid = temp{1};
@@ -714,8 +723,6 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
                 neu.list(k).meanfeatures.harmratio = mean(neu.list(k).features.harmratio);
             end
         end
-
-
 
         function neu = judgeFragResp_FR(neu)
             dbstop if error % 判断对frag 是否反应，通过 Firing rate
@@ -1157,39 +1164,62 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
         end
 
 
-        function templatency = calFirstSpikeLatency(neu)
+        function latency = calLatency(neu)
 
-            fragids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'Frag')));
-            e_objects = neu.getAllEphysObject;
-            e_objects =e_objects(fragids);
+            latency = struct;
+
+            Onelist = neu.frag.allfraglist_nonorm(find([neu.frag.allfraglist_nonorm.label].' == 1));
+            % 第一种方法
             observed = [];
             spon = [];
-            for k = 1:length(e_objects)
-                [observed(k),spon(k)] = e_objects{k}.calObservedFirstSpikeLatency;
+            for k = 1:length(Onelist)
+                %https://direct.mit.edu/neco/article/22/7/1675/7562/First-Spike-Latency-in-the-Presence-of-Spontaneous
+
+                thisone = Onelist(k);
+                temp1 = min(vertcat(thisone.sptimes{:}));
+                temp2 = min(vertcat(thisone.presptimes{:}));
+                if isempty(temp1)
+                    temp1 = nan;
+                end
+                if isempty(temp2)
+                    temp2 = nan;
+                end
+
+                obsevred(k) = temp1;
+                spon(k) = temp2;
+
+                %[observed(k),spon(k)] = e_objects{k}.calObservedFirstSpikeLatency;
             end
 
-            templatency = mean(rmmissing(observed))- mean(rmmissing(spon)); %  这个剑法不对
-            % This is just an temporary solution
+            % if isnan(mean(rmmissing(spon))) % 当pre duration里一个spike也没有时会出现这种情况
+            spontanous_first_spike_latency = 0;
 
-            %             [fo,xo] = ecdf(observed);
-            %             figure; plot(xo,fo)
-            %             [fs,xs] = ecdf(spon);
-            %             upper = 1- fo;
-            %             lower = 1-fs;
-            %             count = 0;
-            %             num = [];
-            %             for a = 1;length(upper)
-            %                 for b = 1:length(lower)
-            %                     num(a,b) = upper(a)/lower(b);
-            %                 end
-            %             end
-            %
-            %             figure
-            %             plot(reshape(num,[],1))
-            %
-            %
-            %             latency = 1 - upper./lower;
 
+            % 现在这个方法依然不对，因为有可能会出现在pre stimuli的最后一秒，突然出现了first spike的情况
+            latency.latency_firstspike = mean(rmmissing(observed))- spontanous_first_spike_latency; %
+
+            % 第二种方法
+            summer = [];
+            for k = 1:length(Onelist)
+
+                thisE = Onelist(k);
+               % figure; Draw.three(thisE.plty,thisE.fs,thisE.pltsptimes) %测试用
+             
+                % 背景SDF的均值（baseline）
+                prezpt_sptimes = Extract.sptimes_resetSP(thisE.rawsptimes, 0, thisE.zpt);
+                baseline = mean(Cal.sdf( prezpt_sptimes,thisE.zpt*thisE.fs,thisE.fs));
+
+                endtime = length(thisE.rawy)/thisE.fs;
+                postzpt_sptimes = Extract.sptimes_resetSP(thisE.rawsptimes, thisE.zpt,endtime);
+                sdfs = Cal.sdf(postzpt_sptimes,(endtime-thisE.zpt)*thisE.fs,thisE.fs);
+
+                maxsdfs = max(sdfs);
+                timeindex = find(sdfs > baseline + (maxsdfs - baseline)/2,1); % 第一次超过half weight的时刻
+                summer(k) = timeindex/length(sdfs)*(endtime -  thisE.zpt);
+
+            end
+
+            latency.latency_halfweight = mean(summer);
 
         end
 
@@ -2164,6 +2194,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
 
             % 其末 draw and save
+            figure;
             neu.waveform.draw1st;
             temp = getframe(gcf);close(gcf);
             w_img = temp.cdata;
@@ -2204,6 +2235,8 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
     end
 
     methods(Static) % 静态方法
+
+
 
         function check_detail_folder(dirpath,global_eleinf)
             % 这个方法可以用来看所有 presented frag stimuli的分布
@@ -2378,7 +2411,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
         end
 
 
-        function [answer,pvalue] = UseTtestToJudegeRespOrNot(y,sptimes,prey,presptimes,fs)
+        function [answer,pvalue] = UseTtestToJudgeRespOrNot(y,sptimes,prey,presptimes,fs)
             dbstop if error
             presdf = Cal.sdf(presptimes,prey,fs,0.001,0.02);
             sdf = Cal.sdf(sptimes,y,fs,0.001,0.02); % 0.001,0.004
@@ -2398,15 +2431,22 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
         end
 
 
-        function result = UseMaxSdfToJudegeRespOrNot(y,sptimes,prey,presptimes,fs)
+        function result = UseMaxSdfToJudgeRespOrNot(y,sptimes,prey,presptimes,fs)
             dbstop if error
             presdf = Cal.sdf(presptimes,prey,fs,0.001,0.02);
             sdf = Cal.sdf(sptimes,y,fs,0.001,0.02); % 0.001,0.004
+
+
+            % for separated sdfs
+            for k = 1:length(presptimes)
+
+            end
+            
             %             [maxpresdf,~] = max(presdf);
             [maxpresdf,~] = max(presdf);
             [maxsdf,maxidx] = max(sdf);
 
-            pre_frs = Cal.eachTrialFiringRate(presptimes,length(y)/fs);
+            pre_frs = Cal.eachTrialFiringRate(presptimes,length(prey)/fs);
             sti_frs = Cal.eachTrialFiringRate(sptimes,length(y)/fs);
 
             [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
@@ -2417,10 +2457,11 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
             result.maxsdf = maxsdf;
             if h == 1
                 result.label = 1;
+            
                 %                     if (num_of_not_empty_trials/length(neu.list(thisi).pltsptimes)<0.5)||(num_of_not_empty_trials<5) % if not 60% of the trails are not empty
                 %                         neu.list(thisi).label = 0;
                 %                     end
-            elseif maxsdf > 17 && maxsdf > maxpresdf % neu rescue
+            elseif maxsdf > 18 && maxsdf > maxpresdf % neu rescue
                 result.label = 1;
 
             end
@@ -2441,13 +2482,13 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
                 % for prey
                 sponFrInfo(m).triggerNum = all_es{m}.sound.trigger;
-                sponFrInfo(m).presptimes = all_es{m}.presptimes
+                sponFrInfo(m).presptimes = all_es{m}.presptimes;
                 sponFrInfo(m).preylen = length(all_es{m}.y)/all_es{m}.fs;
                 sponFrInfo(m).repnum = size(all_es{m}.presptimes,2);
                 temp = all_es{m}.presptimes.';
                 sponFrInfo(m).localSpFr = length(find(vertcat(vertcat(temp{:}))))/(sponFrInfo(m).preylen*sponFrInfo(m).repnum);
                 % for plty
-                sponFrInfo(m).pltsptimes = all_es{m}.pltsptimes
+                sponFrInfo(m).pltsptimes = all_es{m}.pltsptimes;
                 sponFrInfo(m).pltlen = length(all_es{m}.plty)/all_es{m}.fs;
 
             end
@@ -2484,7 +2525,6 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
         end
 
-
         function neu = Deprecated_writeFigdata(neu)
             % 生成这个Analysis的所有three plot的图片
             figmat = {};
@@ -2493,7 +2533,6 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
             end
             neu.figdata = horzcat(figmat{:});
         end
-
 
         function neu = Deprecated_splitStimuliResponsePairsToDifferentTypes(neu)
             % 从list提取出norm,frag,deg,repla等几个子集sublist
@@ -2554,7 +2593,6 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
             end
 
         end
-
 
         function Deprecated_Batch2(neu)
             %neu.rawthree_NeuronClassVersion;
@@ -3071,7 +3109,6 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
 
         end
-
 
         function neu = Deprecated_judgeFragResp(neu)
             % 判断对frag 是否反应，通过自己定义的复杂的机制

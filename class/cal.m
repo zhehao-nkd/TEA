@@ -87,7 +87,7 @@ classdef Cal
             
             
             
-            msdf= mean(sdf);
+            msdf= mean(sdf,1);
         end
         
         function msdf = sdf_concated_sptimes(concated_sptimes,y,fs,resolution,gausswidth)
@@ -153,12 +153,18 @@ classdef Cal
         end
         
         
+        function img = spec256(y,fs) % calculate the image matrix of spectrogram
+            y = 2*y;%myAxe = app.UIAxes;
+            [S,F,T] = spectrogram(y,hamming(256),256-round(fs/1e3),256,fs);
+            img = flip(log(1+abs(S)));
+        end
+
         function img = spec(y,fs) % calculate the image matrix of spectrogram
             y = 2*y;%myAxe = app.UIAxes;
             [S,F,T] = spectrogram(y,hamming(512),512-round(fs/1e3),512,fs);
             img = flip(log(1+abs(S)));
         end
-        
+
         
         function img = Deprecated_spec1024(y,fs) % calculate the image matrix of spectrogram
             y = 2*y;%myAxe = app.UIAxes;

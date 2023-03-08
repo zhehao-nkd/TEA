@@ -1,32 +1,17 @@
-classdef Piece < handle %& EphysAnalysis
-
+classdef PrePiece < handle
     %EPHYS2 Summary of this class goes here
     %   Detailed explanation goes here
     %     properties(Constant)
     %         %pltext = 0.15 % previosuly it was 0.1
+    %
     %     end
-    % Explanation
-    % Ephys相关数据被我储存在三种数据文件中
-    % .pl2 文件是原始文件，External中的 readpl2FileC 是用来读取 .pl2文件的,可以在 matlab file exchange上找到
-    % .txt文件储存spikes的时间和波形
-    % .wav文件其中一个通道是声刺激，另一个通道是用来标定声刺激播放时间的trigger signal
-    %文件储存结构
-    % pl2path = "D:\Ephys-O706-W\P01\O706_P01F1_5sCons.pl2"
-    % txtpath = "D:\Ephys-O706-W\P01\O706_P01F1_5sCons.txt"
-    % stimulidir = "D:\Ephys-O706-W\P01\Stimuli\O706-P01F1-5sCons"
-    % Bird---O706   P01----Plexon system Recording01 P01F1---对这批神经元进行的第一种刺激
-    % 数据用两种采集系统进行采集，P指的是plexon系统,sample frequency=40000 Z指的是zeus系统,sample rate=30000
-    % Trigger signal用方波间距来编码stimuli代号，从右向左读，长为1，短为0，二转十进制后得到stimuli代号
-    % 两个系统摄入Trigger signal的方式也不同,P系统通过Analog Input通道接收，Z系统通过digital Input接收
-
     properties
         spike
         trigger
         sound
         fs
       
-
-        
+       
         y % y is rawy remove pre and post silence
         sptimes
         features
@@ -54,24 +39,33 @@ classdef Piece < handle %& EphysAnalysis
         sigloc % location (time) of the significant neural response
         eliciting_element_counting_whole %  index of the response-elciting
         %element by taking neural response to all stimuli into consideration
-        % this Paramter are calculated outside the Piece class
-        trigger_onset % onset of trigger stimuli, 代表了stimuli播放的时间
+        % this Paramter are calculated outside the Ephys class
+        trigger_onset % onset of trigger stimuli
         pltext
-        judgelaten
         
         fsize
-       % notexist_identifier
     end
     
-    
-    methods
+    methods % 内部计算方法
+        
+        function e = PrePiece(spike, trigger, sound)
+            
+            e.spike = spike;
+            e.trigger = trigger;
+            e.sound = sound;
+            e.rawy = e.sound.rawy; % rawy
+            e.y = e.sound.corey; % corey is y
+            e.fs = sound.fs;
+            e.zpt = e.sound.zpt/e.fs;
+            e.npt = e.sound.npt/e.fs;
+            e.setExtAndAllocate; % 包含了e.setPltext && e.allocate 
+            e.fsize = PM.size3plots;
+        end
         
         function e = setExtAndAllocate(e)
             
             %Part1 setting of pltext
-            if ~isempty(regexp(e.sound.name,'catego|Type|type', 'once')) %如果是包含类型信息的replas、frags （新stimuli）2023.02.03
-                e.pltext = 0.8;   
-            elseif ~isempty(regexp(e.sound.name,'norm|deg|repla|Repla|mirror|reverse|catego|trans|incre|sim', 'once'))
+            if ~isempty(regexp(e.sound.name,'norm|deg|repla|Repla|mirror|reverse|catego|trans|incre|sim', 'once'))
                 e.pltext = 2;
             elseif ~isempty(regexp(e.sound.name,'frag|Frag|syl', 'once'))
                 e.pltext = 0.6;
@@ -79,18 +73,13 @@ classdef Piece < handle %& EphysAnalysis
                 e.pltext = 2; % Sarah's case
             end
             
-            judgelaten = 0.20; % 200ms的latency
-            e.judgelaten = judgelaten;
+            laten = 0.1; % 100ms的latency
             
             %Part2 Allocation here the response is the collection of response
             e.plty = [zeros(e.pltext*e.fs,1);e.y;zeros(e.pltext*e.fs,1)];
-            e.judgerespy = [e.y;zeros(judgelaten*e.fs,1)];
+            e.judgerespy = [e.y;zeros(laten*e.fs,1)];
             n = e.sound.trigger;
             index = find([e.trigger.info.name].'== n);
-%             if isempty(index)
-%                 e.notexist_identifier = 1;
-%                 return
-%             end
             initials = e.trigger.info(index).time; % initials of all the repeats
             e.trigger_onset = initials;
             ylength = length(e.y)/e.sound.fs;
@@ -100,16 +89,16 @@ classdef Piece < handle %& EphysAnalysis
             sptimes = {}; presptimes = {}; pltsptimes = {};  judgerespsptimes = {};
             prejudgerespsptimes = {}; rawsptimes = {}; %#ok<*PROP>
             
-            for k = 1:length(initials) % here should be par-for
+          for k = 1:length(initials) % here should be par-for
                 sptimes{k} = e.spike.time( initials(k)<e.spike.time & e.spike.time<initials(k) + ylength)...
                     - initials(k);
                 presptimes{k} = e.spike.time( initials(k)- ylength<e.spike.time & e.spike.time<initials(k))- double((initials(k)-ylength));%??
                 pltsptimes{k} = e.spike.time( initials(k)- e.pltext<e.spike.time& e.spike.time<initials(k) + ylength + e.pltext)...
                     - (initials(k)- e.pltext);
-                judgerespsptimes{k} = e.spike.time( initials(k)<e.spike.time& e.spike.time<initials(k) + ylength + judgelaten)...
+                judgerespsptimes{k} = e.spike.time( initials(k)<e.spike.time& e.spike.time<initials(k) + ylength + laten)...
                     - initials(k);
-                prejudgerespsptimes{k} = e.spike.time( initials(k)- (ylength + judgelaten)<e.spike.time& e.spike.time< initials(k))...
-                    - double(initials(k)-(ylength + judgelaten));
+                prejudgerespsptimes{k} = e.spike.time( initials(k)- (ylength + laten)<e.spike.time& e.spike.time< initials(k))...
+                    - double(initials(k)-(ylength + laten));
                 
                 rawsptimes{k} = e.spike.time( initials(k)- e.zpt<e.spike.time& e.spike.time<initials(k) + ylength + length(e.rawy)/e.fs- e.npt)...
                     - (initials(k)- e.zpt);  % 这里可能有一个巨大的bug
@@ -118,14 +107,14 @@ classdef Piece < handle %& EphysAnalysis
             e.sptimes = sptimes; e.presptimes = presptimes;
             e.pltsptimes = pltsptimes;  e.judgerespsptimes = judgerespsptimes;
             e.prejudgerespsptimes = prejudgerespsptimes; e.rawsptimes = rawsptimes;
-            % disp('Here might be a huge bug in Piece.allocate!!!');
-            
-            %              if ~isempty(regexp(e.sound.name,'norm|deg|repla', 'once'))
-            %                  [~,e.sigloc] = e.getSigRespnse; % calculate this value only when stimuli is not a syllable
-            %              end
+            % disp('Here might be a huge bug in Ephys.allocate!!!');
+             
+%              if ~isempty(regexp(e.sound.name,'norm|deg|repla', 'once'))
+%                  [~,e.sigloc] = e.getSigRespnse; % calculate this value only when stimuli is not a syllable
+%              end
             
         end
-        
+           
         function [sdf_values,times_from_onset] = getSigRespnse(e)
             % This function find out the response peak events above threshold,
             % regarding them as significant response event of the signal
@@ -181,25 +170,9 @@ classdef Piece < handle %& EphysAnalysis
             
         end
         
-        
-    end
-    
-    methods % 内部计算方法
-        
-        function e = Piece(spike, trigger, sound)
-            
-            e.spike = spike;
-            e.trigger = trigger;
-            e.sound = sound;
-            e.rawy = e.sound.rawy; % rawy
-            e.y = e.sound.corey; % corey is y
-            e.fs = sound.fs;
-            e.zpt = e.sound.zpt/e.fs;
-            e.npt = e.sound.npt/e.fs;
-            e.setExtAndAllocate; % 包含了e.setPltext && e.allocate 
-            e.fsize = PM.size3plots;
+        function getSDFHalfPeakTimeRelativeToOnsetWhichIsLatency(e) % 这个写好后可用来替换原本用来计算latency的方法
+            % 这个可以被Neuron Object 调用
         end
-       
         
         function sylidx = getIndexOfSigSyllable(e,latency) % index of significant syllable
             % This is based on neural respons to a single stimuli, which is
@@ -230,27 +203,6 @@ classdef Piece < handle %& EphysAnalysis
     end
        
     methods % 外部计算方法
-        
-        function e = Three(e) % three plots for single syllable/element
-            %         e.updateplt;
-            figure('color','w','Position',PM.size1)
-            %figure('Visible','off','color','w')
-            Draw.three(e.y,e.fs,e.sptimes);
-            
-            xlabel(e.sound.name);
-        end
-       
-        function collected = collectImages(e)
-            
-            if ~isempty(regexp(e.list.stimuliname,'Frag'))
-                ext = 0.5; % when tested sound is a frag
-            else
-                ext = 1;   % not a frag
-            end
-            collected.specimg = e.drawsaveSpec(ext);
-            collected.rasterimg = e.drawsaveRaster(ext);
-            
-        end
         
         function [new_pltsptimes,plty] = allocate_variablePrePostLength(e, extlen)
              % here the response is the collection of response
@@ -295,7 +247,7 @@ classdef Piece < handle %& EphysAnalysis
         
         function siginf = siginf(e) % full info of sig syllable
             dbstop if error
-            if isempty(e.getIndexOfSigSyllable)
+            if isempty(e.sig)
                 siginf = [];
                 return
             end
@@ -318,7 +270,7 @@ classdef Piece < handle %& EphysAnalysis
                 
                 syl(n).sound = convertStringsToChars(e.sound.name);
                 syl(n).number = n;
-                syl(n).pl2 = convertStringsToChars(e.trigger.pl2name);
+                syl(n).plx = convertStringsToChars(e.trigger.plxname);
                 syl(n).channel = e.spike.channel;
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.fragment(n).y;
@@ -362,7 +314,7 @@ classdef Piece < handle %& EphysAnalysis
                 
                 syl(n).sound = convertStringsToChars(e.sound.name);
                 syl(n).number = n;
-                syl(n).pl2 = convertStringsToChars(e.trigger.pl2name);
+                syl(n).plx = convertStringsToChars(e.trigger.plxname);
                 syl(n).channel = e.spike.channel;
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.sapfragment(n).y;
@@ -412,7 +364,7 @@ classdef Piece < handle %& EphysAnalysis
                 
                 syl(n).sound = convertStringsToChars(e.sound.name);
                 syl(n).number = n;
-                syl(n).pl2 = convertStringsToChars(e.trigger.pl2name);
+                syl(n).plx = convertStringsToChars(e.trigger.plxname);
                 syl(n).channel = e.spike.channel;
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.fragment(n).y;
@@ -439,13 +391,13 @@ classdef Piece < handle %& EphysAnalysis
         
         function syl = avgn(e) % full info of all syllables
             dbstop if error
-            number = e.getIndexOfSigSyllable;
+            number = e.sig;
             syl = struct;
             for n = 1:length(e.sound.initial)
                 syl(n).birdid = Convert.bid(convertStringsToChars(e.sound.name));
                 syl(n).filename = convertStringsToChars(e.sound.name);
                 syl(n).number = n;
-                syl(n).pl2 = convertStringsToChars(e.trigger.pl2name);
+                syl(n).plx = convertStringsToChars(e.trigger.plxname);
                 syl(n).channel = e.spike.channel;
                 syl(n).unit = e.spike.unit;
                 syl(n).y = e.sound.fragment(n).y;
@@ -461,7 +413,19 @@ classdef Piece < handle %& EphysAnalysis
             
             
         end
-
+        
+        function response = resp(e) % mimic the old response function
+            
+            response.plxname = e.trigger.plxname;
+            response.channel_name = e.spike.channel;
+            response.unit_name = e.spike.unit;
+            response.stimuli_name = convertStringsToChars(e.sound.name);
+            response.wav_Y = e.sound.y;
+            response.initial = e.sound.initial;
+            response.terminal = [e.sound.fragment.terminal].';
+            response.sigsylidx = e.sig;
+            
+        end
         
         function pre = preinf(e, duration)% info of pre-peak duration
             
@@ -484,7 +448,7 @@ classdef Piece < handle %& EphysAnalysis
                     pre(n).entropy = temp.entropy;
                     pre(n).pitch = temp.pitch;
                     pre(n).am = temp.AM;
-                    pre(n).pl2 = e.trigger.pl2name;
+                    pre(n).plx = e.trigger.plxname;
                     pre(n).channel = e.spike.channel{1};
                     pre(n).unit = e.spike.unit;
                     pre(n).sound = e.sound.name;
@@ -495,8 +459,6 @@ classdef Piece < handle %& EphysAnalysis
             
         end
         
-
- 
     end
     
     methods  % 作图方法
@@ -554,7 +516,7 @@ classdef Piece < handle %& EphysAnalysis
          end
          
         
-        function e = ThreeWithFreqRelatedFeatures(e) % three plots for single syllable/element
+        function e = threeWithFreqRelatedFeatures(e) % three plots for single syllable/element
             % e.updateplt;
             
             figure('Visible','off','color','w','Position',PM.size3plots);
@@ -598,7 +560,15 @@ classdef Piece < handle %& EphysAnalysis
             
         end
         
-  
+        function e = threesingle(e) % three plots for single syllable/element
+            %         e.updateplt;
+            figure('color','w')
+            %figure('Visible','off','color','w')
+            Draw.three(e.y,e.fs,e.sptimes);
+            
+            xlabel(e.sound.name);
+        end
+        
         function e = two(e) % three plots for single syllable/element
             %         e.updateplt;
             figure('Position',[-41 147 2974 966],'color','w')
@@ -621,12 +591,12 @@ classdef Piece < handle %& EphysAnalysis
             if exist('visibility','var')
                 
                 if visibility == 1
-                    figure('color','w','Position',PM.size1);
+                    figure('Position',e.fsize,'color','w');
                 elseif visibility == 0
-                    figure('Position',PM.size1,'color','w','Visible','off')
+                    figure('Position',e.fsize,'color','w','Visible','off')
                 end
             else
-                figure('Position',PM.size1,'color','w'); %'default'
+                figure('Position',e.fsize,'color','w'); %'default'
             end
             
             Draw.three(e.plty,e.fs,e.pltsptimes);
@@ -730,9 +700,7 @@ classdef Piece < handle %& EphysAnalysis
             end
             
         end
-        
-        
-        
+         
         function fea = featurecurve(e)
             temp = SAT_hijack(e.y,e.fs);
             fea.rawpitch = temp.features.pitch;
@@ -749,20 +717,8 @@ classdef Piece < handle %& EphysAnalysis
             fea.y = e.y;
         end
         
-
     end
     
-    methods(Hidden= true)
-        
-    end
-    
-    
-%     methods(Abstract = true)
-%         % unfinished methods
-%         getSDFHalfPeakTimeRelativeToOnsetWhichIsLatency(e) % 这个写好后可用来替换原本用来计算latency的方法
-%             % 这个可以被Neuron Object 调用
-%        
-%     end
 end
 
 

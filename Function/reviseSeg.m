@@ -33,22 +33,32 @@ classdef reviseSeg
             hFig = figure('units','normalized','outerposition',[0 0 1 1]);
             %set(hFig,'WindowState','fullscreen');
             % to draw the title
-            hAxes = subplot(1,1,1);
+            hOscillo = subplot(5,1,1);
+%             set(subplot(2,2,1),'Color','k')
+            hpy = highpass(segdata.rawy,450,32000);
+            plot((1:length(hpy)).'/32000,hpy,'Color','cyan');
+            set(gca,'Color','k');
+            xlim([0 length(hpy)/32000]);
+
+            hAxes = subplot(5,1,2:5);
+            linkaxes([hOscillo,hAxes],'x');
+         
             fs = 32000;
             y = segdata.rawy;
-            [S,F,T] = spectrogram(y,hamming(512),512-round(fs/1e3),512,fs);
-            imagesc(T,F,flip(log(1+abs(S))));
+            [S,F,T] = spectrogram(hpy,hamming(524),524-round(fs/1e3),524,fs);
+            imagesc(T,F,log(1+abs(S)));
+            set(gca,'YDir','normal');
             % imshow(segdata.I);
             
             cmap = PM.cmap1;
             colormap(cmap);
             title(segdata.birdid);
-            
+
             
             if isfield(segdata,'eleedge') % draw element segmentations
                 for idx = 1: length(segdata.eleedge)
                     %hold on
-                    hVerticalLines(idx) = line([segdata.eleedge(idx),segdata.eleedge(idx)],get(hAxes,'Ylim'),'Color','white');
+                    hVerticalLines(idx) = line([segdata.eleedge(idx),segdata.eleedge(idx)],get(hAxes,'Ylim')*1.27,'Color','white');
                 end
                 if length(segdata.eleedge) == 0
                     hVerticalLines = [];
@@ -58,15 +68,18 @@ classdef reviseSeg
             end
             
             for e = 1: length(segdata.syledge) % draw syllables segmentations
-                hVerticalLines = [hVerticalLines line([segdata.syledge(e),segdata.syledge(e)],get(hAxes,'Ylim'),'Color','red')];
+                hVerticalLines = [hVerticalLines line([segdata.syledge(e),segdata.syledge(e)],get(hAxes,'Ylim')*1.27,'Color','red')];
             end
             
             if isfield(segdata,'motedge') %draw motif segmentations
                 for idx = 1: length(segdata.motedge)
                     %hold on
-                    hVerticalLines = [hVerticalLines, line([segdata.motedge(idx),segdata.motedge(idx)],get(hAxes,'Ylim'),'Color','green')];
+                    hVerticalLines = [hVerticalLines, line([segdata.motedge(idx),segdata.motedge(idx)],get(hAxes,'Ylim')*1.27,'Color','green')];
                 end
             end
+
+           set(gca,'Clipping','Off')
+          
             
             % legend('element','syllables')
             xlabel([...
@@ -85,6 +98,8 @@ classdef reviseSeg
             
             hLineToDrag = [];
             hLineToDelete = [];
+
+
             
             %hLineToCreate = [];
             
@@ -126,8 +141,8 @@ classdef reviseSeg
                                     % is the mouse down event within the axes?
                                     if ~isempty(hLineToDelete) && IsCursorInControl(hObject, hAxes)
                                         currentPoint = get(hAxes,'CurrentPoint');
-                                        delete(hVerticalLines(k)) % firstly delete the object
-                                        hVerticalLines(k) = [] % then remove the object handle
+                                        delete(hVerticalLines(k)); % firstly delete the object
+                                        hVerticalLines(k) = [];% then remove the object handle
                                     end
                                     break;
                                 end
@@ -146,7 +161,7 @@ classdef reviseSeg
                             xCurrentPoint  = currentPoint(2,1);
                         end
                         if exist('xCurrentPoint','var')
-                            hVerticalLines = [hVerticalLines line([xCurrentPoint,xCurrentPoint],get(hAxes,'Ylim'),'Color',hObject.UserData)];
+                            hVerticalLines = [hVerticalLines line([xCurrentPoint,xCurrentPoint],get(hAxes,'Ylim')*1.26,'Color',hObject.UserData)];
                             disp(['颜色是',string(hObject.UserData)])
                         end
                         

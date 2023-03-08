@@ -1,5 +1,5 @@
 classdef Sultan < handle
-    % 批量对Analysis文件进行操作，以进行复杂的数据分析
+    % 批量对Neuron文件进行操作，以进行复杂的数据分析
     % So Sultan controls everything, more powerful than Consul
 
     properties
@@ -2203,20 +2203,54 @@ classdef Sultan < handle
                 {name1,name2,name3});
         end
 
-        function How_Neurons_Resp_To_DegsFragsReplas(neuroninf)
+        function error = Parfor_DoSthForAll
+
+            %利用parfor对A文件进行循环操作，如果有bug会被try catch 并记录断点
             dbstop if error
 
-            wb = waitbar(0,'Start processing');
-            Utl.UpdateParforWaitbar(length(neuroninf), wb);
-            D = parallel.pool.DataQueue;
-            afterEach(D, @Utl.UpdateParforWaitbar);
+            % 已经生成了的图片文件们
+            figures = Extract.filename('./','*.png');
+            matfiles = Extract.filename('./','*.mat');
 
-            for k = 54:length(neuroninf) % bug in 45,53
-                loaded = load(neuroninf(k).path);
-                A = loaded.A;
-                A.Whether_NeuResp_To_SinFrags_Coms_Or_FragsResps_affected_By_Pres;
-                send(D,1);
+            rest_matfiles = {};
+            count = 0;
+            for k = 1:length(matfiles)
+                [~,name,~] = fileparts(matfiles{k});
+                if isempty(find(~cellfun(@isempty, regexp(figures,name)))) % 如果找不到对应的png文件
+                    count = count + 1;
+                    rest_matfiles{count} = matfiles{k};
+                end
             end
+
+
+
+
+            wb = PoolWaitbar(length(rest_matfiles),'开始生成 Neuron objects');
+            if isempty(rest_matfiles)
+                error= [];
+                return
+            end
+
+
+            error = struct;
+            for n = 1: length(rest_matfiles) % par
+                try
+                    A = load(rest_matfiles{n}).A;
+
+                    A.Whether_NeuResp_To_SinFrags_Consis_Or_affected_By_Previous; % 核心
+              
+                catch ME
+                    %                   pause
+                    error(n).ME = ME;
+                    error(n).identifier = ME.identifier;
+                    error(n).matfiles = rest_matfiles{n};
+                    disp(ME);
+                end
+
+                increment(wb);
+            end
+
+            toc
         end
 
         function copyANAFiles(inputanalist,targetdir)
