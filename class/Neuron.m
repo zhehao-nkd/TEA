@@ -9,8 +9,9 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
         repla
         deg % class to process degressive song
         frag
+        consistency
         simsong % class to process similar song
-        simatrix % A class store frag-frag distanced measured for different features
+        %simatrix % A class store frag-frag distanced measured for different features
         waveform
     end
 
@@ -61,24 +62,33 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 %                 end
 
                 % judge neuron's response
-                neu.judgeConResp;
-                neu.judgeFragResp_FR;
+                %neu.judgeConResp; % 2023.03.19 后期这个功能也应该整合到Song里面
+                %neu.judgeFragResp_FR;
 
                 neu.song = Song(neu.list); %如果大于19的实验数为零或者大于1，姑且让它报错
                 neu.song.formated_name = neu.info.formated_name;
 
+                if ~isempty(find(~cellfun(@isempty,regexp(cellstr({neu.list.stimuliname}.'),'Deg'))))
+                    neu.deg = Deg(neu.list);
+                    neu.deg.formated_name = neu.info.formated_name;
+                    neu.simsong = Simsong(neu.list); % sibling songs
+                    neu.simsong.formated_name = neu.info.formated_name;
+                end
 
-                neu.deg = Deg(neu.list);
-                neu.deg.formated_name = neu.info.formated_name;
-                neu.frag = Frag(neu.list);
-                neu.frag.formated_name = neu.info.formated_name;
-                neu.targets = neu.knowTarget;  %知道谁是target syllable
-                neu.frag.knowCloseAndFarFrags(neu.targets);
-                neu.simsong = Simsong(neu.list);
-                neu.simsong.formated_name = neu.info.formated_name;
-                latency = neu.calLatency;  % 计算 latency
-                neu.repla = Repla(neu.list,latency.latency_halfweight);
-                neu.repla.formated_name = neu.info.formated_name;
+                if ~isempty(find(~cellfun(@isempty,regexp(cellstr({neu.list.stimuliname}.'),'frag|Frag'))))
+                    neu.frag = Frag(neu.list);
+                    neu.frag.formated_name = neu.info.formated_name;
+                    neu.targets = neu.knowTarget;  %知道谁是target syllable
+                   % neu.frag.knowCloseAndFarFrags(neu.targets);
+                end
+
+                if ~isempty(find(~cellfun(@isempty,regexp(cellstr({neu.list.stimuliname}.'),'Repla|repla'))))
+                    latency = neu.frag.calLatency;  % 计算 latency,计算正确的前提是neu.frag的response与否已经被判断过了
+                    neu.repla = Repla(neu.list,latency.latency_halfweight);
+                    neu.repla.formated_name = neu.info.formated_name;
+                    neu.consistency = Consistency(neu.list);
+                    neu.consistency.formated_name = neu.info.formated_name;
+                end
 
                
                  % 计算 tags
@@ -87,10 +97,13 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
                
                 %计算 multipleRepeats Meanfeatures
                 neu.getInfo_post;
-                neu.info = catstruct(neu.info,neu.getInfo_more);
+                disp('@Neuron.Neuron: neu.info = catstruct(neu.info,neu.getInfo_more) was commented!!!')
+                %neu.info = catstruct(neu.info,neu.getInfo_more);!!!!!!!!!!!!!!!!!!!!!!!!!!
                 neu.getExtraInfo;
                 neu.setStimuliCorrespondingNeuronId;
-                neu.getInfo_last;
+                if ~isempty(find(~cellfun(@isempty,regexp(cellstr({neu.list.stimuliname}.'),'frag|Frag'))))
+                    neu.getInfo_last;
+                end
                 neu.info.tags = neu.tags;
 
                 % 生成experiments
@@ -98,16 +111,33 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
                     input = {};
                     for k = 1:length(neu.experiments)
                         input{k} = neu.experiments{k}.waves.waveform;
+                        %input{k}.adfreq = neu.experiments{k}.adfreq;
                     end
                     neu.waveform = SpikeWaveform(input,'multiple');
+                    neu.waveform.adfreq = neu.experiments{1}.adfreq;
+                    neu.waveform.meanWL = neu.waveform.calMeanWaveLength;
+                    %neu.adfreq = neu.experiments{1}.adfreq;
+
+        
 
                 else
                     input = struct;
                     input.waveforms = neu.experiments{1}.waves.waveform;
                     input.times = neu.experiments{1}.waves.times;
-                    input.timedurations = neu.experiments{1}.waves.times;
+
+                    temp_durations = neu.experiments{1}.nSections/neu.experiments{1}.adfreq;
+
+                    time_edges = {};
+                    a = 0;
+                    for k = 1:length(temp_durations)
+                        time_edges{k} = [a,a + temp_durations(k)]
+                        a = a + temp_durations(k);
+                    end
+                    input.timeedges = time_edges;
+                    input.adfreq = neu.experiments{1}.adfreq;
 
                     neu.waveform = SpikeWaveform(input,'single or merge');
+                    neu.waveform.formated_name = neu.info.formated_name;
 
 
                 end
@@ -136,6 +166,30 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
 
             end
+
+        end
+
+
+        function SNR = CalculateSNR(neu)
+
+            %比较 信号的valley和estimated 的noise 的standard deviation的比例
+            try
+                temp = strcat("E:\Trustable\" ,erase(neu.experiments{1, 1}.inputs.pl2data,("F:\"|"G:\")));
+                allsignal = PL2Ad(temp, neu.info.channelname).Values;
+                signalltable= Spike.extract_specific_channel(temp,neu.info.channelname);
+            catch
+                temp = strcat("E:\Untrustable\" ,erase(neu.experiments{1, 1}.inputs.pl2data,("F:\"|"G:\")));
+                allsignal = PL2Ad(temp, neu.info.channelname).Values;
+                signalltable= Spike.extract_specific_channel(temp,neu.info.channelname);
+            end
+
+            %allsignal = PL2Ad(neu.experiments{1, 1}.inputs.pl2data, neu.info.channelname).Values;
+
+            noiselevel =  median(abs(allsignal)/0.6745);
+          
+            signallevel = mean(abs(signalltable(signalltable.unit == neu.info.unitname,:).valley));
+            SNR = signallevel/noiselevel;  % 最少要大于5
+            % 来源是 http://www.scholarpedia.org/article/Spike_sorting
 
         end
 
@@ -304,7 +358,16 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
             neu.info.zpid = regexp(neu.experiments{1}.info.pl2name,'[ZP]\d{2}','match');
             neu.info.channelname = neu.experiments{1}.info.channelname;
             neu.info.unitname = neu.experiments{1}.info.unitname;
-            neu.info.formated_name = sprintf('%s_%s_%s_%u',neu.info.birdid,neu.info.zpid{1},neu.info.channelname,neu.info.unitname);
+
+           try
+               temp = strsplit(neu.experiments{1}.inputs.folder_wav,'\\Stimuli'); % folder of the neuron
+           catch
+               temp = strsplit(neu.experiments{1}.inputs.folder_wav{1},'\\Stimuli');
+           end
+            [~,foldername,~] = fileparts(temp{1});
+
+            neu.info.formated_name = neu.experiments{1}.inputs.folder_wav
+            neu.info.formated_name = sprintf('%s_%s_%s_%u_%s',neu.info.birdid,neu.info.zpid{1},neu.info.channelname,neu.info.unitname,foldername);
 
 
         
@@ -394,8 +457,8 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
         function neu = getInfo_post(neu)
             %             Ninfo.num_respcons
             neu.info.wl = neu.calMeanWaveLength;  % calculate mean wavelength
-            neu.info.num_resp_to_18 = neu.song.info.num_resp_to_18;
-            neu.info.name_resp_to_18 = neu.song.info.name_resp_to_18;
+            neu.info.num_resp_to_18 = neu.song.num_resp_to_18;
+            neu.info.name_resp_to_18 = neu.song.name_resp_to_18;
             neu.info.fr_info = neu.multiRepeatsFiringRate;
 
         end
@@ -462,7 +525,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
                 sum_prelen = sum_prelen +  info.preylen{m};
 
                 % for plty
-                info.judgerespsptimes{m} = normlist(m).judgerespsptimes
+                info.judgerespsptimes{m} = normlist(m).judgerespsptimes;
                 info.judgeresplen{m} = length(normlist(m).judgerespy)/normlist(m).fs;
                 temp = normlist(m).judgerespsptimes.';
                 %concat_judgerespsptimes = [concat_judgerespsptimes;vertcat(vertcat(temp{:}))+ sum_judgeresplen];
@@ -653,7 +716,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
                 sum_prelen = sum_prelen +  fr_info.preylen{m};
 
                 % for plty
-                fr_info.pltsptimes{m} = all_es{m}.pltsptimes
+                fr_info.pltsptimes{m} = all_es{m}.pltsptimes;
                 fr_info.pltlen{m} = length(all_es{m}.plty)/all_es{m}.fs;
                 temp = all_es{m}.pltsptimes.';
                 concat_pltsptimes = [concat_pltsptimes;vertcat(vertcat(temp{:}))+ sum_pltlen];
@@ -661,7 +724,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
                 % for y only
 
-                fr_info.ysptimes{m} = all_es{m}.sptimes
+                fr_info.ysptimes{m} = all_es{m}.sptimes;
                 fr_info.ylen{m} = length(all_es{m}.y)/all_es{m}.fs;
                 temp = all_es{m}.sptimes.';
                 concat_ysptimes = [concat_ysptimes;vertcat(vertcat(temp{:}))+ sum_ylen];
@@ -669,7 +732,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
 
                 % for prejudgerespy
-                fr_info.preJsptimes{m} = all_es{m}.prejudgerespsptimes
+                fr_info.preJsptimes{m} = all_es{m}.prejudgerespsptimes;
                 fr_info.preJlen{m} = length(all_es{m}.judgerespy)/all_es{m}.fs;
                 temp = all_es{m}.prejudgerespsptimes.';
                 concat_preJsptimes = [concat_preJsptimes;vertcat(vertcat(temp{:}))+ sum_preJlen];
@@ -712,6 +775,10 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
     methods% 内部计算方法
 
+
+
+
+
         function neu = calHarmRatio(neu)
             % calculate harmonic noise ratio
 
@@ -724,7 +791,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
             end
         end
 
-        function neu = judgeFragResp_FR(neu)
+        function neu = Frozen20230319_judgeFragResp_FR(neu)
             dbstop if error % 判断对frag 是否反应，通过 Firing rate
 
    
@@ -774,110 +841,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
         end
 
-        function neu = judgeConResp(neu,mode)
-
-            if exist("mode",'var')  % 原来的备选方法
-
-                % 判断对Cons是否反应，通过 Firing rate
-                % firstly update e objectys 以后可以删掉这个部分
-                %             for k = 1: length(neu.experiments)
-                %                 for kk = 1: length( neu.experiments{k}.e)
-                %                     neu.experiments{k}.e{kk}.setExtAndAllocate;
-                %                 end
-                %             end
-                %             neu.updatelist;
-
-                ids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'norm|deg|repla'))); % find all norms
-                % ’syl'可以兼容旧的stimuli命名规则
-
-                for n = 1: length(ids)
-                    thisi = ids(n);
-
-                    presdf = Cal.sdf(neu.list(thisi).prejudgerespsptimes,zeros(length(neu.list(thisi).judgerespy),1),neu.list(thisi).fs,0.001,0.02);
-                    sdf = Cal.sdf(neu.list(thisi).judgerespsptimes,neu.list(thisi).judgerespy,neu.list(thisi).fs,0.001,0.02); % 0.001,0.004
-                    %                 sdf = Cal.sdf(neu.list(thisi).judgerespsptimes,neu.list(thisi).judgerespy,neu.list(thisi).fs,0.001,0.02);
-                    [maxpresdf,~] = max(presdf);
-                    [maxsdf,maxidx] = max(sdf);
-
-                    pre_frs = Cal.eachTrialFiringRate(neu.list(thisi).prejudgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
-                    sti_frs = Cal.eachTrialFiringRate(neu.list(thisi).judgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
-
-                    [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
-                    neu.list(thisi).pvalue = p;
-                    neu.list(thisi).label = 0; % 初始化
-                    neu.list(thisi).sti_frs = mean(sti_frs);
-                    neu.list(thisi).pre_frs = mean(pre_frs);
-                    if h == 1
-                        neu.list(thisi).label = 1;
-                        %                     if (num_of_not_empty_trials/length(neu.list(thisi).pltsptimes)<0.5)||(num_of_not_empty_trials<5) % if not 60% of the trails are not empty
-                        %                         neu.list(thisi).label = 0;
-                        %                     end
-                    elseif maxsdf > 17 && maxsdf > maxpresdf % neu rescue
-                        neu.list(thisi).label = 1;
-
-                    end
-                end
-
-                return
-
-
-            end
-
-            ids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'norm|deg'))); % find all norms
-            % ’syl'可以兼容旧的stimuli命名规则
-
-            for n = 1: length(ids)
-                thisi = ids(n);
-
-                presdf = Cal.sdf(neu.list(thisi).prejudgerespsptimes,zeros(length(neu.list(thisi).judgerespy),1),neu.list(thisi).fs,0.001,0.02);
-                sdf = Cal.sdf(neu.list(thisi).judgerespsptimes,neu.list(thisi).judgerespy,neu.list(thisi).fs,0.001,0.02); % 0.001,0.004
-                %figure; plot(sdf);
-                % figure; Draw.three(neu.list(thisi).judgerespy,neu.list(thisi).fs,neu.list(thisi).judgerespsptimes);
-                % figure; Draw.three(neu.list(thisi).plty,neu.list(thisi).fs,neu.list(thisi).pltsptimes);
-                [maxpresdf,~] = max(presdf);
-                [maxsdf,maxidx] = max(sdf);
-                percentage_max = maxidx/length(sdf);
-                time_max = length(neu.list(thisi).judgerespy)/neu.list(thisi).fs*percentage_max;
-                % check whether the surroding are has spikes in most of the
-                % trials
-                extracted_sptimes = Extract.sptimes(neu.list(thisi).judgerespsptimes,time_max - 0.15, time_max + 0.15); % 前后 100ms
-                num_of_not_empty_trials = length(find(~cellfun(@isempty, extracted_sptimes)));
-
-                % ttest2 to test whether sti_frs are significantly higher
-                % than pre_frs
-                pre_frs = Cal.eachTrialFiringRate(neu.list(thisi).prejudgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
-                sti_frs = Cal.eachTrialFiringRate(neu.list(thisi).judgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
-
-                [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
-                neu.list(thisi).pvalue = p;
-                neu.list(thisi).label = 0; % 初始化
-
-
-                % mean_maxsdf = maxsdf/length(neu.list(thisi).judgerespsptimes);
-                neu.list(thisi).maxsdf = maxsdf;
-                neu.list(thisi).label = 0; % 初始化
-                if h == 1&&(maxsdf) > 17 && maxsdf > maxpresdf %如果是 time-locked response
-                    neu.list(thisi).label = 1;
-
-                    if (num_of_not_empty_trials/length(neu.list(thisi).pltsptimes)<0.5)||(num_of_not_empty_trials<5) % if not 60% of the trails are not empty
-                        neu.list(thisi).label = 0;
-                    end
-
-                elseif mean(sdf)> 9*mean(presdf) && mean(sdf)>0.6 % 如果不是 time-locked response
-                    neu.list(thisi).label = 1;   %  set to 2 ,biao ming shi fei time-locked response
-                end
-
-                neu.song = Song(neu.list); %不仅主list,而且subclass Song 的 norm list也要更新！
-
-                %                 figure;  % 测试用代码
-                %                 Draw.three(neu.list(thisi).plty,neu.list(thisi).fs,neu.list(thisi).pltsptimes);
-                %                 title(sprintf('Label is %u',neu.list(thisi).label) );
-                %                 close(gcf)
-
-            end
-
-        end
-
+ 
     
         function neu = set_eleinf(neu,eleinf)
             %从外部传入eleinf这个变量
@@ -1164,64 +1128,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
         end
 
 
-        function latency = calLatency(neu)
-
-            latency = struct;
-
-            Onelist = neu.frag.allfraglist_nonorm(find([neu.frag.allfraglist_nonorm.label].' == 1));
-            % 第一种方法
-            observed = [];
-            spon = [];
-            for k = 1:length(Onelist)
-                %https://direct.mit.edu/neco/article/22/7/1675/7562/First-Spike-Latency-in-the-Presence-of-Spontaneous
-
-                thisone = Onelist(k);
-                temp1 = min(vertcat(thisone.sptimes{:}));
-                temp2 = min(vertcat(thisone.presptimes{:}));
-                if isempty(temp1)
-                    temp1 = nan;
-                end
-                if isempty(temp2)
-                    temp2 = nan;
-                end
-
-                obsevred(k) = temp1;
-                spon(k) = temp2;
-
-                %[observed(k),spon(k)] = e_objects{k}.calObservedFirstSpikeLatency;
-            end
-
-            % if isnan(mean(rmmissing(spon))) % 当pre duration里一个spike也没有时会出现这种情况
-            spontanous_first_spike_latency = 0;
-
-
-            % 现在这个方法依然不对，因为有可能会出现在pre stimuli的最后一秒，突然出现了first spike的情况
-            latency.latency_firstspike = mean(rmmissing(observed))- spontanous_first_spike_latency; %
-
-            % 第二种方法
-            summer = [];
-            for k = 1:length(Onelist)
-
-                thisE = Onelist(k);
-               % figure; Draw.three(thisE.plty,thisE.fs,thisE.pltsptimes) %测试用
-             
-                % 背景SDF的均值（baseline）
-                prezpt_sptimes = Extract.sptimes_resetSP(thisE.rawsptimes, 0, thisE.zpt);
-                baseline = mean(Cal.sdf( prezpt_sptimes,thisE.zpt*thisE.fs,thisE.fs));
-
-                endtime = length(thisE.rawy)/thisE.fs;
-                postzpt_sptimes = Extract.sptimes_resetSP(thisE.rawsptimes, thisE.zpt,endtime);
-                sdfs = Cal.sdf(postzpt_sptimes,(endtime-thisE.zpt)*thisE.fs,thisE.fs);
-
-                maxsdfs = max(sdfs);
-                timeindex = find(sdfs > baseline + (maxsdfs - baseline)/2,1); % 第一次超过half weight的时刻
-                summer(k) = timeindex/length(sdfs)*(endtime -  thisE.zpt);
-
-            end
-
-            latency.latency_halfweight = mean(summer);
-
-        end
+   
 
     end
 
@@ -2103,7 +2010,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
                 if ~isempty(fragids)
                     birdid = Convert.bid(normlist(w).stimuliname);
-                    ids_infrag = find(~cellfun(@isempty, regexp(cellstr({fraglist.stimuliname}.'),birdid) ) );
+                    ids_infrag = ~cellfun(@isempty, regexp(cellstr({fraglist.stimuliname}.'),birdid) ) ;
                     selected_fraglist = fraglist(ids_infrag);
                     [~,temp_index] = sortrows([selected_fraglist.sylIni].');
                     selected_fraglist = selected_fraglist(temp_index);
@@ -2176,7 +2083,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
                     % draw the basic figure
                     Icollect = {}; figure('Color','w','Position',[406 675 1378 420]);
                     Draw.two(selected_normlist(w).pady,selected_normlist(w).fs,selected_normlist(w).padsptimes);
-                    xlabel(selected_normlist(w).stimuliname);
+                    xlabel(sprintf('%s-%s',selected_normlist(w).Fid,selected_normlist(w).stimuliname)); 
                     frame = getframe(gcf);  Icollect{1} = frame.cdata;  close(gcf);
 
                     if ~isempty(replaids)
@@ -2236,6 +2143,164 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
     methods(Static) % 静态方法
 
+
+        function AlignedFragsDegs(neu)
+            dbstop if error
+            tic
+
+            % 首先，定义songlist
+            songlist = neu.list(find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'norm'))));
+            degids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'Deg|deg') ));
+            if isempty(degids); return; end
+            deglist = neu.list(degids);
+            deg_bids = unique(cellfun(@Convert.bid,cellstr({deglist.stimuliname}.'),'Uni',0));
+
+            I_song = {};
+            for w = 1: length(deg_bids)
+                Icollect = {};
+                degexist_norm_list  = songlist(find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),deg_bids{w}))));
+                for k = 1; length(degexist_norm_list)
+                    smallfig = figure('Color','w','Position',[406 675 1378 420]);
+                    Draw.two(degexist_norm_list(k).plty,degexist_norm_list(k).fs,degexist_norm_list(k).pltsptimes);
+                    xlabel(degexist_norm_list(k).stimuliname);
+                    frame = getframe(smallfig); Icollect{1} = frame.cdata;close(gcf)
+                end
+                I_song{w} = vertcat(Icollect{:});
+            end
+          %  [~,postunique] = unique(cellstr(cellfun(@Convert.bid,{songlist.stimuliname}.','Uni',0)));
+           % songlist = songlist(postunique);
+
+            % 其二，找到deressive songs对应的birdid
+            degids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'Deg|deg') ));
+            if isempty(degids); return; end
+            deglist = neu.list(degids);
+            for m = 1: length(deglist)
+                birdid_collect{m} = Convert.bid(deglist(m).stimuliname);
+                ids_norm = find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),birdid_collect{m}) ) );
+                ids_norm = ids_norm(1); % ids_norm 可能有多个
+                if ~isempty(ids_norm)& length(ids_norm) == 1
+                    [deglist(m).sylIni,trump_diffvalue] = Neuron.findIni(songlist(ids_norm).plty,deglist(m).y);
+                    fprintf('%s has the DIFFVALUE as: %u and INI as: %f \n ',deglist(m).stimuliname,trump_diffvalue,deglist(m).sylIni/32000);
+                    deglist(m).pady = [zeros([deglist(m).sylIni-1-deglist(m).fs*deglist(m).pltext,1]);deglist(m).plty;zeros(length(songlist(ids_norm).plty)...
+                        - (deglist(m).sylIni-1-deglist(m).fs*deglist(m).pltext) - length(deglist(m).plty),1)];
+                    deglist(m).padsptimes = cellfun( @(x) x + (deglist(m).sylIni-1-deglist(m).fs*deglist(m).pltext)/deglist(m).fs, deglist(m).pltsptimes,'uni',0);
+                end
+            end
+
+            unique_bid = unique(cellstr(birdid_collect));
+            normlist = songlist(find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),strjoin(unique_bid,'|')) )));
+
+            I_Deg = {}; % 最初定义
+            for w = 1: length(normlist)
+
+                birdid = Convert.bid(normlist(w).stimuliname);
+                ids_indeg = find(~cellfun(@isempty, regexp(cellstr({deglist.stimuliname}.'),birdid) ) );
+                selected_deglist = deglist(ids_indeg);
+                [~,temp_index] = sortrows([selected_deglist.sylIni].');
+                selected_deglist = selected_deglist(temp_index);
+
+                % draw the norm figure
+                Icollect = {};figure('Color','w','Position',[406 675 1378 420]);
+                Draw.two(normlist(w).plty,normlist(w).fs,normlist(w).pltsptimes);
+                xlabel(sprintf('%s-%s',normlist(w).Fid,normlist(w).stimuliname));
+                frame = getframe(gcf); Icollect{1} = frame.cdata;close(gcf);
+
+                % draw the deg figure
+                for hh = 1: length(selected_deglist)
+                    figure('Color','w','Position',[406 675 1378 420]);
+                    Draw.two(selected_deglist(hh).pady,selected_deglist(hh).fs,selected_deglist(hh).padsptimes);
+                    xlabel(sprintf('%s-%s',selected_deglist(hh).Fid,selected_deglist(hh).stimuliname));
+                    frame = getframe(gcf); Icollect{1 + hh} = frame.cdata;close(gcf);
+                end
+
+                I_Deg{w} = vertcat(Icollect{:});
+            end
+
+            % 其三，找到对应birdid的frags
+            fragids1 = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'frag|Frag|syl|Syl') ));
+            unique_bid = unique(cellstr(birdid_collect));
+            fragids2 = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),strjoin(unique_bid,'|')) ));
+            fragids = intersect(fragids1,fragids2);
+            if ~isempty(fragids)
+                fraglist = neu.list(fragids);
+                for m = 1: length(fraglist)
+
+                    birdid = Convert.bid(fraglist(m).stimuliname);
+                    ids_norm = find(~cellfun(@isempty, regexp(cellstr({songlist.stimuliname}.'),birdid) ) );
+
+
+                    if ~isempty(ids_norm)
+                        ids_norm = ids_norm(1);
+                        fraglist(m).sylIni = Neuron.findIni(songlist(ids_norm).plty,fraglist(m).y);
+                        fraglist(m).pady = [zeros([fraglist(m).sylIni-1-fraglist(m).fs*fraglist(m).pltext,1]);fraglist(m).plty;zeros(length(songlist(ids_norm).plty)...
+                            - (fraglist(m).sylIni-1-fraglist(m).fs*fraglist(m).pltext) - length(fraglist(m).plty),1)];
+                        fraglist(m).padsptimes = cellfun( @(x) x + (fraglist(m).sylIni-1-fraglist(m).fs*fraglist(m).pltext)/fraglist(m).fs, fraglist(m).pltsptimes,'uni',0);
+                    end
+                end
+            end
+
+            I_Frag = {};
+            for w = 1: length(normlist)
+
+                if ~isempty(fragids)
+                    birdid = Convert.bid(normlist(w).stimuliname);
+                    ids_infrag = ~cellfun(@isempty, regexp(cellstr({fraglist.stimuliname}.'),birdid) ) ;
+                    selected_fraglist = fraglist(ids_infrag);
+                    [~,temp_index] = sortrows([selected_fraglist.sylIni].');
+                    selected_fraglist = selected_fraglist(temp_index);
+                end
+
+                Icollect = {};figure('Color','w','Position',[406 675 1378 420]);
+                Draw.two(normlist(w).plty,songlist(w).fs,normlist(w).pltsptimes); xlabel(sprintf('%s-%s',normlist(w).Fid,normlist(w).stimuliname));
+                frame = getframe(gcf);   Icollect{1} = frame.cdata; close(gcf)
+
+                if ~isempty(fragids)
+                    for bb = 1: length(selected_fraglist)
+                        figure('Color','w','Position',[406 675 1378 420]);
+                        Draw.two(selected_fraglist(bb).pady,selected_fraglist(bb).fs,selected_fraglist(bb).padsptimes);
+                        xlabel(sprintf('%s-%s',selected_fraglist(bb).Fid,selected_fraglist(bb).stimuliname));
+                        frame = getframe(gcf);Icollect{1 + bb} = frame.cdata;close(gcf);
+                    end
+                end
+                I_Frag{w} = vertcat(Icollect{:});
+            end
+
+
+            % 其末 draw and save
+%             figure;
+%             neu.waveform.draw1st;
+%             temp = getframe(gcf);close(gcf);
+%             w_img = temp.cdata;
+%             I_WF{1} = w_img;
+
+%             try
+                I_of_each_column = horzcat(I_song,I_Deg,I_Frag);
+%             catch
+% %                 I_of_each_column = horzcat(I_song,I_Deg,I_Frag,I_WF);
+%             end
+            % padding each I based on the maximum size of local I
+            size1 = [];
+            for oo = 1: length(I_of_each_column)
+                size1(oo) = size(I_of_each_column{oo},1);
+            end
+
+            [max_size1,max_oo] = max(size1);
+
+            Ipad = {};
+            for oo = 1: length(I_of_each_column)
+                localI = I_of_each_column{oo};
+                Ibase= uint8(256*ones(size(I_of_each_column{max_oo})));
+                Ibase(1:size(localI,1),1:size(localI,2),1:size(localI,3)) = localI;
+                Ipad{oo} = Ibase;
+            end
+
+            Iall = horzcat(Ipad{:});
+
+            imwrite(Iall,sprintf('鄂州AlignedFragsDegs_%s.png',neu.info.formated_name));
+            toc
+
+
+        end
 
 
         function check_detail_folder(dirpath,global_eleinf)
@@ -2411,22 +2476,35 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
         end
 
 
-        function [answer,pvalue] = UseTtestToJudgeRespOrNot(y,sptimes,prey,presptimes,fs)
+        function result = UseTtestToJudgeRespOrNot(y,sptimes,prey,presptimes,fs)
+            %[answer,pvalue] = UseTtestToJudgeRespOrNot(y,sptimes,prey,presptimes,fs)
             dbstop if error
             presdf = Cal.sdf(presptimes,prey,fs,0.001,0.02);
             sdf = Cal.sdf(sptimes,y,fs,0.001,0.02); % 0.001,0.004
+
+
             %             [maxpresdf,~] = max(presdf);
             %             [maxsdf,maxidx] = max(sdf);
 
             pre_frs = Cal.eachTrialFiringRate(presptimes,length(prey)/fs);
             sti_frs = Cal.eachTrialFiringRate(sptimes,length(y)/fs);
+
             [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
-            if h == 1
+
+            % 有多少个不为零的trails
+            num_not0trails = length(find(~cellfun(@isempty,sptimes)));
+            percentage_not0 = num_not0trails/length(sptimes);
+
+            if h == 1 && percentage_not0 >=0.5
                 answer = 1;
+            elseif h == 1 && percentage_not0 < 0.5
+                answer = 0;
             elseif h == 0||isnan(h)
                 answer = 0;
             end
-            pvalue = p;
+            result.pvalue = p;
+            result.label = answer;
+            result.maxsdf = sdf;
 
         end
 
@@ -2529,7 +2607,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
             % 生成这个Analysis的所有three plot的图片
             figmat = {};
             for k = 1: length(neu.experiments)
-                figmat{k} = neu.experiments{k}.writeFigdata
+                figmat{k} = neu.experiments{k}.writeFigdata;
             end
             neu.figdata = horzcat(figmat{:});
         end

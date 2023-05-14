@@ -74,8 +74,6 @@
             
         end
 
-
-
         function exp = knowWaves(exp)
             % 获取与waveform有关的信息
          
@@ -166,7 +164,7 @@
             end
 
 
-            temp = regexp(exp.info.pl2name,'(?<=[ZP]\d+)F\d+','match');
+            temp = regexp(exp.info.pl2name,'(?<=[ZP]\d+\S+)F\d+','match');
             
             if ~isempty(temp)&& length(exp.nSections) == 1 % 只有当前experiment不具有nSections时，才具有Fid这个性质
                 exp.info.Fid = temp{1};
@@ -1010,16 +1008,16 @@
                 thelist(k).y = eobjects{k}.y;
                 thelist(k).rawy = eobjects{k}.rawy;
                 thelist(k).plty = eobjects{k}.plty;
-                thelist(k).judgerespy = eobjects{k}.judgerespy;
+                %thelist(k).judgerespy = eobjects{k}.judgerespy;
                 %info(k).prejudgerespy = eobjects{k}.prejudgerespy;
                 thelist(k).sptimes = eobjects{k}.sptimes;
-%                 if length(eobjects{k}.sptimes) > 10
-%                     disp('error here: Experiment line 850');
-%                 end
+                %                 if length(eobjects{k}.sptimes) > 10
+                %                     disp('error here: Experiment line 850');
+                %                 end
                 thelist(k).rawsptimes = eobjects{k}.rawsptimes;
                 thelist(k).pltsptimes = eobjects{k}.pltsptimes;
-                thelist(k).judgerespsptimes = eobjects{k}.judgerespsptimes;
-                thelist(k).prejudgerespsptimes = eobjects{k}.prejudgerespsptimes;
+                %thelist(k).judgerespsptimes = eobjects{k}.judgerespsptimes;
+                %thelist(k).prejudgerespsptimes = eobjects{k}.prejudgerespsptimes;
                 thelist(k).presptimes = eobjects{k}.presptimes;
                 thelist(k).zpt = eobjects{k}.zpt; % zero point time
                 thelist(k).leny = length(thelist(k).y);
@@ -1987,7 +1985,7 @@
             
             reshapedI = reshape(I, lieshu,[])';clear I;
             Iall = cell2mat(reshapedI);
-            imwrite(Iall,sprintf('Three_%s.png',exp.neuronname));
+            imwrite(Iall,sprintf('Three_%s.png',exp.info.neuronname));
             
         end
         

@@ -13,7 +13,7 @@ classdef Frag < handle
     end
     methods
         function fg = Frag(list)
-            fg.list = list;
+            fg.list = Frag.judgeFragResp(list);
 
             include_weird_fragids = find(~cellfun(@isempty, regexp(cellstr({fg.list.stimuliname}.'),'frag|Frag') ));
             pure_fagids = find(~cellfun(@isempty, regexp(cellstr({fg.list.stimuliname}.'),'^Frag') ));
@@ -36,21 +36,81 @@ classdef Frag < handle
 
             end
             if ~isempty(fg.fraglist)
-                fg.allfraglist = horzcat(fg.fraglist{:});
+                fraglist = horzcat(fg.fraglist{:});
+                fg.allfraglist = Frag.judgeFragResp(fraglist);
                 fg.allfraglist_nonorm = fg.allfraglist(find(~cellfun(@isempty, regexp(cellstr({fg.allfraglist.stimuliname}.'),'Frag|frag'))));
 
-
-                %构造Simatrix
-
-                %             fraglist = neu.list( find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'), 'Frag|frag') )));
-                fg.simatrix = Simatrix(fg.allfraglist_nonorm);
-                fg.simatrix.formated_name = fg.formated_name;
+                %构造Simatrix  暂时不需要，所以不执行
+                use_matrix = 0;
+                if use_matrix == 1
+                    fg.simatrix = Simatrix(fg.allfraglist_nonorm);
+                    fg.simatrix.formated_name = fg.formated_name;
+                end
             end
             
             fg.list = []; % 为了节省存储，在最后一步把此项设为零
 
         end
 
+        function latency = calLatency(frag)
+            % 这个方法迁移自Neuron
+
+            latency = struct;
+
+            Onelist = frag.allfraglist_nonorm(find([frag.allfraglist_nonorm.label].' == 1));
+            % 第一种方法
+            observed = [];
+            spon = [];
+            for k = 1:length(Onelist)
+                %https://direct.mit.edu/neco/article/22/7/1675/7562/First-Spike-Latency-in-the-Presence-of-Spontaneous
+
+                thisone = Onelist(k);
+                temp1 = min(vertcat(thisone.sptimes{:}));
+                temp2 = min(vertcat(thisone.presptimes{:}));
+                if isempty(temp1)
+                    temp1 = nan;
+                end
+                if isempty(temp2)
+                    temp2 = nan;
+                end
+
+                obsevred(k) = temp1;
+                spon(k) = temp2;
+
+                %[observed(k),spon(k)] = e_objects{k}.calObservedFirstSpikeLatency;
+            end
+
+            % if isnan(mean(rmmissing(spon))) % 当pre duration里一个spike也没有时会出现这种情况
+            spontanous_first_spike_latency = 0;
+
+
+            % 现在这个方法依然不对，因为有可能会出现在pre stimuli的最后一秒，突然出现了first spike的情况
+            latency.latency_firstspike = mean(rmmissing(observed))- spontanous_first_spike_latency; %
+
+            % 第二种方法
+            summer = [];
+            for k = 1:length(Onelist)
+
+                thisE = Onelist(k);
+                % figure; Draw.three(thisE.plty,thisE.fs,thisE.pltsptimes) %测试用
+
+                % 背景SDF的均值（baseline）
+                prezpt_sptimes = Extract.sptimes_resetSP(thisE.rawsptimes, 0, thisE.zpt);
+                baseline = mean(Cal.sdf( prezpt_sptimes,thisE.zpt*thisE.fs,thisE.fs));
+
+                endtime = length(thisE.rawy)/thisE.fs;
+                postzpt_sptimes = Extract.sptimes_resetSP(thisE.rawsptimes, thisE.zpt,endtime);
+                sdfs = Cal.sdf(postzpt_sptimes,(endtime-thisE.zpt)*thisE.fs,thisE.fs);
+
+                maxsdfs = max(sdfs);
+                timeindex = find(sdfs > baseline + (maxsdfs - baseline)/2,1); % 第一次超过half weight的时刻
+                summer(k) = timeindex/length(sdfs)*(endtime -  thisE.zpt);
+
+            end
+
+            latency.latency_halfweight = mean(summer);
+
+        end
 
         function  knowCloseAndFarFrags(fg,targetname) % know which syllables is a par one , and which is a close one
 
@@ -132,8 +192,6 @@ classdef Frag < handle
 
         end
 
-
-
         function saveDrawSSIMSimlarityMatrix(neu)
             % This function firstly order the frags by response strength
             % then measure the pairwise similarity between elements
@@ -180,7 +238,7 @@ classdef Frag < handle
             for k = 1: length(fraglist)
                 fraglist(k).responseMeasure = fraglist(k).rs; % Response Strength
             end
-            fraglist = table2struct(sortrows(struct2table(fraglist), 'responseMeasure'));
+            neu.fraglist = table2struct(sortrows(struct2table(fraglist), 'responseMeasure'));
 
             figure;
             subplot(5,2,1)
@@ -1031,34 +1089,92 @@ classdef Frag < handle
         end
 
 
-        function outputlist = judgeFragResp(inputlist) % 似乎暂时并未使用
+        function outputlist = Deprecated_judgeFragResp_FR(inputlist)
+            dbstop if error % 判断对frag 是否反应，通过 Firing rate
+
+
+
+            ids = find(~cellfun(@isempty, regexp(cellstr({inputlist.stimuliname}.'),'Frag|frag|syl|ele'))); % find all norms
+            % ’syl'可以兼容旧的stimuli命名规则
+
+            if isempty(ids)
+                return
+            end
+            for n = 1: length(ids)
+                thisi = ids(n);
+
+                %                 presdf = Cal.sdf(inputlist(thisi).prejudgerespsptimes,zeros(length(inputlist(thisi).judgerespy),1),inputlist(thisi).fs,0.001,0.02);
+                %                 sdf = Cal.sdf(inputlist(thisi).judgerespsptimes,inputlist(thisi).judgerespy,inputlist(thisi).fs,0.001,0.02); % 0.001,0.004
+                %
+                presdf = Cal.sdf(inputlist(thisi).prejudgerespsptimes,zeros(length(inputlist(thisi).judgerespy),1),inputlist(thisi).fs,0.001,0.02);
+                sdf = Cal.sdf(inputlist(thisi).judgerespsptimes,inputlist(thisi).judgerespy,inputlist(thisi).fs,0.001,0.02); % 0.001,0.004
+                [maxpresdf,~] = max(presdf);
+                [maxsdf,maxidx] = max(sdf);
+
+
+                pre_frs = Cal.eachTrialFiringRate(inputlist(thisi).prejudgerespsptimes,length(inputlist(thisi).judgerespy)/inputlist(thisi).fs);
+                sti_frs = Cal.eachTrialFiringRate(inputlist(thisi).judgerespsptimes,length(inputlist(thisi).judgerespy)/inputlist(thisi).fs);
+                [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05); % should be 0.05!!!
+
+
+                inputlist(thisi).pvalue = p;
+                repeats = length(inputlist(thisi).judgerespsptimes);
+                inputlist(thisi).sti_frs = length(vertcat(inputlist(thisi).judgerespsptimes{:}))...
+                    /((length(inputlist(thisi).judgerespy)/inputlist(thisi).fs) *repeats);
+                inputlist(thisi).maxsdf = maxsdf;
+                inputlist(thisi).label = 0; % 初始化
+                if h == 1 &&...
+                        length(find(~cellfun(@isempty,inputlist(thisi).judgerespsptimes)))/length(inputlist(thisi).judgerespsptimes) >=0.5...
+                        && maxsdf>13
+                    inputlist(thisi).label = 1;
+                end
+                %                 disp([h,p,inputlist(thisi).label])  下面的三行是为测试之用
+                %                 fig1 = figure('Position',[2407 186 529 403]); Draw.two(inputlist(thisi).judgerespy,32000,inputlist(thisi).judgerespsptimes);
+                %                 fig2 = figure('Position',[1898 205 529 403]); Draw.two(zeros(length(inputlist(thisi).judgerespy),1),32000,inputlist(thisi).prejudgerespsptimes);
+                %                 close(fig1); close(fig2);
+            end
+
+
+            outputlist = inputlist;
+            %             neu.frag = Frag(inputlist);
+
+
+        end
+
+
+        function outputlist = judgeFragResp(inputlist,latency) % 似乎暂时并未使用
             % 判断对frag 是否反应，通过自己定义的复杂的机制
             ids = find(~cellfun(@isempty, regexp(cellstr({inputlist.stimuliname}.'),'Frag|syl'))); % find all frags
 
+
+            if ~exist('latency','var')
+                latency = 0;
+            end
             % ’syl'可以兼容旧的stimuli命名规则
-            DUR = 0.300 ;% 300ms
+            DUR = 0.200 ;% 300ms
 
 
             for n = 1: length(ids)
                 kk = ids(n);
        
-                inputlist(kk).targety = inputlist(kk).plty(inputlist(kk).zpt*inputlist(kk).fs:(inputlist(kk).zpt+DUR)*inputlist(kk).fs); % 
-                inputlist(kk).targetsptimes = Extract.sptimes_resetSP(inputlist(kk).sptimes,inputlist( kk).zpt,inputlist( kk).zpt + DUR);
-
+                inputlist(kk).targety = inputlist(kk).rawy(int64((inputlist(kk).zpt + latency)*inputlist(kk).fs):int64((inputlist(kk).zpt + latency+DUR)*inputlist(kk).fs)); % 
+                inputlist(kk).targetsptimes = Extract.sptimes_resetSP(inputlist(kk).rawsptimes,inputlist( kk).zpt+latency,inputlist(kk).zpt + DUR+ latency);
+%                 disp(inputlist(kk).sptimes);
+%                 disp(inputlist(kk).targetsptimes);
                
-                inputlist(kk).pretargety = zeros(0.3*inputlist(kk).fs,1);%inputlist(nid).prey(end - 0.1*32000:end); % 截取100ms
+                inputlist(kk).pretargety = zeros(DUR*inputlist(kk).fs,1);%inputlist(nid).prey(end - 0.1*32000:end); % 截取200ms
                 inputlist(kk).pretargetsptimes = Extract.sptimes_resetSP(...
                     inputlist(kk).presptimes,inputlist(kk).zpt - DUR,inputlist(kk).zpt);%length(inputlist(rids(kk)).prey)/32000 -0.1*32000
                 %calculate and judege whether the neuron respond to the target area or not
-                temp = Neuron.UseMaxSdfToJudgeRespOrNot(inputlist(kk).targety,inputlist(kk).targetsptimes,...
+%                 temp = Neuron.UseMaxSdfToJudgeRespOrNot(inputlist(kk).targety,inputlist(kk).targetsptimes,...
+%                     inputlist(kk).pretargety,inputlist(kk).pretargetsptimes,inputlist(kk).fs);
+
+                temp = Neuron.UseTtestToJudgeRespOrNot(inputlist(kk).targety,inputlist(kk).targetsptimes,...
                     inputlist(kk).pretargety,inputlist(kk).pretargetsptimes,inputlist(kk).fs);
 
                 inputlist(kk).label = temp.label;
-                inputlist(kk).replaPvalue = temp.pvalue;
+                inputlist(kk).pvalue = temp.pvalue;
                 inputlist(kk).maxsdf = temp.maxsdf;
-                %                     [inputlist(rids(kk)).label,inputlist(rids(kk)).replaPvalue] = Neuron.UseTtestToJudegeRespOrNot(...
-                %                         inputlist(rids(kk)).targety,inputlist(rids(kk)).targetsptimes,... % 查看对replaced song的反应是否明显大于对pre period的response
-                %                         inputlist(rids(kk)).pretargety ,inputlist(rids(kk)).pretargetsptimes ,inputlist(rids(kk)).fs);
                 inputlist(kk).targetfr = length(vertcat(inputlist(kk).targetsptimes{:}))/DUR; % per seconds
 
 
@@ -1069,9 +1185,9 @@ classdef Frag < handle
         end
 
 
-        function drawFragsSortedByTypes(A)
+        function drawFragsSortedByTypes(frag)
 
-            inputlist = A.frag.allfraglist;
+            inputlist = frag.allfraglist;
 
             thelist = Frag.judgeFragResp(inputlist);
 
@@ -1097,11 +1213,14 @@ classdef Frag < handle
 %             unique_categos = unique([goodlist.catego].');
 
             % Sorting !!!!!!!!!!!!!!
+            if isempty(goodlist)
+                return
+            end
             [~,index] = sortrows([goodlist.catego].'); goodlist = goodlist(index); clear index
 
 
             for idx = 1: length(goodlist)
-                figure('Color','w');
+                figure('Color','w','Position',PM.size1);
                 Draw.three(goodlist(idx).plty,goodlist(idx).fs,goodlist(idx).pltsptimes);
                 frame = getframe(gcf);
                 I{idx} = frame.cdata;
@@ -1120,22 +1239,59 @@ classdef Frag < handle
             if rest > 0
                 for k = 1:rest
                     I = [I,white];
-                    %                     ax = gcf;
-                    %                     ax.Position(3) = 560;
-                    %                     ax.Position(4) = 420;
                 end
             end
 
             reshapedI = reshape(I, lieshu,[])';
             %clear I
             IMG = cell2mat(reshapedI);
-            imwrite(IMG,sprintf('三相图Syllables_%s.png',A.info.formated_name));
+            imwrite(IMG,sprintf('涿州Syllables_%s.png',frag.formated_name));
 
 
         end
 
-        function [summer,global_result] = getResponse2SyllableCategories(A)
-            thelist = A.frag.allfraglist;
+
+        function drawFragsInListOrder(frag)
+
+            goodlist = frag.allfraglist_nonorm;
+
+
+            for idx = 1: length(goodlist)
+                figure('Color','w','Position',PM.size1);
+                Draw.three(goodlist(idx).plty,goodlist(idx).fs,goodlist(idx).pltsptimes);
+                xlabel(goodlist(idx).stimuliname);
+                frame = getframe(gcf);
+                I{idx} = frame.cdata;
+                close(gcf);
+               
+            end
+
+
+            % draw blank white
+
+            lieshu = 15;
+
+            hangshu = ceil(length(I)/lieshu);
+            rest = lieshu*hangshu - length(I);
+            white = uint8(255*ones(size(I{1})));
+
+            if rest > 0
+                for k = 1:rest
+                    I = [I,white];
+                end
+            end
+
+            reshapedI = reshape(I, lieshu,[])';
+            %clear I
+            IMG = cell2mat(reshapedI);
+            imwrite(IMG,sprintf('雷州Syllables_%s.png',frag.formated_name));
+
+
+        end
+
+
+        function [summer,global_result] = getResponse2SyllableCategories(frag)
+            thelist = frag.allfraglist;
 
 
             newstimuli_ids = find(~cellfun(@isempty, regexp(cellstr({thelist.stimuliname}.'),'Type')));
@@ -1178,7 +1334,7 @@ classdef Frag < handle
             summer = struct;
 
             for k = 1:length(unique_categos)
-                summer(k).neuronname = A.info.formated_name;
+                summer(k).neuronname = frag.formated_name;
                 summer(k).catego = unique_categos(k);
                 corresp_ids = find([goodlist.catego].' == unique_categos(k));
                 summer(k).maxsdfs = [goodlist(corresp_ids).maxsdf].'; % maximum SDF
@@ -1200,7 +1356,7 @@ classdef Frag < handle
 
             % global result for this neuron
             global_result = struct;
-            global_result.neuronname = A.info.formated_name;
+            global_result.neuronname = frag.formated_name;
             [~,best_index] = max([summer.mean_zfrs].');
             global_result.bestcatego = summer(best_index).catego;
             global_result.best_response = summer(best_index).mean_zfrs;
@@ -1227,6 +1383,8 @@ classdef Frag < handle
 
 
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+            to_draw_or_not_to_draw = 0;
 
             % Draw boxplot
             figure('Position',[1463 146 1596 849],'Color','w');
@@ -1273,20 +1431,37 @@ classdef Frag < handle
                 end
             end
             xlabel('Firing rate');
-            saveas(gcf,sprintf('Syllables群箱图OldStimuli%s.png',A.info.formated_name));
+            saveas(gcf,sprintf('Syllables群箱图OldStimuli%s.png',frag.formated_name));
             close(gcf);
 
         end
 
 
-        function [summer,global_result] = getResponse2SyllableCategoriesOldStimuli(A,bingyang)
-            thelist = A.frag.allfraglist;
+        function [perneuron,pertype,perstimulus] = getResponse2SyllableCategoriesOldStimuli(frag,categolist)
+            % Pertype: 神经元关于单独某一类syllables的信息
+            % Perneuron: 某个神经元的信息
+            % Pertype: 神经元关于单独某一个stimuli（从属于某个类）的信息
+            rawlist = frag.allfraglist_nonorm;
 
+
+            names_frags = {categolist.fullname}.';
+            for k = 1:length(rawlist)
+                extracted_fullname = regexp(convertCharsToStrings(rawlist (k).stimuliname),'[OGBYR]\d{3}-\d+','match');
+                rawlist(k).inCategolistOrNot = ~isempty(find(~cellfun(@isempty, regexp(names_frags,extracted_fullname))));
+            end
+
+            thelist = rawlist([rawlist.inCategolistOrNot].'> 0);
+            if isempty(thelist)
+                perneuron = [];
+                pertype = [];
+                perstimulus = [];
+                return
+            end
 
             newstimuli_ids = find(~cellfun(@isempty, regexp(cellstr({thelist.stimuliname}.'),'Frag')));
 
 
-            % Find the most frequent Fid
+            %找到包含Frag stimuli最多的那个文件
             C = cellstr({thelist.Fid}.') ;
             catC=categorical(C);
             catNames=categories(catC);
@@ -1297,107 +1472,118 @@ classdef Frag < handle
 
             goodlist = thelist(goodids);
             for k = 1:length(goodlist)
-                goodlist(k).catego = MetaStimuli.categorizeByBingyangOldData(goodlist(k).y, goodlist(k).fs,bingyang);
+                goodlist(k).catego = MetaStimuli.categorizeByBingyangOldData(goodlist(k).y, goodlist(k).fs,categolist);
+            end
+
+            perstimulus = goodlist([goodlist.catego].'<=8 & [goodlist.catego].'> 0);
+
+            zscored_maxsdf = zscore([perstimulus.maxsdf].');
+
+            for k = 1:length(perstimulus)
+                perstimulus(k).fragstimuliname = regexp(convertCharsToStrings(perstimulus(k).stimuliname), '[OGBYR]\d{3}-\d+','match');
+                perstimulus(k).neuronname = frag.formated_name;
+                perstimulus(k).zscored_maxsdf = zscored_maxsdf(k);
             end
 
             unique_categos = 1:8;
 %             maxsdfs = {};
 %             frs = {};
-            summer = struct;
+            pertype = struct;
 
             for k = 1:length(unique_categos)
-                summer(k).neuronname = A.info.formated_name;
-                summer(k).catego = unique_categos(k);
+                pertype(k).neuronname = frag.formated_name;
+                pertype(k).catego = unique_categos(k);
                 corresp_ids = find([goodlist.catego].' == unique_categos(k));
-                summer(k).maxsdfs = [goodlist(corresp_ids).maxsdf].'; % maximum SDF
-                summer(k).frs = [goodlist(corresp_ids).sti_frs].'; % firing rate
-                summer(k).label = [goodlist(corresp_ids).label].'; % 是否反应的label
-                summer(k).positiveratio =  length(find(summer(k).label == 1))/length(summer(k).label); % 阳性率
+                pertype(k).maxsdfs = [goodlist(corresp_ids).maxsdf].'; % maximum SDF
+                pertype(k).frs = [goodlist(corresp_ids).targetfr].'; % firing rate
+                pertype(k).label = [goodlist(corresp_ids).label].'; % 是否反应的label
+                pertype(k).positiveratio =  length(find(pertype(k).label == 1))/length(pertype(k).label); % 阳性率
                 %summer(k).meanfrs = mean(summer(k).frs);  % mean firing rate
             end
 
-            cell_frs = {summer.frs}.';
+            cell_frs = {pertype.frs}.';
             all_std = std(vertcat(cell_frs{:}));
             all_mean = mean(vertcat(cell_frs{:}));
 
             % calculate normalized rate
             for k = 1:length(unique_categos)
-                summer(k).zscored_frs = (summer(k).frs - all_mean)/all_std;
-                summer(k).mean_zfrs = mean(summer(k).zscored_frs);
+                pertype(k).zscored_frs = (pertype(k).frs - all_mean)/all_std;
+                pertype(k).mean_zfrs = mean(pertype(k).zscored_frs);
             end
 
             % global result for this neuron
-            global_result = struct;
-            global_result.neuronname = A.info.formated_name;
-            [~,best_index] = max([summer.mean_zfrs].');
-            global_result.bestcatego = summer(best_index).catego;
-            global_result.best_response = summer(best_index).mean_zfrs;
+            perneuron = struct;
+            perneuron.neuronname = frag.formated_name;
+            [~,best_index] = max([pertype.mean_zfrs].');
+            perneuron.bestcatego = pertype(best_index).catego;
+            perneuron.best_response = pertype(best_index).mean_zfrs;
 
-            [~,highestratio_index] = max([summer.positiveratio].');
-            global_result.bestcatego_positiverate = summer(highestratio_index).catego;
-            global_result.best_positiveratio = summer(highestratio_index).positiveratio;
-
+            [~,highestratio_index] = max([pertype.positiveratio].');
+            perneuron.bestcatego_positiverate = pertype(highestratio_index).catego;
+            perneuron.best_positiveratio = pertype(highestratio_index).positiveratio;
 
             %计算selectivity index
-            response_rmmising = rmmissing([summer.mean_zfrs].');
+            response_rmmising = rmmissing([pertype.mean_zfrs].');
             n = length(response_rmmising);
-            global_result.sparseness = (1 - (sum(response_rmmising) / n)^2 / (sum(response_rmmising.^2) / n)) / (1 - 1/n);
+            perneuron.sparseness = (1 - (sum(response_rmmising) / n)^2 / (sum(response_rmmising.^2) / n)) / (1 - 1/n);
             % Based on A090
 
             % selectivity 阳性率
-            response_rmmising = rmmissing([summer.positiveratio].');
+            response_rmmising = rmmissing([pertype.positiveratio].');
             n = length(response_rmmising);
-            global_result.sparseness_positiveratio = (1 - (sum(response_rmmising) / n)^2 / (sum(response_rmmising.^2) / n)) / (1 - 1/n);
+            perneuron.sparseness_positiveratio = (1 - (sum(response_rmmising) / n)^2 / (sum(response_rmmising.^2) / n)) / (1 - 1/n);
 
 
+            todraw = 0;
 
-            % Draw boxplot
-            figure('Position',[1463 146 1596 849],'Color','w');
-            subplot(2,2,1)
-            hold on
-            for k = 1:length(summer)
-                xs = summer(k).catego*ones(size(summer(k).maxsdfs));
-                if ~isempty( xs )
-                boxchart(xs,summer(k).maxsdfs);
+            if todraw == 1
+                % Draw boxplot
+                figure('Position',[1463 146 1596 849],'Color','w');
+                subplot(2,2,1)
+                hold on
+                for k = 1:length(pertype)
+                    xs = pertype(k).catego*ones(size(pertype(k).maxsdfs));
+                    if ~isempty( xs )
+                        boxchart(xs,pertype(k).maxsdfs);
+                    end
                 end
-            end
-            xlabel('Max-SDF');
+                xlabel('Max-SDF');
 
-            subplot(2,2,2)
-            hold on
-            for k = 1:length(summer)
-                xs = summer(k).catego*ones(size(summer(k).frs));
-                if ~isempty( xs )
-                boxchart(xs,summer(k).frs);
+                subplot(2,2,2)
+                hold on
+                for k = 1:length(pertype)
+                    xs = pertype(k).catego*ones(size(pertype(k).frs));
+                    if ~isempty( xs )
+                        boxchart(xs,pertype(k).frs);
+                    end
                 end
-            end
-            xlabel('Firing rate');
-            %              saveas(gcf,sprintf('箱图%s.png',A.info.formated_name));
-            %              close(gcf);
-
-
-            % Draw swarmchart
-            subplot(2,2,3)
-            hold on
-            for k = 1:length(summer)
-                xs = summer(k).catego*ones(size(summer(k).maxsdfs));
-                if ~isempty( xs )
-                swarmchart(xs,summer(k).maxsdfs);
+                xlabel('Firing rate');
+                %              saveas(gcf,sprintf('箱图%s.png',A.info.formated_name));
+                %              close(gcf);
+                % Draw swarmchart
+                subplot(2,2,3)
+                hold on
+                for k = 1:length(pertype)
+                    xs = pertype(k).catego*ones(size(pertype(k).maxsdfs));
+                    if ~isempty( xs )
+                        swarmchart(xs,pertype(k).maxsdfs);
+                    end
                 end
-            end
-            xlabel('Max-SDF');
+                xlabel('Max-SDF');
 
-            subplot(2,2,4)
-            hold on
-            for k = 1:length(summer)
-                xs = summer(k).catego*ones(size(summer(k).frs));
-                if ~isempty( xs )
-                swarmchart(xs,summer(k).frs);
+                subplot(2,2,4)
+                hold on
+                for k = 1:length(pertype)
+                    xs = pertype(k).catego*ones(size(pertype(k).frs));
+                    if ~isempty( xs )
+                        swarmchart(xs,pertype(k).frs);
+                    end
                 end
+                xlabel('Firing rate');
+                saveas(gcf,sprintf('Syllables群箱图OldStimuli%s.png',frag.formated_name));
+                close(gcf);
+
             end
-            xlabel('Firing rate');
-            saveas(gcf,sprintf('Syllables群箱图OldStimuli%s.png',A.info.formated_name));
-            close(gcf);
 
 
 

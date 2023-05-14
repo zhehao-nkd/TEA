@@ -187,7 +187,7 @@ classdef Chorus < handle
         end
 
         function neurons = getExperiments(cho) % initiatialize Experiment objects
-
+             % 对应于原来的batch.getn
             for idx = 1: length(cho.sneu) % Here should be parfor
                 neurons{idx} = Experiment(cho.sneu{idx},cho.spl2{idx},cho.swavfolder{idx});
                 neurons{idx}.timeSections = cho.timeSections;

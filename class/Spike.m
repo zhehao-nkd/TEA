@@ -1,7 +1,6 @@
 classdef Spike < handle
     
-    properties
-        
+    properties    
         T
         time
         pc

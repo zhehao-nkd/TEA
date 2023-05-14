@@ -3,6 +3,36 @@ classdef Utl
     
   
     methods(Static)
+
+        function c = intersect_allowrepeats(a,b)
+            % a = [1,2,3,3],b = [3,3,4,5], the intersection c =  [3,3]
+            if isnumeric(a) && isnumeric(b)
+                c = [];
+                for i = 1:length(a)
+                    for j = 1:length(b)
+                        if a(i) == b(j)
+                            c(end+1) = a(i);
+                            b(j) = NaN; % Mark the element as already counted
+                            break;
+                        end
+                    end
+                end
+            elseif iscellstr(a) && iscellstr(b)
+                c = {};
+                for i = 1:length(a)
+                    for j = 1:length(b)
+                        if strcmp(a{i}, b{j})
+                            c{end+1} = a{i};
+                            b{j} = ''; % Mark the element as already counted
+                            break;
+                        end
+                    end
+                end
+            else
+                error('Input arrays must be both numeric or both cell arrays of character strings');
+            end
+
+        end
         
         
         function padded = pad(y,targetlen)

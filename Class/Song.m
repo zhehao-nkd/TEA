@@ -6,6 +6,8 @@ classdef Song < handle
         formated_name
         list18
         info
+        num_resp_to_18
+        name_resp_to_18
     end
     
     methods
@@ -41,11 +43,11 @@ classdef Song < handle
         function sg = getInfo(sg)
 
             respond_18_ids = find([sg.list18.label].' ==1);
-            sg.info.num_resp_to_18 = length(respond_18_ids);
-            if ~(sg.info.num_resp_to_18 == 0)
-                sg.info.name_resp_to_18 = cellfun(@Convert.bid,cellstr({sg.list18(respond_18_ids).stimuliname}.'),'Uni',0);
+            sg.num_resp_to_18 = length(respond_18_ids);
+            if ~(sg.num_resp_to_18 == 0)
+                sg.name_resp_to_18 = cellfun(@Convert.bid,cellstr({sg.list18(respond_18_ids).stimuliname}.'),'Uni',0);
             else
-                sg.info.name_resp_to_18 =[];
+                sg.name_resp_to_18 =[];
             end
 
         end
@@ -170,7 +172,112 @@ classdef Song < handle
     methods(Static)
 
 
-   
+
+        function neu = judgeConResp(neu,mode)
+
+            if exist("mode",'var')  % 原来的备选方法
+
+                % 判断对Cons是否反应，通过 Firing rate
+                % firstly update e objectys 以后可以删掉这个部分
+                %             for k = 1: length(neu.experiments)
+                %                 for kk = 1: length( neu.experiments{k}.e)
+                %                     neu.experiments{k}.e{kk}.setExtAndAllocate;
+                %                 end
+                %             end
+                %             neu.updatelist;
+
+                ids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'norm|deg|repla'))); % find all norms
+                % ’syl'可以兼容旧的stimuli命名规则
+
+                for n = 1: length(ids)
+                    thisi = ids(n);
+
+                    presdf = Cal.sdf(neu.list(thisi).prejudgerespsptimes,zeros(length(neu.list(thisi).judgerespy),1),neu.list(thisi).fs,0.001,0.02);
+                    sdf = Cal.sdf(neu.list(thisi).judgerespsptimes,neu.list(thisi).judgerespy,neu.list(thisi).fs,0.001,0.02); % 0.001,0.004
+                    %                 sdf = Cal.sdf(neu.list(thisi).judgerespsptimes,neu.list(thisi).judgerespy,neu.list(thisi).fs,0.001,0.02);
+                    [maxpresdf,~] = max(presdf);
+                    [maxsdf,maxidx] = max(sdf);
+
+                    pre_frs = Cal.eachTrialFiringRate(neu.list(thisi).prejudgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
+                    sti_frs = Cal.eachTrialFiringRate(neu.list(thisi).judgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
+
+                    [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
+                    neu.list(thisi).pvalue = p;
+                    neu.list(thisi).label = 0; % 初始化
+                    neu.list(thisi).sti_frs = mean(sti_frs);
+                    neu.list(thisi).pre_frs = mean(pre_frs);
+                    if h == 1
+                        neu.list(thisi).label = 1;
+                        %                     if (num_of_not_empty_trials/length(neu.list(thisi).pltsptimes)<0.5)||(num_of_not_empty_trials<5) % if not 60% of the trails are not empty
+                        %                         neu.list(thisi).label = 0;
+                        %                     end
+                    elseif maxsdf > 17 && maxsdf > maxpresdf % neu rescue
+                        neu.list(thisi).label = 1;
+
+                    end
+                end
+
+                return
+
+
+            end
+
+            ids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'norm|deg'))); % find all norms
+            % ’syl'可以兼容旧的stimuli命名规则
+
+            for n = 1: length(ids)
+                thisi = ids(n);
+                presptimes = Extract.sptimes
+
+                presdf = Cal.sdf(neu.list(thisi).prejudgerespsptimes,zeros(length(neu.list(thisi).judgerespy),1),neu.list(thisi).fs,0.001,0.02);
+                sdf = Cal.sdf(neu.list(thisi).judgerespsptimes,neu.list(thisi).judgerespy,neu.list(thisi).fs,0.001,0.02); % 0.001,0.004
+                %figure; plot(sdf);
+                % figure; Draw.three(neu.list(thisi).judgerespy,neu.list(thisi).fs,neu.list(thisi).judgerespsptimes);
+                % figure; Draw.three(neu.list(thisi).plty,neu.list(thisi).fs,neu.list(thisi).pltsptimes);
+                [maxpresdf,~] = max(presdf);
+                [maxsdf,maxidx] = max(sdf);
+                percentage_max = maxidx/length(sdf);
+                time_max = length(neu.list(thisi).judgerespy)/neu.list(thisi).fs*percentage_max;
+                % check whether the surroding are has spikes in most of the
+                % trials
+                extracted_sptimes = Extract.sptimes(neu.list(thisi).judgerespsptimes,time_max - 0.15, time_max + 0.15); % 前后 100ms
+                num_of_not_empty_trials = length(find(~cellfun(@isempty, extracted_sptimes)));
+
+                % ttest2 to test whether sti_frs are significantly higher
+                % than pre_frs
+                pre_frs = Cal.eachTrialFiringRate(neu.list(thisi).prejudgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
+                sti_frs = Cal.eachTrialFiringRate(neu.list(thisi).judgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
+
+                [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
+                neu.list(thisi).pvalue = p;
+                neu.list(thisi).label = 0; % 初始化
+
+
+                % mean_maxsdf = maxsdf/length(neu.list(thisi).judgerespsptimes);
+                neu.list(thisi).maxsdf = maxsdf;
+                neu.list(thisi).label = 0; % 初始化
+                if h == 1&&(maxsdf) > 17 && maxsdf > maxpresdf %如果是 time-locked response
+                    neu.list(thisi).label = 1;
+
+                    if (num_of_not_empty_trials/length(neu.list(thisi).pltsptimes)<0.5)||(num_of_not_empty_trials<5) % if not 60% of the trails are not empty
+                        neu.list(thisi).label = 0;
+                    end
+
+                elseif mean(sdf)> 9*mean(presdf) && mean(sdf)>0.6 % 如果不是 time-locked response
+                    neu.list(thisi).label = 1;   %  set to 2 ,biao ming shi fei time-locked response
+                end
+
+                neu.song = Song(neu.list); %不仅主list,而且subclass Song 的 norm list也要更新！
+
+                %                 figure;  % 测试用代码
+                %                 Draw.three(neu.list(thisi).plty,neu.list(thisi).fs,neu.list(thisi).pltsptimes);
+                %                 title(sprintf('Label is %u',neu.list(thisi).label) );
+                %                 close(gcf)
+
+            end
+
+        end
+
 
         
         function namelist = get_all_elements_involved(rawdir_path)
@@ -414,5 +521,11 @@ classdef Song < handle
 
         
     end
+
+
+
+
+
+
 end
 

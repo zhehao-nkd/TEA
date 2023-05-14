@@ -12,7 +12,7 @@ classdef Sultan < handle
 
         function st = Sultan(dirs_of_analysis)
 
-            st.mfiles = Extract.filesAllLevel(dirs_of_analysis,'*.mat');
+            st.mfiles = Extract.filename(dirs_of_analysis,'*.mat');
 
         end
 
@@ -172,6 +172,8 @@ classdef Sultan < handle
 
 
         function ainf = featureVsFeature(st)
+            %这个方法对比Neurons的一种feature with 另一种
+            %feature，目的是靠这些feature找出Neuron的类型
 
             % 把每个神经元根据所选的性质以散点图的形式画出来
             dbstop if error
@@ -197,7 +199,7 @@ classdef Sultan < handle
                 ainf(k).formated_name = acollect{k}.formated_name;
                 ainf(k).sumCI= acollect{k}.sumCI;
                 ainf(k).mean_judgeresp_fr= acollect{k}.mean_judgeresp_fr;
-                ainf(k).forpca= acollect{k}.forpca;
+               % ainf(k).forpca= acollect{k}.forpca;
             end
 
             figure;
@@ -247,7 +249,7 @@ classdef Sultan < handle
             [ainf(maskEmptyId).wl] = deal(nan); % 把ainf的空项设为零
 
 
-            xyzpoints = horzcat([ainf.sumsparseness].',[fr_info.mean_pre_fr].',[ainf.wl].')
+            xyzpoints = horzcat([ainf.sumsparseness].',[fr_info.mean_pre_fr].',[ainf.wl].');
             Y = tsne(xyzpoints)
 
             figure
@@ -266,16 +268,16 @@ classdef Sultan < handle
             %
             neuronnames = {ainf.formated_name}.';
             values = [];
-            for k = 1:length(ainf)
-                values(k,:) = ainf(k).forpca;
-                %values(k,:) = ainf(k).eachsparseness;
-
-            end
-            [coeff,score,latent] = pca(values);
-            figure;
-            scatter(score(:,1),score(:,2));
-
-            Y = tsne(values);
+%             for k = 1:length(ainf)
+%                 values(k,:) = ainf(k).forpca;
+%                 %values(k,:) = ainf(k).eachsparseness;
+% 
+%             end
+%             [coeff,score,latent] = pca(values);
+%             figure;
+%             scatter(score(:,1),score(:,2));
+% 
+%             Y = tsne(values);
 
             figure
             %scatter(Y(:,1),Y(:,2))
@@ -479,63 +481,70 @@ classdef Sultan < handle
 
 
         function How_Do_NCM_Neurons_respond_to_Songs_FR(st)
-            % Extract neuron'st responses to CONs, but binary, but
-            % evaluatedby response strength
+            % 为了计算Neuron对每一个song的反应的大小
             neuronfiles = st.mfiles;
             dbstop if error
 
             conkeywords = {'B346','B512','B521','B554','B606','G429','G506','G518','G548','G573',...
                 'G578','O331','O507','O509','O540','Y515','Y606','Y616'};
-
-            wb = waitbar(0,'Start processing');
             num_files = length(neuronfiles);
-            Utl.UpdateParforWaitbar(num_files, wb);
-            D = parallel.pool.DataQueue;
-            afterEach(D, @Utl.UpdateParforWaitbar);
+            wb = PoolWaitbar(num_files,'loading...');
+            
 
-            conallneurons = struct;
-            ana_pathes = neuronfiles;
-            collect_frtable = {};
-            collect_sdftable = {};
-            error = struct;
-            parfor k = 1:length(neuronfiles) %  431% should be par-for
+            responseinfo = struct;
+%             ana_pathes = neuronfiles;
+% %             collect_frtable = {};
+% %             collect_sdftable = {};
+%             error = struct;
+
+
+            summer = {};
+        %    findit = @(x) find();
+            for k = 1:3 %length(neuronfiles) % should be par-for
                 %                 try
-                loaded = load(ana_pathes{k});
+                loaded = load(neuronfiles{k});
                 A = loaded.A;
-                A.judgeConResp_FR;
+                % A.judgeConResp_FR;
+                list18 = A.song.normlist(~cellfun(@isempty, regexp(cellstr({A.song.normlist.stimuliname}.'),strjoin(conkeywords,'|'))));
 
-                normlist = A.list(find(~cellfun(@isempty, regexp(cellstr({A.list.stimuliname}.'),'norm-CON'))));
-                if isempty(normlist)
-                    normlist = A.list(setdiff( find(~cellfun(@isempty, regexp(cellstr({A.list.stimuliname}.'),'norm'))),...
-                        find(~cellfun(@isempty, regexp(cellstr({A.list.stimuliname}.'),'WNS|TUT|BOS|Fcall|Mcall|Het')) ) ));
+
+                for kk = 1:length(list18)
+                    list18(kk).neuronname = A.info.formated_name;
+
                 end
+                summer{k} = list18;
+%                 normlist = A.list(find(~cellfun(@isempty, regexp(cellstr({A.list.stimuliname}.'),'norm-CON'))));
+%                 if isempty(normlist)
+%                     normlist = A.list(setdiff( find(~cellfun(@isempty, regexp(cellstr({A.list.stimuliname}.'),'norm'))),...
+%                         find(~cellfun(@isempty, regexp(cellstr({A.list.stimuliname}.'),'WNS|TUT|BOS|Fcall|Mcall|Het')) ) ));
+%                 end
+% 
+              
+%                 try
+%                     list18 = normlist(cellfun(@(x) findit(x),conkeywords)) ;
+%                 catch
+%                     continue
+%                 end
+% 
+%                 for li = 1:length(list18)
+%                     [list18(li).sdf,~] = histcounts( vertcat(list18(li).sptimes{:}), 0:0.2:round(length(list18(li).y)/list18(li).fs-0.5)+0.5);
+%                     %list18(li).sdf = Cal.sdf(list18(li).sptimes,list18(li).y,list18(li).fs,0.1,0.4);
+%                 end
+%                 atable = struct2table(list18);
 
-                findit = @(x) find(~cellfun(@isempty, regexp(cellstr({normlist.stimuliname}.'),x)));
-                try
-                    list18 = normlist(cellfun(@(x) findit(x),conkeywords)) ;
-                catch
-                    continue
-                end
-
-                for li = 1:length(list18)
-                    [list18(li).sdf,~] = histcounts( vertcat(list18(li).sptimes{:}), 0:0.2:round(length(list18(li).y)/list18(li).fs-0.5)+0.5);
-                    %list18(li).sdf = Cal.sdf(list18(li).sptimes,list18(li).y,list18(li).fs,0.1,0.4);
-                end
-                atable = struct2table(list18);
-
-                atable.Properties.RowNames = cellstr(regexp(atable.stimuliname,'[ORGBY]\d+','match'));
-                frtable =  rows2vars( normalize(atable(:,'sti_frs'),'range',[0,1]));
-                %frtable =  rows2vars( atable(:,'sti_frs'));
-                frtable.OriginalVariableNames = A.info.formated_name;
-                collect_frtable{k}= frtable;
-
-
-                %sdf collection
-                sdftable =  rows2vars( atable(:,{'sdf'}));
-                sdftable.OriginalVariableNames = A.info.formated_name;
-                collect_sdftable{k}= sdftable;
-
-                send(D, 1);
+%                 atable.Properties.RowNames = cellstr(regexp(atable.stimuliname,'[ORGBY]\d+','match'));
+%                 frtable =  rows2vars( normalize(atable(:,'sti_frs'),'range',[0,1]));
+%                 %frtable =  rows2vars( atable(:,'sti_frs'));
+%                 frtable.OriginalVariableNames = A.info.formated_name;
+%                 collect_frtable{k}= frtable;
+% 
+% 
+%                 %sdf collection
+%                 sdftable =  rows2vars( atable(:,{'sdf'}));
+%                 sdftable.OriginalVariableNames = A.info.formated_name;
+%                 collect_sdftable{k}= sdftable;
+% 
+%                 increment(wb);
                 %                 catch ME
                 %
                 %                     error(k).ME = ME;
@@ -545,73 +554,79 @@ classdef Sultan < handle
 
             end
 
-            responsemap = vertcat(collect_frtable{:});
-            responsemap.Properties.RowNames = cellstr(responsemap.OriginalVariableNames);
-            responsemap =  removevars(responsemap,{'OriginalVariableNames'});
+            respinfo = struct2table(horzcat(summer{:}));
 
-            % group by best stimuli
-            [~,which_song_best] = max(responsemap{:,:},[],2);
-            [best_stimuli_name, best_stimuli_rank] = sort(which_song_best,'ascend');
-            responsemap =responsemap(best_stimuli_rank,:)
-
-            % In each group, sort by mean FR of best stimuli
-            uniques = unique(best_stimuli_name);
-            collectsubmap = {};
-            for k = 1:length(uniques)
-                submap = responsemap(find(uniques(k) == best_stimuli_name),:);
-                submap = sortrows(submap,uniques(k));
-                collectsubmap{k} = submap;
-            end
-
-            responsemap = vertcat(collectsubmap{:});
-            figure('Position',[2056 523 853 542],'Color','w');
-            %             imagesc(responsemap{:,:});
-            toshow = responsemap{:,:};
-            toshow(toshow < 0.5) = 0;
-            imagesc(toshow); % temporary trick
+            figure
+            h = heatmap(respinfo,'neuronname','stimuliname','ColorVariable','label')
             colormap('hot');
-            colorbar;
-            xlabel('18 Songs')
-            ylabel('Neurons')
-            %             hugeunpack = @(x) x{1}{1};
-            %             title(unique(  cellfun(@hugeunpack,regexp(responsemap.Properties.RowNames,'[OBYRG]\d{3}','match'),'Uni',0 )  ))
-            title(sprintf('Bird:%st',regexp(convertCharsToStrings(responsemap.Properties.RowNames{1}),'[OBYRG]\d{3}','match')));
 
-            %close(wb);
-
-            sdfmap = vertcat(collect_sdftable{:});
-            sdfmap.Properties.RowNames = cellstr(sdfmap.OriginalVariableNames);
-            sdfmap =  removevars(sdfmap,{'OriginalVariableNames'});
-
-            % group by best stimuli
-            %             customizedMax = @(x)
-            maxvaluemap = cellfun(@max,sdfmap{:,:});
-
-            [~,which_song_best] = max(maxvaluemap,[],2);
-            [best_stimuli_name, best_stimuli_rank] = sort(which_song_best,'ascend');
-            maxvaluemap =maxvaluemap(best_stimuli_rank,:);
-            sdfmap =sdfmap(best_stimuli_rank,:)
-            % In each group, sort by mean FR of best stimuli
-            uniques = unique(best_stimuli_name);
-            collectsubmap = {};
-            for k = 1:length(uniques)
-                submap = sdfmap(find(uniques(k) == best_stimuli_name),:);
-                wheremaxmap = cellfun(@wheremax,submap{:,:});
-                [~,sorted_index] = sortrows(wheremaxmap,uniques(k));
-                submap = submap(sorted_index,:);
-                collectsubmap{k} = submap;
-            end
-
-            sdfmap = vertcat(collectsubmap{:});
-
-            figure; imagesc(cell2mat(sdfmap{:,:}));
-            colormap('hot');
-            colorbar;
-            xlabel('18 Songs');
-            ylabel('Neurons');
-            %             title( unique( regexp(responsemap.Properties.RowNames,'[OBYRG]\d{3}','match') ) )
-            title(sprintf('Bird:%st',regexp(convertCharsToStrings(responsemap.Properties.RowNames{1}),'[OBYRG]\d{3}','match')));
-
+%             responsemap = vertcat(collect_frtable{:});
+%             responsemap.Properties.RowNames = cellstr(responsemap.OriginalVariableNames);
+%             responsemap =  removevars(responsemap,{'OriginalVariableNames'});
+% 
+%             % group by best stimuli
+%             [~,which_song_best] = max(responsemap{:,:},[],2);
+%             [best_stimuli_name, best_stimuli_rank] = sort(which_song_best,'ascend');
+%             responsemap =responsemap(best_stimuli_rank,:)
+% 
+%             % In each group, sort by mean FR of best stimuli
+%             uniques = unique(best_stimuli_name);
+%             collectsubmap = {};
+%             for k = 1:length(uniques)
+%                 submap = responsemap(find(uniques(k) == best_stimuli_name),:);
+%                 submap = sortrows(submap,uniques(k));
+%                 collectsubmap{k} = submap;
+%             end
+% 
+%             responsemap = vertcat(collectsubmap{:});
+%             figure('Position',[2056 523 853 542],'Color','w');
+%             %             imagesc(responsemap{:,:});
+%             toshow = responsemap{:,:};
+%             toshow(toshow < 0.5) = 0;
+%             imagesc(toshow); % temporary trick
+         
+%             colorbar;
+%             xlabel('18 Songs')
+%             ylabel('Neurons')
+%             %             hugeunpack = @(x) x{1}{1};
+%             %             title(unique(  cellfun(@hugeunpack,regexp(responsemap.Properties.RowNames,'[OBYRG]\d{3}','match'),'Uni',0 )  ))
+%             title(sprintf('Bird:%st',regexp(convertCharsToStrings(responsemap.Properties.RowNames{1}),'[OBYRG]\d{3}','match')));
+% 
+%             %close(wb);
+% 
+%             sdfmap = vertcat(collect_sdftable{:});
+%             sdfmap.Properties.RowNames = cellstr(sdfmap.OriginalVariableNames);
+%             sdfmap =  removevars(sdfmap,{'OriginalVariableNames'});
+% 
+%             % group by best stimuli
+%             %             customizedMax = @(x)
+%             maxvaluemap = cellfun(@max,sdfmap{:,:});
+% 
+%             [~,which_song_best] = max(maxvaluemap,[],2);
+%             [best_stimuli_name, best_stimuli_rank] = sort(which_song_best,'ascend');
+%             maxvaluemap =maxvaluemap(best_stimuli_rank,:);
+%             sdfmap =sdfmap(best_stimuli_rank,:)
+%             % In each group, sort by mean FR of best stimuli
+%             uniques = unique(best_stimuli_name);
+%             collectsubmap = {};
+%             for k = 1:length(uniques)
+%                 submap = sdfmap(find(uniques(k) == best_stimuli_name),:);
+%                 wheremaxmap = cellfun(@wheremax,submap{:,:});
+%                 [~,sorted_index] = sortrows(wheremaxmap,uniques(k));
+%                 submap = submap(sorted_index,:);
+%                 collectsubmap{k} = submap;
+%             end
+% 
+%             sdfmap = vertcat(collectsubmap{:});
+% 
+%             figure; imagesc(cell2mat(sdfmap{:,:}));
+%             colormap('hot');
+%             colorbar;
+%             xlabel('18 Songs');
+%             ylabel('Neurons');
+%             %             title( unique( regexp(responsemap.Properties.RowNames,'[OBYRG]\d{3}','match') ) )
+%             title(sprintf('Bird:%st',regexp(convertCharsToStrings(responsemap.Properties.RowNames{1}),'[OBYRG]\d{3}','match')));
+% 
 
 
 
@@ -622,14 +637,14 @@ classdef Sultan < handle
 
         end
 
-        function drawCONResponse(st)
+        function Deprecated_drawCONResponse(st)
             % Extract binarized neuron'st responses to CONs
             dbstop if error
             con_info = struct;
             counts = 0;
 
             common_cons = {};
-            for k = 1: length(st.neurons)
+            for k = 1: length(st.mfiles)
                 Conlist = Neuron(st.neurons{k}).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
                     counts = counts + 1;
@@ -931,7 +946,7 @@ classdef Sultan < handle
         end
 
         function conallneurons = How_Do_NCM_Neurons_respond_to_Songs(st)
-            %对每个neuron画出复杂的Three plots 阵列
+            %对每个neuron画出复杂的Three plots 阵列，Three plots会按照response map进行排列
 
             % Extract binarized neuron'st responses to CONs
             dbstop if error

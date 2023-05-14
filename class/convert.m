@@ -284,7 +284,7 @@ classdef Convert
             
         end
         
-        function originalImage = colorEdge(originalImage,color)
+        function originalImage = colorEdge(originalImage,color, width)
             % 在一个图片矩阵的边缘加一层颜色圈
             
             switch color
@@ -294,19 +294,23 @@ classdef Convert
                     targetcolor = uint8([0,0,225]);
                 case 'g'
                     targetcolor = uint8([0,225,0]);
+                case 'k'
+                    targetcolor = uint8([225,225,225]);
             end
             
-            range = 9;
+            if ~exist('width','var')
+                width = 9; % 宽度
+            end
             
             for k = 1: size(originalImage,2)
-                for kk = 1: range
+                for kk = 1: width
                     originalImage(kk,k,:) = targetcolor;
                     originalImage(size(originalImage,1)-kk+1,k,:) = targetcolor;
                 end
             end
             
             for k = 1: size(originalImage,1)
-                for kk = 1: range
+                for kk = 1: width
                     originalImage(k,kk,:) = targetcolor;
                     originalImage(k,size(originalImage,2)-kk+1,:) = targetcolor;
                 end

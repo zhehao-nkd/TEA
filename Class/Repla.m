@@ -14,7 +14,7 @@ classdef Repla < handle
             % 从 Neuron 文件中提取neuron对replas的反应，已经具体的replas的名称
             rp.list = list;
             rp.genReplalist
-            if ~exist('latency','var')
+            if ~exist('latency','var') || isnan(latency)
                 latency = 0; % default
             end
           %  rp.judgeReplaResp; % judgeReplaResponse是在生成replalist之后的，所以应该比较方便修改
@@ -22,7 +22,7 @@ classdef Repla < handle
             for k = 1:length(rp.replalist)
                 sublist = rp.replalist{k};
                 if  length(find(~cellfun(@isempty, regexp(cellstr({sublist.stimuliname}.'),'Type')))) >0 % 说明是新的stimuli
-                    rp.replalist{k} = Repla.judgeReplaRespNewStimuli(sublist,latency);
+                    rp.replalist{k} = Repla.judgeReplaRespNewStimuli(sublist,latency); 
                 else
                     rp.replalist{k} = Repla.judgeReplaRespOldStimuli(sublist,latency);
 
@@ -30,17 +30,23 @@ classdef Repla < handle
 
             end
             
-            for k = 1:length(rp.replalist)
+            CALCULATE_FEATURE = 0;
 
-                pseudo_list = struct('stimuliname',{rp.replalist{k}.stimuliname}.','y',{rp.replalist{k}.replaceparty}.',...
-                    'fs',{rp.replalist{k}.fs}.','label',{rp.replalist{k}.label}.'); % 把replalist变成fraglist的格式，以便计算simatrix
-                for kk = 1:length(pseudo_list)
-                    tempsat = SAT_sound(pseudo_list(kk).y,pseudo_list(kk).fs);
-                    pseudo_list(kk).features = tempsat.features;
-                    pseudo_list(kk).meanfeatures = tempsat.meanfeatures;
+            if CALCULATE_FEATURE == 1
 
+                for k = 1:length(rp.replalist)
+
+                    pseudo_list = struct('stimuliname',{rp.replalist{k}.stimuliname}.','y',{rp.replalist{k}.replaceparty}.',...
+                        'fs',{rp.replalist{k}.fs}.','label',{rp.replalist{k}.label}.'); % 把replalist变成fraglist的格式，以便计算simatrix
+                    for kk = 1:length(pseudo_list)
+                        tempsat = SAT_sound(pseudo_list(kk).y,pseudo_list(kk).fs);
+                        pseudo_list(kk).features = tempsat.features;
+                        pseudo_list(kk).meanfeatures = tempsat.meanfeatures;
+
+                    end
+                    rp.simatrix{k} = Simatrix(pseudo_list);
                 end
-                rp.simatrix{k} = Simatrix(pseudo_list);
+
             end
 
             rp.list = []; % 为了节省存储，在最后一步把此项设为零
@@ -120,15 +126,17 @@ classdef Repla < handle
                 end
 
                 % 最后填充norm song的信息
-                splited = split(Replst_fnames{k_of_norm},{'-before-','-gapis-'});
-                thislist(k_of_norm).bname1 = Convert.bid(splited{1});
-                thislist(k_of_norm).fid1 =  thislist(k_of_norm+1).fid2-1;
-                thislist(k_of_norm).bname2 = thislist(k_of_norm).bname1 ;
-                thislist(k_of_norm).fid2 = thislist(k_of_norm+1).fid2;
-                thislist(k_of_norm).concat1 = sprintf('%s-%02u',thislist(k_of_norm).bname1,thislist(k_of_norm).fid1);
-                thislist(k_of_norm).concat2 = sprintf('%s-%02u',thislist(k_of_norm).bname2,thislist(k_of_norm).fid2);
-                thislist(k_of_norm).fullrepla = sprintf('%s-%02u-%s-%02u',thislist(k_of_norm).bname1,thislist(k_of_norm).fid1,thislist(k_of_norm).bname2,thislist(k_of_norm).fid2);
-                rp.replalist{a} = thislist;
+                if ~isempty(k_of_norm)
+                    splited = split(Replst_fnames{k_of_norm},{'-before-','-gapis-'});
+                    thislist(k_of_norm).bname1 = Convert.bid(splited{1});
+                    thislist(k_of_norm).fid1 =  thislist(k_of_norm+1).fid2-1;
+                    thislist(k_of_norm).bname2 = thislist(k_of_norm).bname1 ;
+                    thislist(k_of_norm).fid2 = thislist(k_of_norm+1).fid2;
+                    thislist(k_of_norm).concat1 = sprintf('%s-%02u',thislist(k_of_norm).bname1,thislist(k_of_norm).fid1);
+                    thislist(k_of_norm).concat2 = sprintf('%s-%02u',thislist(k_of_norm).bname2,thislist(k_of_norm).fid2);
+                    thislist(k_of_norm).fullrepla = sprintf('%s-%02u-%s-%02u',thislist(k_of_norm).bname1,thislist(k_of_norm).fid1,thislist(k_of_norm).bname2,thislist(k_of_norm).fid2);
+                    rp.replalist{a} = thislist;
+                end
 
             end
 
@@ -137,6 +145,34 @@ classdef Repla < handle
 
         end
 
+        function targets = knowTarget(rp)
+            %找到哪个是目标syllable，目标syllable是生成deg stimuli和repla stimuli的基础
+            %目前的版本只是通过repla判断，之后有时间也应该写通过deg判断的方法
+            % 2022.12.21 追加通过degressive song 判断
+            %当然，如果连degressive song 也没有，那就根本谈不上有targets
+            %而为了通过degressive song 判断，首先需要解决的是JudgeDegResp
+
+
+            allreplalist = vertcat(rp.replalist{:});
+
+            % target
+            targetidx = find(~cellfun(@isempty, regexp(cellstr({allreplalist.stimuliname}.'),'Repla')));
+            targetlist = allreplalist(targetidx);
+            for k = 1: length(targetlist)
+
+                temp = strsplit(targetlist(k).stimuliname,'-');
+
+                targetnames{k} = sprintf('%s-%s-%s',temp{6},temp{7},temp{8});
+            end
+
+            if exist('targetnames','var')
+                targets = unique(targetnames);
+            else
+                targets = {};
+            end
+
+        end
+        
         function img = saveDrawSortedRespToReplas(rp) %非常难以找到这个function
 
 
@@ -496,20 +532,20 @@ classdef Repla < handle
                     Ini_y = Ini_y + num_of_zeros;
                     Ini_replay = Ini_replay + num_of_zeros;
                     try
-                        rp.list(rids(kk)).targety = rp.list(rids(kk)).y(Ini_replay:Ini_replay + 0.2*32000); % 截取200ms
+                        rp.list(rids(kk)).targety = rp.list(rids(kk)).y(Ini_replay:Ini_replay + DUR*32000); % 截取200ms
                         rp.list(rids(kk)).replaceparty = rp.list(rids(kk)).y(1:Ini_replay ); % 被替换的那一部分的y值
                     catch % if the second index overceed
                         rp.list(rids(kk)).targety = rp.list(rids(kk)).y(Ini_replay:end); % 截取到 end
                         rp.list(rids(kk)).replaceparty = rp.list(rids(kk)).y(1:Ini_replay ); % 被替换的那一部分的y值
                         disp(' MEssage@Neuron.judgeReplaResp :Overceed');
                     end
-                    rp.list(rids(kk)).targetsptimes = Extract.sptimes_resetSP(rp.list(rids(kk)).sptimes,Ini_replay/32000,(Ini_replay + 0.2*32000)/32000);
+                    rp.list(rids(kk)).targetsptimes = Extract.sptimes_resetSP(rp.list(rids(kk)).sptimes,Ini_replay/32000,(Ini_replay + DUR*32000)/32000);
                     rp.list(rids(kk)).replacepartsptimes = Extract.sptimes_resetSP(... % replacepart, sptimes
                         rp.list(rids(kk)).sptimes,1,Ini_replay/32000);
                     % corresponding pre (targety) data
                     rp.list(rids(kk)).pretargety = zeros(length(rp.list(rids(kk)).targety),1);%rp.list(nid).prey(end - 0.1*32000:end); % 截取100ms
                     rp.list(rids(kk)).pretargetsptimes = Extract.sptimes_resetSP(...
-                        rp.list(rids(kk)).presptimes,length(rp.list(rids(kk)).pretargety)/32000 -0.2*32000,length(rp.list(rids(kk)).pretargety)/32000 );%length(rp.list(rids(kk)).prey)/32000 -0.1*32000
+                        rp.list(rids(kk)).presptimes,length(rp.list(rids(kk)).pretargety)/32000 -DUR*32000,length(rp.list(rids(kk)).pretargety)/32000 );%length(rp.list(rids(kk)).prey)/32000 -0.1*32000
                     %calculate and judege whether the neuron respond to the target area or not
                     [rp.list(rids(kk)).replaresp,rp.list(rids(kk)).replaPvalue] = Neuron.UseTtestToJudegeRespOrNot(...
                         rp.list(rids(kk)).targety,rp.list(rids(kk)).targetsptimes,...
@@ -584,28 +620,28 @@ classdef Repla < handle
                     Ini_y = Ini_y + num_of_zeros;
                     Ini_replay = Ini_replay + num_of_zeros;
                     try
-                        a.list(rids(kk)).targety = a.list(rids(kk)).y(Ini_replay:Ini_replay + 0.2*32000); % 截取200ms
+                        a.list(rids(kk)).targety = a.list(rids(kk)).y(Ini_replay:Ini_replay + DUR*32000); % 截取200ms
                         a.list(rids(kk)).replaceparty = a.list(rids(kk)).y(1:Ini_replay ); % 被替换的那一部分的y值
                     catch % if the second index overceed
                         a.list(rids(kk)).targety = a.list(rids(kk)).y(Ini_replay:end); % 截取200ms
                         disp(' MEssage@Neuron.judgeReplaResp :Overceed');
                     end
-                    a.list(rids(kk)).targetsptimes = Extract.sptimes_resetSP(a.list(rids(kk)).sptimes,Ini_replay/32000,(Ini_replay + 0.2*32000)/32000);
+                    a.list(rids(kk)).targetsptimes = Extract.sptimes_resetSP(a.list(rids(kk)).sptimes,Ini_replay/32000,(Ini_replay + DUR*32000)/32000);
                     a.list(rids(kk)).replacepartsptimes = Extract.sptimes_resetSP(... % replacepart, sptimes
                         a.list(rids(kk)).sptimes,1,Ini_replay/32000);
                     % corresponding pre (targety) data
                     a.list(rids(kk)).pretargety = zeros(length(a.list(rids(kk)).targety),1);%a.list(nid).prey(end - 0.1*32000:end); % 截取100ms
                     a.list(rids(kk)).pretargetsptimes = Extract.sptimes_resetSP(...
-                        a.list(rids(kk)).presptimes,length(a.list(rids(kk)).pretargety)/32000 -0.2*32000,length(a.list(rids(kk)).pretargety)/32000 );%length(a.list(rids(kk)).prey)/32000 -0.1*32000
+                        a.list(rids(kk)).presptimes,length(a.list(rids(kk)).pretargety)/32000 -DUR*32000,length(a.list(rids(kk)).pretargety)/32000 );%length(a.list(rids(kk)).prey)/32000 -0.1*32000
                     %calculate and judege whether the neuron respond to the target area or not
                     [a.list(rids(kk)).replaresp,a.list(rids(kk)).replaPvalue] = Neuron.UseTtestToJudegeRespOrNot(...
                         a.list(rids(kk)).targety,a.list(rids(kk)).targetsptimes,...
                         a.list(rids(kk)).pretargety ,a.list(rids(kk)).pretargetsptimes ,32000);
                     a.list(rids(kk)).targetfr = length(vertcat(a.list(rids(kk)).targetsptimes{:}))/200; % per milisecond
                 end
-                % a.list(nid).target = a.list(nid).y(Ini_y:Ini_y + 0.2*32000); % 截取200ms
-                % a.list(nid).targetsptimes = Extract.sptimes_resetSP(a.list(nid).sptimes,Ini_y,Ini_y + 0.2*32000);
-                %a.list(nid).targetfr = length(vertcat(a.list(nid).targetsptimes{:}))/0.2;
+                % a.list(nid).target = a.list(nid).y(Ini_y:Ini_y + DUR*32000); % 截取200ms
+                % a.list(nid).targetsptimes = Extract.sptimes_resetSP(a.list(nid).sptimes,Ini_y,Ini_y + DUR*32000);
+                %a.list(nid).targetfr = length(vertcat(a.list(nid).targetsptimes{:}))/DUR;
 
 
             end
@@ -640,13 +676,12 @@ classdef Repla < handle
         end
 
 
-
     end
 
     methods(Static)
 
-        function   sortedThree(A)
-            thelist = A.repla.replalist{1};
+        function   sortedThree(repla)
+            thelist = repla.replalist{1};
 
             gap = [];
 
@@ -688,7 +723,7 @@ classdef Repla < handle
 
 
              for idx = 1: length(goodlist)
-                figure('Color','w');
+                figure('Color','w','Position',PM.size1);
                 Draw.three(goodlist(idx).plty,goodlist(idx).fs,goodlist(idx).pltsptimes);
                 frame = getframe(gcf);
                 I{idx} = frame.cdata;
@@ -716,7 +751,7 @@ classdef Repla < handle
             reshapedI = reshape(I, lieshu,[])';
             %clear I
             IMG = cell2mat(reshapedI);
-            imwrite(IMG,sprintf('SortedThreeReplas_%s.png',A.info.formated_name));
+            imwrite(IMG,sprintf('蓟州SortedThreeReplas_%s.png',repla.formated_name));
 
 
 
@@ -727,6 +762,7 @@ classdef Repla < handle
         function  outputlist = judgeReplaRespOldStimuli(inputlist)
             % 为什么会有V1和V2，写的时候没有注意，导致有两个版本，有些许区别，但似乎V1更正确
             % 如果需要对比，可使用 online code difference comparision 的工具
+            DUR = 0.2;
             dbstop if error
 
             % evaluate the responsiveness of song replacements
@@ -779,10 +815,10 @@ classdef Repla < handle
                 end
 
                 try %不管当前是不是norm song都不影响的
-                    sublist(allids(kk)).targety = sublist(allids(kk)).y(Ini_replay:Ini_replay + 0.2*sublist(allids(kk)).fs); % 截取200ms
+                    sublist(allids(kk)).targety = sublist(allids(kk)).y(Ini_replay:Ini_replay + DUR*sublist(allids(kk)).fs); % 截取200ms
                 catch % if the second index overceed 当剩下的distance小于200ms时
                     sublist(allids(kk)).targety = sublist(allids(kk)).y(Ini_replay:end); % 截取到 end
-                    disp(' MEssage@Neuron.judgeReplaResp :Overceed');
+                    disp(' MEssage@Neuron.judgeReplaRespOldStimuli:Overceed');
                 end
 
                 temp_y = sublist(allids(kk)).y(Ini_replay:end);
@@ -810,13 +846,13 @@ classdef Repla < handle
                 end
 
 
-                sublist(allids(kk)).targetsptimes = Extract.sptimes_resetSP(sublist(allids(kk)).sptimes,Ini_replay/32000,(Ini_replay + 0.2*sublist(allids(kk)).fs)/sublist(allids(kk)).fs);
+                sublist(allids(kk)).targetsptimes = Extract.sptimes_resetSP(sublist(allids(kk)).sptimes,Ini_replay/32000,(Ini_replay + DUR*sublist(allids(kk)).fs)/sublist(allids(kk)).fs);
                 sublist(allids(kk)).replacepartsptimes = Extract.sptimes_resetSP(... % replacepart, sptimes
                     sublist(allids(kk)).sptimes,1,Ini_replay/sublist(allids(kk)).fs);
                 % corresponding pre (targety) data
                 sublist(allids(kk)).pretargety = zeros(length(sublist(allids(kk)).targety),1);%sublist(nid).prey(end - 0.1*32000:end); % 截取100ms
                 sublist(allids(kk)).pretargetsptimes = Extract.sptimes_resetSP(...
-                    sublist(allids(kk)).presptimes,length(sublist(allids(kk)).pretargety)/sublist(allids(kk)).fs -0.2*sublist(allids(kk)).fs,length(sublist(allids(kk)).pretargety)/32000 );%length(sublist(rids(kk)).prey)/32000 -0.1*32000
+                    sublist(allids(kk)).presptimes,length(sublist(allids(kk)).pretargety)/sublist(allids(kk)).fs -DUR*sublist(allids(kk)).fs,length(sublist(allids(kk)).pretargety)/32000 );%length(sublist(rids(kk)).prey)/32000 -0.1*32000
                 %calculate and judege whether the neuron respond to the target area or not
                 temp = Neuron.UseMaxSdfToJudgeRespOrNot(sublist(allids(kk)).targety,sublist(allids(kk)).targetsptimes,...
                     sublist(allids(kk)).pretargety,sublist(allids(kk)).pretargetsptimes,sublist(allids(kk)).fs);
@@ -826,7 +862,7 @@ classdef Repla < handle
                 %                     [sublist(rids(kk)).label,sublist(rids(kk)).replaPvalue] = Neuron.UseTtestToJudegeRespOrNot(...
                 %                         sublist(rids(kk)).targety,sublist(rids(kk)).targetsptimes,... % 查看对replaced song的反应是否明显大于对pre period的response
                 %                         sublist(rids(kk)).pretargety ,sublist(rids(kk)).pretargetsptimes ,sublist(rids(kk)).fs);
-                sublist(allids(kk)).targetfr = length(vertcat(sublist(allids(kk)).targetsptimes{:}))/0.2; % per milisecond
+                sublist(allids(kk)).targetfr = length(vertcat(sublist(allids(kk)).targetsptimes{:}))/DUR; % per milisecond
 
 
 
@@ -848,6 +884,7 @@ classdef Repla < handle
              % 为什么会有V1和V2，写的时候没有注意，导致有两个版本，有些许区别，但似乎V1更正确
             % 如果需要对比，可使用 online code difference comparision 的工具
             dbstop if error
+            DUR = 0.2;
 
             % evaluate the responsiveness of song replacements
             % Find out that the repla stimuliname correspond to how many natrual songs
@@ -864,18 +901,18 @@ classdef Repla < handle
             sublist = withnorm_sublist(rponly_ids);
 
 
-            firsty = sublist(1).y;
-            secondy = sublist(2).y;
+            firsty = sublist(1).plty;
+            secondy = sublist(2).plty;
 
 
             for kk = 1:length(sublist)
 
                 % 找到分歧点
                 if kk == 1
-                     [~,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla(secondy,sublist(kk).y);
+                     [~,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla(secondy,sublist(kk).plty);
 
                 else
-                     [~,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla(firsty,sublist(kk).y);
+                     [~,Ini_replay] = Neuron.findConergentPointBetwenNormAndRepla(firsty,sublist(kk).plty);
                      % figure; subplot(211); Draw.spec(firsty,32000);
                      % subplot(212); Draw.spec(sublist(kk).y,32000);
 
@@ -883,41 +920,48 @@ classdef Repla < handle
 
 
                 try %不管当前是不是norm song都不影响的
-                    sublist(kk).targety = sublist(kk).y(Ini_replay:Ini_replay + 0.3*sublist(kk).fs); % 截取300ms
+                    sublist(kk).targety = sublist(kk).plty(Ini_replay:Ini_replay + DUR*sublist(kk).fs); % 截取300ms
                 catch % if the second index overceed 当剩下的distance小于300ms时
-                    sublist(kk).targety = sublist(kk).y(Ini_replay:end); % 截取到 end
-                    disp(' MEssage@Neuron.judgeReplaResp :Overceed');
+                    sublist(kk).targety = sublist(kk).plty(Ini_replay:end); % 截取到 end
+
+                    warning('MEssage@Neuron.judgeReplaRespNewStimuli：target y的截取有大问题，停下来检查bug！！');
                 end
 
-                sublist(kk).replaceparty = sublist(kk).y(1:Ini_replay); % 被替换的那一部分的y值
+                sublist(kk).replaceparty = sublist(kk).plty(1:Ini_replay); % 被替换的那一部分的y值
+                sublist(kk).onsetB = sublist(kk).zpt*sublist(kk).fs + (Ini_replay - sublist(kk).pltext*sublist(kk).fs); % Oneset of the second syllable B of sequence A-B
 
  
-                notZeros = find(sublist(kk).y~= 0);
+                notZeros = find(sublist(kk).plty~= 0);
                 convergentP = min(notZeros(notZeros>Ini_replay)); % 不知道计算时，convergent point是第一个变异值还是最后一个共享值
                 % figure; subplot(211); Draw.spec(sublist(kk).plty,32000);
                 if exist('latency','var')
-                    sublist(kk).targetsptimes = Extract.sptimes_resetSP(sublist(kk).rawsptimes,convergentP/sublist(kk).fs + latency+sublist(kk).zpt,(convergentP+0.3*sublist(kk).fs)/sublist(kk).fs+latency+sublist(kk).zpt);
+                    sublist(kk).targetsptimes = Extract.sptimes_resetSP(sublist(kk).pltsptimes,convergentP/sublist(kk).fs + latency+sublist(kk).zpt,(convergentP+DUR*sublist(kk).fs)/sublist(kk).fs+latency+sublist(kk).zpt);
                 else
-                    sublist(kk).targetsptimes = Extract.sptimes_resetSP(sublist(kk).rawsptimes,convergentP/sublist(kk).fs +sublist(kk).zpt,(convergentP+0.3*sublist(kk).fs)/sublist(kk).fs+sublist(kk).zpt);
+                    sublist(kk).targetsptimes = Extract.sptimes_resetSP(sublist(kk).pltsptimes,convergentP/sublist(kk).fs +sublist(kk).zpt,(convergentP+DUR*sublist(kk).fs)/sublist(kk).fs+sublist(kk).zpt);
                 end
                % 300 ms
 
                sublist(kk).replacepartsptimes = Extract.sptimes_resetSP(... % replacepart, sptimes
                     sublist(kk).sptimes,1,convergentP/sublist(kk).fs);
                 % corresponding pre (targety) data
-                sublist(kk).pretargety = zeros(0.3*sublist(kk).fs,1);%sublist(nid).prey(end - 0.1*32000:end); % 截取100ms
+                sublist(kk).pretargety = zeros(DUR*sublist(kk).fs,1);%sublist(nid).prey(end - 0.1*32000:end); % 截取100ms
                 sublist(kk).pretargetsptimes = Extract.sptimes_resetSP(...
-                    sublist(kk).presptimes,length(sublist(kk).pretargety)/sublist(kk).fs -0.3*sublist(kk).fs,length(sublist(kk).pretargety)/32000 );%length(sublist(rids(kk)).prey)/32000 -0.1*32000
+                    sublist(kk).presptimes,length(sublist(kk).pretargety)/sublist(kk).fs -DUR*sublist(kk).fs,length(sublist(kk).pretargety)/32000 );%length(sublist(rids(kk)).prey)/32000 -0.1*32000
                 %calculate and judege whether the neuron respond to the target area or not
-                temp = Neuron.UseMaxSdfToJudgeRespOrNot(sublist(kk).targety,sublist(kk).targetsptimes,...
+%                 temp = Neuron.UseMaxSdfToJudgeRespOrNot(sublist(kk).targety,sublist(kk).targetsptimes,...
+%                     sublist(kk).pretargety,sublist(kk).pretargetsptimes,sublist(kk).fs);
+                 temp = Neuron.UseTtestToJudgeRespOrNot(sublist(kk).targety,sublist(kk).targetsptimes,...
                     sublist(kk).pretargety,sublist(kk).pretargetsptimes,sublist(kk).fs);
+
+                
+
                 sublist(kk).label = temp.label;
                 sublist(kk).replaPvalue = temp.pvalue;
                 sublist(kk).maxsdf = temp.maxsdf;
                 %                     [sublist(rids(kk)).label,sublist(rids(kk)).replaPvalue] = Neuron.UseTtestToJudegeRespOrNot(...
                 %                         sublist(rids(kk)).targety,sublist(rids(kk)).targetsptimes,... % 查看对replaced song的反应是否明显大于对pre period的response
                 %                         sublist(rids(kk)).pretargety ,sublist(rids(kk)).pretargetsptimes ,sublist(rids(kk)).fs);
-                sublist(kk).targetfr = length(vertcat(sublist(kk).targetsptimes{:}))/0.3; % per seconds
+                sublist(kk).targetfr = length(vertcat(sublist(kk).targetsptimes{:}))/DUR; % per seconds
 
 
 
@@ -934,9 +978,9 @@ classdef Repla < handle
 
          end
 
-         function [summer,global_result] = getResponse2CategoriesNewStimuli(A,bingyang)
+         function [summer,global_result] = getResponse2CategoriesNewStimuli(repla,bingyang)
 
-             thelist = A.repla.replalist{1};
+             thelist = repla.replalist{1};
 
              gap = [];
 
@@ -984,7 +1028,7 @@ classdef Repla < handle
              summer = struct;
 
              for k = 1:length(unique_categos)
-                 summer(k).neuronname = A.info.formated_name;
+                 summer(k).neuronname = repla.formated_name;
                  summer(k).catego = unique_categos(k);
                  summer(k).targetcatego = unique([goodlist.catego2].');
                  summer(k).calculated_targetcatego = unique([goodlist.calculated_catego2].');
@@ -1004,11 +1048,12 @@ classdef Repla < handle
              for k = 1:length(unique_categos)
                  summer(k).zscored_frs = (summer(k).frs-all_mean)/all_std;%(summer(k).frs)/all_std; % 半zscore 指不去掉all_mean
                  summer(k).mean_zfrs = mean(summer(k).zscored_frs);
+                 summer(k).mean_frs = mean(summer(k).frs);
              end
 
              % global result for this neuron
              global_result = struct;
-             global_result.neuronname = A.info.formated_name;
+             global_result.neuronname = repla.formated_name;
              [~,best_index] = max([summer.mean_zfrs].');
              global_result.bestcatego = summer(best_index).catego;
              global_result.best_response = summer(best_index).mean_zfrs;
@@ -1040,7 +1085,7 @@ classdef Repla < handle
 
            % Draw boxplot
 
-           todraw = 1;
+           todraw = 0;
            if todraw == 1
                figure('Position',[1463 146 1596 849],'Color','w');
                subplot(2,2,1)
@@ -1084,9 +1129,9 @@ classdef Repla < handle
                end
                xlabel('Firing rate');
 
-               sgtitle(A.info.formated_name);
+               sgtitle(repla.formated_name);
                set(gcf,'defaultTextInterpreter','none');
-               saveas(gcf,sprintf('Repla群散点箱图%s.png',A.info.formated_name));
+               saveas(gcf,sprintf('Repla群散点箱图%s.png',repla.formated_name));
                close(gcf);
 
            end
@@ -1627,8 +1672,6 @@ classdef Repla < handle
 
         end
 
-
-
         function [ConvergentIndexY,ConvergentIndexReplaY] = findConergentPointBetwenNormAndRepla(y, yrepla) % find the correspoding initial timestamps by aliging two time series
             % 此趋同点指的是趋同数据点在yrepla中的次序 （从前往后数）
             % 之后或可考虑更复杂的序列对比算法，这样的算法应更普适一些
@@ -1671,7 +1714,6 @@ classdef Repla < handle
 
 
         end
-
 
 
         function namelist = get_all_elements_involved(rawdir_path)
@@ -1818,7 +1860,7 @@ classdef Repla < handle
                     for k = 1: length(categos)
 
                         ids = find([all_eleinf.catego].' == categos(k));
-                        gap = zeros(0.3*fs,1);
+                        gap = zeros(DUR*fs,1);
                         categoys = cellfun(@(x) vertcat(x,gap),{all_eleinf(ids).y}.','Uni',0);
                         concated_y{k} = vertcat(categoys{:});
 
@@ -1848,7 +1890,7 @@ classdef Repla < handle
                     for k = 1: row_num
 
                         ids = column_num*(k-1) + 1: min(column_num*k,length(all_eleinf));
-                        gap = zeros(0.3*fs,1);
+                        gap = zeros(DUR*fs,1);
                         categoys = cellfun(@(x) vertcat(x,gap),{all_eleinf(ids).y}.','Uni',0);
                         concated_y = vertcat(categoys{:});
 

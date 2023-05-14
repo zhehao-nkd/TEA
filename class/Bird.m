@@ -243,8 +243,8 @@ classdef Bird < handle
             diskletter = Utl.bucketletter;
             b.folders = Bird.birdsong;
 
-            pathlog = strcat(diskletter,":\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx");
-            pathlist = strcat(diskletter,":\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx");
+            pathlog = strcat(diskletter,"Z:\Yazaki-SugiyamaU\Bird log\Bird log2021 _ver_2.xlsx");
+            pathlist = strcat(diskletter,"Z:\Yazaki-SugiyamaU\Bird log\Bird_List_new ver_3.xlsx");
 
             isoid = Bird.getIso(pathlog, pathlist); % 获取 isolated birdids  
             temp = arrayfun(@(x) find(~cellfun(@isempty, regexpi({b.folders.bnames}.', x))), isoid,'UniformOutput',0);
@@ -301,7 +301,7 @@ classdef Bird < handle
                 'DataRange', dataStartLoc);
 
             % preview('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts)
-            birdlist = readtable('Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx',opts);
+            birdlist = readtable('Z:\Yazaki-SugiyamaU\Bird log\Bird_List_new ver_3.xlsx',opts);
 
 
 
@@ -366,7 +366,7 @@ classdef Bird < handle
             diskletter = Utl.bucketletter;
             dbstop if error
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%% 第一部分
-            pathlog =  strcat(diskletter,":\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx");
+            pathlog =  strcat(diskletter,'Z:\Yazaki-SugiyamaU\Bird log\Bird log2021 _ver_2.xlsx');
             [~,sheets] = xlsfinfo(pathlog);
             sheetnum = length(sheets); % number of sheet in one xls file
 
@@ -420,7 +420,7 @@ classdef Bird < handle
             bucketDriveletter = Utl.bucketletter;
 
             birdlist = readtable(strcat(bucketDriveletter,...
-                ":\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx"),opts);
+                ":\Yazaki-SugiyamaU\Bird log\Bird_List_new ver_3.xlsx"),opts);
         end
 
         function collectsyllables(targetfolders,file_per_folder) % generate .mat file for avgn analysis
@@ -599,8 +599,8 @@ classdef Bird < handle
 
             bd = Bird;
             % A script to find out candidate birds for Piece experiments
-            pathlog = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird log2021 _ver_1.xlsx";
-            pathlist = "Z:\Yazaki-SugiyamaU\Bird-log_AK\Bird_List_new ver_2.xlsx";
+            pathlog = "Z:\Yazaki-SugiyamaU\Bird log\Bird log2021 _ver_2.xlsx";
+            pathlist = "Z:\Yazaki-SugiyamaU\Bird log\Bird_List_new ver_3.xlsx";
             birdlog = table2struct(readtable(pathlog, 'Sheet','today'));
 
             birdlog = birdlog(1:30); % 只取前30行

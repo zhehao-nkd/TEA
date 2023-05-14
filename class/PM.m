@@ -19,6 +19,7 @@ classdef PM % parameter
         % this class store the commonly used paramters( ect. pathes) for testing
         % the function
         size1 = [1930 362 696 505]
+        size2 = [1930 362 696 387];
         size3plots = [1986 97 895 672]
         size_wide = [1201 584 1732 407];
         size1plot = [1947 500 1255 340];
