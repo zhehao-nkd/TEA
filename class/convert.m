@@ -296,6 +296,8 @@ classdef Convert
                     targetcolor = uint8([0,225,0]);
                 case 'k'
                     targetcolor = uint8([225,225,225]);
+                case 'y'
+                    targetcolor = uint8([225,225,0]);
             end
             
             if ~exist('width','var')

@@ -51,6 +51,19 @@ classdef Utl
             
             
         end
+
+
+        function padded = pad0(y,fs,before,after)
+            % pad zero to data in both side
+            % here length(y) must < targetlen
+            y = y(:); % force y to be column vector
+    
+            padded = [zeros(int64(before*fs),1);y;zeros(int64(after*fs),1)];
+
+
+        end
+
+
         
    
         function s = deblankl(x)

@@ -12,11 +12,9 @@ classdef Song < handle
     
     methods
         
-        function sg = Song(input_list)
-            % 从 Neuron 文件中提取neuron对song的反应
-            % 把提取experiment list信息的方法放在Experiment里面，但是input_list需要用judge
-            % response过的list
-            % 以上弃用
+        function sg = Song(input_list,formated_name)
+
+            sg.formated_name = formated_name;
 
             % 首先把list根据Fid分裂开来，然后再对每一个分裂的list算num of
             % norms的个数，取放了最多的stimuli的分裂list作为normlist
@@ -33,49 +31,76 @@ classdef Song < handle
             [~,maxloc] = max(cellfun(@length,separated));
             sg.normlist = separated{maxloc};
 
+            sg.normlist = Song.judgeConResp(sg.normlist);
+
 
 %             sg.normlist = input_list(find(~cellfun(@isempty, regexp(cellstr({input_list.stimuliname}.'),'norm'))));
-            sg.list18 = sg.response18;
+            sg.labelSongs;
             sg.getInfo;
             
         end
 
         function sg = getInfo(sg)
 
-            respond_18_ids = find([sg.list18.label].' ==1);
+            respond_18_ids = find([sg.normlist.label].' ==1);
             sg.num_resp_to_18 = length(respond_18_ids);
             if ~(sg.num_resp_to_18 == 0)
-                sg.name_resp_to_18 = cellfun(@Convert.bid,cellstr({sg.list18(respond_18_ids).stimuliname}.'),'Uni',0);
+                sg.name_resp_to_18 = cellfun(@Convert.bid,cellstr({sg.normlist(respond_18_ids).stimuliname}.'),'Uni',0);
             else
                 sg.name_resp_to_18 =[];
             end
 
         end
 
-        function list18 = response18(sg)
+        function sg = labelSongs(sg)
+            %由于不同neuron的stimuliname和tutbos不一样，这个方法是用来标记出每个stimuli是cons，het还是其他
+
+            bd = Bird; %使用Bird类判断father song
+            bosname = Convert.bid(sg.formated_name);
+            fathername =  bd.findFather(bosname);
 
 
             names18 = {'B346','B512','B521','B554','B606','G429','G506','G518','G548','G573',...
-                'G578','O331','O507','O509','O540','Y515','Y606','Y616'};
+                'G578','O331','O507','O509','O540','Y515','Y606','Y616','G699'};
+
+            for k = 1:length(sg.normlist)
+
+                 if ~isempty(regexp(sg.normlist(k).stimuliname,strjoin(names18,'|'))) 
+                     sg.normlist(k).type = 1;
+                     sg.normlist(k).name = regexp(convertCharsToStrings(sg.normlist(k).stimuliname),strjoin(names18,'|'),'match');
+                 elseif ~isempty(regexp(sg.normlist(k).stimuliname,'WNS|Fcall|Het|Mcall'))
+                     sg.normlist(k).type = 3;
+                     sg.normlist(k).name = regexp(convertCharsToStrings(sg.normlist(k).stimuliname),'WNS|Fcall|Het|Mcall','match');
+                 elseif ~isempty(regexp(sg.normlist(k).stimuliname,bosname))
+                     sg.normlist(k).type = 2;
+                     sg.normlist(k).name = "BOS";
+                 elseif ~isempty(regexp(sg.normlist(k).stimuliname,fathername))
+                      sg.normlist(k).type = 2;
+                     sg.normlist(k).name = "TUT";         
+                 end
+
+            end
 
 
 
 %             findit = @(x) find(~cellfun(@isempty, regexp(cellstr({sg.normlist.stimuliname}.'),x)));
 
-            list18 = sg.normlist(~cellfun(@isempty, regexp(cellstr({sg.normlist.stimuliname}.'),strjoin(names18,'|') ))) ;
-
-
+          
 
         end
         
-        function drawThree(sg)
+        function drawThree(sg,outdir)
 
             I = {};
             for idx = 1: length(sg.normlist)
-                figure('Color','w','Position', [1933 672 673 497]);
+                figure('Color','w','Position', [216 590 1274 447]);
                 Draw.three(sg.normlist(idx).plty,sg.normlist(idx).fs,sg.normlist(idx).pltsptimes);
+                xlabel(sprintf('%s-%s',sg.normlist(idx).stimuliname,sg.normlist(idx).Fid));
                 frame = getframe(gcf);
                 I{idx} = frame.cdata;
+                saveas(gcf,sprintf('%s\\Song_%s_%s.fig',outdir,sg.formated_name,sg.normlist(idx).stimuliname));
+                saveas(gcf,sprintf('%s\\Song_%s_%s.eps',outdir,sg.formated_name,sg.normlist(idx).stimuliname),'epsc');
+                saveas(gcf,sprintf('%s\\Song_%s_%s.svg',outdir,sg.formated_name,sg.normlist(idx).stimuliname),'svg');
                 close(gcf);
             end
 
@@ -86,7 +111,7 @@ classdef Song < handle
 %             close(gcf);
 
             % draw blank white
-            lieshu = 9;
+            lieshu = 3;
             hangshu = ceil(length(I)/lieshu);
             rest = lieshu*hangshu - length(I);
             white = uint8(255*ones(size(I{1})));
@@ -100,7 +125,7 @@ classdef Song < handle
             reshapedI = reshape(I, lieshu,[])';
             clear I
             img = cell2mat(reshapedI);
-            imwrite(img,sprintf('燕NormThree_%s.png',sg.formated_name));
+            imwrite(img,sprintf('%s\\临安府NormThree_%s.png',outdir,sg.formated_name));
 
 
         end
@@ -173,46 +198,38 @@ classdef Song < handle
 
 
 
-        function neu = judgeConResp(neu,mode)
+        function outputlist = judgeConResp(inputlist,mode)
 
             if exist("mode",'var')  % 原来的备选方法
 
-                % 判断对Cons是否反应，通过 Firing rate
-                % firstly update e objectys 以后可以删掉这个部分
-                %             for k = 1: length(neu.experiments)
-                %                 for kk = 1: length( neu.experiments{k}.e)
-                %                     neu.experiments{k}.e{kk}.setExtAndAllocate;
-                %                 end
-                %             end
-                %             neu.updatelist;
 
-                ids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'norm|deg|repla'))); % find all norms
+                % ids = find(~cellfun(@isempty, regexp(cellstr({inputlist.stimuliname}.'),'norm|deg|repla'))); % find all norms
                 % ’syl'可以兼容旧的stimuli命名规则
 
-                for n = 1: length(ids)
-                    thisi = ids(n);
+                for k = 1: length(inputlist)
+                    %  thisi = ids(n);
 
-                    presdf = Cal.sdf(neu.list(thisi).prejudgerespsptimes,zeros(length(neu.list(thisi).judgerespy),1),neu.list(thisi).fs,0.001,0.02);
-                    sdf = Cal.sdf(neu.list(thisi).judgerespsptimes,neu.list(thisi).judgerespy,neu.list(thisi).fs,0.001,0.02); % 0.001,0.004
+                    presdf = Cal.sdf(inputlist(k).prejudgerespsptimes,zeros(length(inputlist(k).judgerespy),1),inputlist(k).fs,0.001,0.02);
+                    sdf = Cal.sdf(inputlist(k).judgerespsptimes,inputlist(k).judgerespy,inputlist(k).fs,0.001,0.02); % 0.001,0.004
                     %                 sdf = Cal.sdf(neu.list(thisi).judgerespsptimes,neu.list(thisi).judgerespy,neu.list(thisi).fs,0.001,0.02);
                     [maxpresdf,~] = max(presdf);
                     [maxsdf,maxidx] = max(sdf);
 
-                    pre_frs = Cal.eachTrialFiringRate(neu.list(thisi).prejudgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
-                    sti_frs = Cal.eachTrialFiringRate(neu.list(thisi).judgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
+                    pre_frs = Cal.eachTrialFiringRate(inputlist(k).prejudgerespsptimes,length(inputlist(k).judgerespy)/inputlist(k).fs);
+                    sti_frs = Cal.eachTrialFiringRate(inputlist(k).judgerespsptimes,length(inputlist(k).judgerespy)/inputlist(k).fs);
 
                     [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
-                    neu.list(thisi).pvalue = p;
-                    neu.list(thisi).label = 0; % 初始化
-                    neu.list(thisi).sti_frs = mean(sti_frs);
-                    neu.list(thisi).pre_frs = mean(pre_frs);
+                    inputlist(k).pvalue = p;
+                    inputlist(k).label = 0; % 初始化
+                    inputlist(k).sti_frs = mean(sti_frs);
+                    inputlist(k).pre_frs = mean(pre_frs);
                     if h == 1
-                        neu.list(thisi).label = 1;
+                        inputlist(k).label = 1;
                         %                     if (num_of_not_empty_trials/length(neu.list(thisi).pltsptimes)<0.5)||(num_of_not_empty_trials<5) % if not 60% of the trails are not empty
                         %                         neu.list(thisi).label = 0;
                         %                     end
                     elseif maxsdf > 17 && maxsdf > maxpresdf % neu rescue
-                        neu.list(thisi).label = 1;
+                        inputlist(k).label = 1;
 
                     end
                 end
@@ -221,53 +238,50 @@ classdef Song < handle
 
 
             end
+            %             ids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'norm|deg'))); % find all norms
+            %             % ’syl'可以兼容旧的stimuli命名规则
 
-            ids = find(~cellfun(@isempty, regexp(cellstr({neu.list.stimuliname}.'),'norm|deg'))); % find all norms
-            % ’syl'可以兼容旧的stimuli命名规则
+            for k = 1: length(inputlist)
+                % thisi = ids(n);
+              %  presptimes = Extract.sptimes
 
-            for n = 1: length(ids)
-                thisi = ids(n);
-                presptimes = Extract.sptimes
-
-                presdf = Cal.sdf(neu.list(thisi).prejudgerespsptimes,zeros(length(neu.list(thisi).judgerespy),1),neu.list(thisi).fs,0.001,0.02);
-                sdf = Cal.sdf(neu.list(thisi).judgerespsptimes,neu.list(thisi).judgerespy,neu.list(thisi).fs,0.001,0.02); % 0.001,0.004
+                presdf = Cal.sdf(inputlist(k).presptimes,zeros(length(inputlist(k).y),1),inputlist(k).fs,0.001,0.02);
+                sdf = Cal.sdf(inputlist(k).sptimes,inputlist(k).y,inputlist(k).fs,0.001,0.02); % 0.001,0.004
                 %figure; plot(sdf);
                 % figure; Draw.three(neu.list(thisi).judgerespy,neu.list(thisi).fs,neu.list(thisi).judgerespsptimes);
                 % figure; Draw.three(neu.list(thisi).plty,neu.list(thisi).fs,neu.list(thisi).pltsptimes);
                 [maxpresdf,~] = max(presdf);
                 [maxsdf,maxidx] = max(sdf);
                 percentage_max = maxidx/length(sdf);
-                time_max = length(neu.list(thisi).judgerespy)/neu.list(thisi).fs*percentage_max;
+                time_max = length(inputlist(k).y)/inputlist(k).fs*percentage_max;
                 % check whether the surroding are has spikes in most of the
                 % trials
-                extracted_sptimes = Extract.sptimes(neu.list(thisi).judgerespsptimes,time_max - 0.15, time_max + 0.15); % 前后 100ms
+                extracted_sptimes = Extract.sptimes(inputlist(k).sptimes,time_max - 0.15, time_max + 0.15); % 前后 100ms
                 num_of_not_empty_trials = length(find(~cellfun(@isempty, extracted_sptimes)));
 
                 % ttest2 to test whether sti_frs are significantly higher
                 % than pre_frs
-                pre_frs = Cal.eachTrialFiringRate(neu.list(thisi).prejudgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
-                sti_frs = Cal.eachTrialFiringRate(neu.list(thisi).judgerespsptimes,length(neu.list(thisi).judgerespy)/neu.list(thisi).fs);
+                pre_frs = Cal.eachTrialFiringRate(inputlist(k).presptimes,length(inputlist(k).y)/inputlist(k).fs);
+                sti_frs = Cal.eachTrialFiringRate(inputlist(k).sptimes,length(inputlist(k).y)/inputlist(k).fs);
 
-                [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
-                neu.list(thisi).pvalue = p;
-                neu.list(thisi).label = 0; % 初始化
-
-
+                [p,h] = signrank(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
+                inputlist(k).pvalue = p;
                 % mean_maxsdf = maxsdf/length(neu.list(thisi).judgerespsptimes);
-                neu.list(thisi).maxsdf = maxsdf;
-                neu.list(thisi).label = 0; % 初始化
-                if h == 1&&(maxsdf) > 17 && maxsdf > maxpresdf %如果是 time-locked response
-                    neu.list(thisi).label = 1;
+                inputlist(k).maxsdf = maxsdf;
+                inputlist(k).label = h; % 初始化
 
-                    if (num_of_not_empty_trials/length(neu.list(thisi).pltsptimes)<0.5)||(num_of_not_empty_trials<5) % if not 60% of the trails are not empty
-                        neu.list(thisi).label = 0;
-                    end
+            
 
-                elseif mean(sdf)> 9*mean(presdf) && mean(sdf)>0.6 % 如果不是 time-locked response
-                    neu.list(thisi).label = 1;   %  set to 2 ,biao ming shi fei time-locked response
+
+                if maxsdf > 17 && maxsdf > maxpresdf %如果是 time-locked response
+                    inputlist(k).label = 1;
                 end
 
-                neu.song = Song(neu.list); %不仅主list,而且subclass Song 的 norm list也要更新！
+                if (num_of_not_empty_trials/length(inputlist(k).pltsptimes)<0.5)||(num_of_not_empty_trials<5) % if not 60% of the trails are not empty
+                    inputlist(k).label = 0;
+                end
+
+
 
                 %                 figure;  % 测试用代码
                 %                 Draw.three(neu.list(thisi).plty,neu.list(thisi).fs,neu.list(thisi).pltsptimes);
@@ -275,6 +289,8 @@ classdef Song < handle
                 %                 close(gcf)
 
             end
+
+            outputlist = inputlist;
 
         end
 

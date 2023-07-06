@@ -22,6 +22,40 @@ classdef MetaStimuli < handle
 
     methods(Static)
 
+
+        function genFigByTypes(input,targetdir)
+
+            tic
+            % targetdir = 'ClassifiedFigs';
+            mkdir(targetdir);
+
+            unique_categos = unique([input.catego].');
+            wb = PoolWaitbar(length(input),'Processing');
+            parfor k = 1:length(unique_categos )
+                subdir = sprintf('%s\\%u',targetdir,unique_categos(k));
+                mkdir(subdir);
+                sub_conote = input(find([input.catego].' == unique_categos(k)));
+
+                %sub_conote = sub_conote([sub_conote.distance].'~=0);  % 在bingyang里的不生成
+
+                mkdir(targetdir);
+                for kk = 1:length(sub_conote)
+                    padded_y = [zeros(400,1);sub_conote(kk).y;zeros(400,1)];
+                    figure('Position',[681 403 length(padded_y)*187/2305 543]);
+                    Draw.spec(padded_y,sub_conote(kk).fs)
+                    colormap('jet')
+                    saveas(gcf,fullfile(subdir,sprintf('%s.png',sub_conote(kk).fullname)));
+                    close(gcf)
+                    increment(wb);
+                end
+                toc
+
+            end
+
+
+        end
+
+
         function splited = split(fraginf)
             % 把集合在一起的fraginf分割成对于每个eleinf的单个fraginf
             % input is the s.sylinf, output is the sylinf for each each song
@@ -87,18 +121,27 @@ classdef MetaStimuli < handle
 
         end
 
-        function metadata = read2ele(file_or_dir)  % read to elements
+        function metadata = read2ele(files_or_dir, controler)  % read to elements
             % 功能：读取鸟歌的分割数据到element
 
-            if length(file_or_dir) == 1 && exist(file_or_dir,'dir')
-                matfiles = Extract.filesAllLevel(file_or_dir,'*.mat');
+            if length(files_or_dir) == 1 && exist(files_or_dir,'dir')
+                matfiles = Extract.filesAllLevel(files_or_dir,'*.mat');
             else
-                matfiles = file_or_dir;
+                matfiles = files_or_dir;
             end
 
             song_collect = {};
 
-            for m = 1: length(matfiles) % parfor here m = 85
+            if exist('controler','var') && strcmp(controler,'no-image')
+                to_draw_or_not_to_draw = 0;
+
+            else
+                to_draw_or_not_to_draw = 1;
+            end
+
+
+
+            parfor m = 1: length(matfiles) % parfor here m = 85
 
                 loaded = load(matfiles{m});
 
@@ -120,7 +163,13 @@ classdef MetaStimuli < handle
                 end
 
                 fiy = bandpass(loaded.segdata.rawy,[900 6000],fs); %% It is very important that here the y should be fiy !!!!! filtered y instead of the raw y
-                I = Cal.spec(fiy,fs);
+               
+                if to_draw_or_not_to_draw == 1
+                    I = Cal.spec(fiy,fs);
+
+                else
+                    
+                end
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 initials = alledges(1:2:end);
                 terminals = alledges(2:2:end); % 2023.01.22
@@ -152,8 +201,14 @@ classdef MetaStimuli < handle
                     end
                     song_eleinf(w).fs = fs;
 
-                    imgratio = size(I,2)/(length(hp_y)/fs);
-                    song_eleinf(w).fragI = imresize(I(:,max(round(initials(w)*imgratio),1):round(terminals(w)*imgratio)),[257,50]);
+
+                    if to_draw_or_not_to_draw == 1
+                        imgratio = size(I,2)/(length(hp_y)/fs);
+                        song_eleinf(w).fragI = imresize(I(:,max(round(initials(w)*imgratio),1):round(terminals(w)*imgratio)),[257,50]);
+
+                    else
+                    end
+
                     song_eleinf(w).fragid = w;
                     song_eleinf(w).unifragnames = sprintf('%s-%02u',Convert.bid(song_eleinf(w).songname ),song_eleinf(w).fragid);
 
@@ -488,7 +543,7 @@ classdef MetaStimuli < handle
 
                 figure('Position',[681 403 length(padded_y)*187/2305 543]);
                 Draw.spec(padded_y,meta_ele(k).fs)
-                saveas(gcf,fullfile(targetdir,sprintf('%s.png',meta_ele(k).stimuliname)))
+                saveas(gcf,fullfile(targetdir,sprintf('%s.png',meta_ele(k).fullname)))
                 close(gcf)
             end
 
@@ -497,12 +552,20 @@ classdef MetaStimuli < handle
         function metadata_withcatego = replenishCatego(csv_path,metadata)
             dbstop if error
             csv_info = table2struct(readtable(csv_path));
+
             for k = 1:length(metadata)
                 if ~isempty( csv_info(find(~cellfun(@isempty, regexp({csv_info.name}.',metadata(k).fullname)))))
                     metadata(k).catego = csv_info(find(~cellfun(@isempty, regexp({csv_info.name}.',metadata(k).fullname)))).catego;
                 else
-                    metadata(k).catego = 0;
+                    metadata(k).catego = -1;
+                    warning('存在未分类的fragments');
                 end
+            end
+
+            for k = 1:length(metadata)
+                metadata(k).sat = SAT_sound(metadata(k).y,metadata(k).fs);
+                disp(k);
+                %fprintf('Now ths k is %u',k);
             end
 
             metadata_withcatego = metadata;

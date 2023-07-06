@@ -17,6 +17,81 @@ classdef Draw
 
 
 
+          function showselect(list,ids,rangeratio)
+            
+            selected = list(ids);
+           % selected = Display.f0(selected);
+            
+            leny = cellfun(@length,{selected.y}.');
+            lenrawy = cellfun(@length,{selected.rawy}.');
+            lenplty = cellfun(@length,{selected.plty}.');
+            
+            maxy = max(leny);
+            maxrawy = max(lenrawy);
+            maxplty = max(lenplty);
+            
+            for k = 1: length(selected)
+
+                selected(k).leny = leny(k);
+                selected(k).lenrawy = lenrawy(k);
+                selected(k).lenplty = lenplty(k);
+
+                selected(k).f0y = [zeros([maxy - selected(k).leny,1]);selected(k).y]; % f0 means front-pad-zero
+                selected(k).f0rawy = [zeros([maxy - selected(k).lenrawy,1]);selected(k).rawy];
+                selected(k).f0plty = [zeros([maxy - selected(k).leny,1]);selected(k).plty];
+
+                diffy = (maxy - selected(k).leny)/selected(k).fs;
+                diffrawy = (maxrawy - selected(k).lenrawy)/selected(k).fs;
+                diffplty = (maxplty - selected(k).lenplty)/selected(k).fs;
+
+                for m = 1: length(selected(k).sptimes)
+                    selected(k).f0sptimes{m} = selected(k).sptimes{m} + diffy;
+                    selected(k).f0rawsptimes{m} = selected(k).rawsptimes{m} + diffrawy;
+                    selected(k).f0pltsptimes{m} = selected(k).pltsptimes{m} + diffplty;  % bad code...
+                end
+            end
+
+            % f0 means front pad zero
+
+
+            
+            figure('Color','w');
+            len = length(selected);
+            ax = tight_subplot(2*len, 1, 0.015, 0.02, 0);
+            
+            for k = 1: len
+                %subplot(2*len,1, 2*(k-1)+ 1);
+                axes(ax(2*(k-1)+ 1));
+                Draw.spec(selected(k).f0plty,selected(k).fs);
+                xlabel('')
+                ylabel('')
+                set(gca,'TickLength',[0 .01])
+                set(gca,'Yticklabel',[])
+                set(gca,'Xticklabel',[])
+                signallen = length(selected(k).f0plty)/selected(k).fs;% length of y signal
+                xlim([rangeratio(1)*signallen,rangeratio(2)*signallen]);
+                axis off
+                %subplot(2*len,1, 2*k);
+                axes(ax(2*k));
+                Draw.raster(selected(k).f0pltsptimes,selected(k).f0plty,selected(k).fs,4.2);
+                %xlim([0,length(selected(k).f0plty)/selected(k).fs]);
+                xlim([rangeratio(1)*signallen,rangeratio(2)*signallen]);
+                ylabel('')
+                set(gca,'TickLength',[0 .01])
+                if k~= len
+                    set(gca,'Yticklabel',[])
+                    set(gca,'Xticklabel',[])
+                else
+                    xlabel(selected(1).stimuliname);
+                end
+                axis off
+                
+            end
+            
+            
+          end
+
+
         function pvalue = Permutation(allvalues,thres)
             [bins,edges] =histcounts(allvalues,60,'Normalization','probability')
             centers = edges(1:end-1) + mean(diff(edges))/2;
@@ -146,7 +221,9 @@ classdef Draw
             [S,F,T] = spectrogram(y,hamming(512),512-round(fs/1e3),512,fs);
             imagesc(T, F, log(1+abs(S)) ); %plot the log spectrum
             set(gca,'YDir','normal');
-            colormap('jet')
+
+            colormap(PM.cmap1);
+            %colormap('jet')
             set(gca, 'CLim', [0, 3])  % change the contrast
             %xlim([min(T),max(T)]);
              ylim([min(F),max(F)]);
@@ -210,7 +287,7 @@ classdef Draw
             end
             
             if ~exist ('linewidth','var')
-               linewidth = 1.5; % default color
+               linewidth = 2.5; % default color
             end
             
             idx = find(y,1);
@@ -518,7 +595,48 @@ classdef Draw
             
         
         end
-        
+
+        function text(textToDisplay)
+
+
+            % Define the text to be displayed
+           % textToDisplay = 'Hello, World!';
+
+            % Create a blank image
+            h = gcf;
+            position = h.Position;
+            imageSize = [h.Position(3), h.Position(4)]; % Adjust the size as per your requirements
+            image = ones(imageSize);
+
+            % Calculate the maximum font size that fits within the image
+            fontSize = 1;
+            while true
+                fontSize = fontSize + 1;
+                textWidth = numel(textToDisplay) * fontSize / 2;
+                textHeight = fontSize;
+                if textWidth > imageSize(2) || textHeight > imageSize(1)
+                    fontSize = fontSize - 1;
+                    break;
+                end
+            end
+
+            % Calculate the position to center the text
+            xPos = (imageSize(2) - numel(textToDisplay) * fontSize) / 2;
+            yPos = imageSize(1) / 2;
+
+            % Plot the text onto the image
+            
+          
+            imshow(image);
+            hold on;
+            text(-xPos, yPos, textToDisplay, 'FontSize', fontSize-6, 'Color', 'black', 'HorizontalAlignment', 'center','Interpreter','none');
+            box off
+            axis off
+            set(gcf, 'Position', position);
+            hold off;
+
+        end
+
         function three(y,fs,sptimes)
             subplot(3,1,1)
             Draw.spec(y,fs);
@@ -539,9 +657,106 @@ classdef Draw
         function two(y,fs,sptimes)
             subplot(2,1,1)
             Draw.spec(y,fs);
+            set(gca, 'XTickLabel', []);
+            subplot(2,1,2)
+            Draw.raster(sptimes, y, fs,4);
+        end
+
+
+        function two_forPaper(y,fs,sptimes)
+            subplot(2,1,1)
+            Draw.spec(y,fs);
+            set(gca,'xtick',[]);
+            set(gca,'ytick',[]);
+            set(gca, 'XTickLabel', []);
+            set(gca, 'YTickLabel', []);
+            xlabel('');
+            ylabel('');
+            box off
             subplot(2,1,2)
             Draw.raster(sptimes, y, fs,5);
-         end
+            set(gca,'xtick',[]);
+            set(gca,'ytick',[]);
+            set(gca, 'XTickLabel', []);
+            set(gca, 'YTickLabel', []);
+            h = gca;
+            h.YAxis.Visible = 'off';
+            set(gca,'LineWidth',3,'Color',[.9 .9 .9],'XColor',[.1 .1 .1]);
+
+        end
+
+
+
+        function six_forPoster(y1,sptimes1,y2,sptimes2,y3,sptimes3,fs)
+
+            subplot(6,1,1)
+            Draw.spec(y1,fs);
+            set(gca,'xtick',[]);
+            set(gca,'ytick',[]);
+            set(gca, 'XTickLabel', []);
+            set(gca, 'YTickLabel', []);
+            xlabel('');
+            ylabel('');
+            box off
+
+            subplot(6,1,2)
+            Draw.raster(sptimes1, y1, fs,5);
+            set(gca,'xtick',[]);
+            set(gca,'ytick',[]);
+            set(gca, 'XTickLabel', []);
+            set(gca, 'YTickLabel', []);
+            h = gca;
+            h.YAxis.Visible = 'off';
+            set(gca,'LineWidth',3,'Color',[.9 .9 .9],'XColor',[.1 .1 .1]);
+
+
+            subplot(6,1,3)
+            Draw.spec(y2,fs);
+            set(gca,'xtick',[]);
+            set(gca,'ytick',[]);
+            set(gca, 'XTickLabel', []);
+            set(gca, 'YTickLabel', []);
+            xlabel('');
+            ylabel('');
+            box off
+
+            subplot(6,1,4)
+            Draw.raster(sptimes2, y2, fs,5);
+            set(gca,'xtick',[]);
+            set(gca,'ytick',[]);
+            set(gca, 'XTickLabel', []);
+            set(gca, 'YTickLabel', []);
+            h = gca;
+            h.YAxis.Visible = 'off';
+            set(gca,'LineWidth',3,'Color',[.9 .9 .9],'XColor',[.1 .1 .1]);
+
+
+            subplot(6,1,5)
+            Draw.spec(y3,fs);
+            set(gca,'xtick',[]);
+            set(gca,'ytick',[]);
+            set(gca, 'XTickLabel', []);
+            set(gca, 'YTickLabel', []);
+            xlabel('');
+            ylabel('');
+            box off
+
+            subplot(6,1,6)
+            Draw.raster(sptimes3, y3, fs,5);
+            set(gca,'xtick',[]);
+            set(gca,'ytick',[]);
+            set(gca, 'XTickLabel', []);
+            set(gca, 'YTickLabel', []);
+            h = gca;
+            h.YAxis.Visible = 'off';
+            set(gca,'LineWidth',3,'Color',[.9 .9 .9],'XColor',[.1 .1 .1]);
+
+
+
+
+
+
+        end
          
         function four(y,fs,sptimes)
             

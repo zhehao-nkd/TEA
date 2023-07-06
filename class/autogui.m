@@ -18,11 +18,87 @@ classdef AutoGui < handle
             a.leftbutton = java.awt.event.InputEvent.BUTTON1_MASK;
             a.genWritelist;
         end
+        function [x,y] = findText(a,image, text, roi)
+            if exist('roi','var')
+                ocrResults = ocr(image,roi);
+            else
+                ocrResults = ocr(image);
+            end
+            bboxes = locateText(ocrResults,text,IgnoreCase=true);
+
+            %Iocr = insertShape(image,"FilledRectangle",bboxes);figure;imshow(Iocr)
+            %
+
+            if isempty(bboxes)
+                x = nan;
+                y = nan;
+                return
+            end
+
+            x = bboxes(1)+bboxes(3)/2;
+            y =  bboxes(2)+ bboxes(4)/2;
+
+        end
+
+        function deletion(a)
+
+            % Simulate pressing the Delete key
+            a.rob.keyPress(java.awt.event.KeyEvent.VK_DELETE);
+            a.rob.keyRelease(java.awt.event.KeyEvent.VK_DELETE);
+
+        end
+
+        function ctrlA(a)
+
+            % Create a Java Robot object
+         
+
+            % Simulate pressing and holding the Ctrl key
+            a.rob.keyPress(java.awt.event.KeyEvent.VK_CONTROL);
+
+            % Simulate pressing the 'A' key
+            a.rob.keyPress(java.awt.event.KeyEvent.VK_A);
+            a.rob.keyRelease(java.awt.event.KeyEvent.VK_A);
+
+            % Simulate releasing the 'A' key
+            a.rob.keyRelease(java.awt.event.KeyEvent.VK_CONTROL);
+
+        end
+
+        function moveScroll(a,scrollAmount,wait)
+
+            if exist('wait','var')
+                pause(wait);
+            end
+
+
+            % Specify the number of wheel movements (positive for scrolling up, negative for scrolling down)
+            % scrollAmount = 30; % Change this value as needed
+
+            % Simulate mouse wheel movement
+            a.rob.mouseWheel(-scrollAmount);
+
+        end
         
         function move(a,x,y)
             %pause(wait);
             a.rob.mouseMove(x,y);
             
+        end
+
+        function ctrlV(a)
+       
+
+            % Simulate pressing and holding the Ctrl key
+            a.rob.keyPress(java.awt.event.KeyEvent.VK_CONTROL);
+
+            % Simulate pressing the 'V' key
+            a.rob.keyPress(java.awt.event.KeyEvent.VK_V);
+            a.rob.keyRelease(java.awt.event.KeyEvent.VK_V);
+
+            % Simulate releasing the 'V' key
+            a.rob.keyRelease(java.awt.event.KeyEvent.VK_CONTROL);
+
         end
         
         function a = genWritelist(a)
@@ -87,6 +163,28 @@ classdef AutoGui < handle
             a.rob.mouseRelease(a.leftbutton);
             a.rob.mousePress(a.leftbutton);
             a.rob.mouseRelease(a.leftbutton);
+        end
+
+        function Deprecated_Typewrite(a,textToType)
+
+           
+
+            % Specify the text you want to type
+            %textToType = 'Hello, World!';
+
+            % Convert the text to an array of characters
+            characters = char(textToType);
+
+            % Simulate typing each character
+            for i = 1:length(characters)
+                character = characters(i);
+
+                % Simulate typing the character
+                a.rob.keyPress(character);
+                a.rob.keyRelease(character);
+            end
+
+
         end
         
         function typewrite(a,txt)

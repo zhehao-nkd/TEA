@@ -13,8 +13,12 @@ classdef SpikeWaveform
     methods
         function wv = SpikeWaveform(input,mode) % timesdurations是针对mergedfiles
             dbstop if error
+
+            warning('@SpikeWaveform ：Not constructed yet');
             
             switch mode
+
+                
 
                 case 'single or merge'
                     wv.adfreq = input.adfreq;
@@ -22,8 +26,8 @@ classdef SpikeWaveform
                     times = input.times;
                     timeedges = input.timeedges;
                     wv.all = waveforms;
-                    disp('@SpikeWaveform ：这个计算有大问题,timeedges没有把gap 算上，等有空改正');
-                    for k = 1:length(timeedges) % 这个计算有大问题
+                    
+                    for k = 1:length(timeedges) % 这个计算有大问题!!
                         ids = find(times >=timeedges{k}(1)&times <timeedges{k}(2));
                         wv.separated{k} = waveforms(ids,:);
                     end
@@ -49,8 +53,11 @@ classdef SpikeWaveform
             % temporialriy neu.neurons{1}
             waveforms = wv.separated{1};
 
+            % 如果只取前0.8ms
+            waveforms = waveforms(:,1:32);
+
             hold on
-            plot(waveforms.',':','Color',[.5,.5,.5]);
+            plot(waveforms.','-','Color',[.5,.5,.5],'LineWidth',1);
             plot(max(waveforms),'--','Color','blue');
             plot(min(waveforms),'--','Color','blue');
             plot(mean(waveforms),'Color','red');
@@ -64,20 +71,45 @@ classdef SpikeWaveform
             
         end
         
-        function drawAll(wv)
+        function drawAll(wv, handle)
             % this function is used to draw waveform
             % what this works for concatenating all neurons together???
+            if exist('handle','var') && handle == 1
+                figure('Color','w','Position',[2031 376 807 600]);
+            end
+
             for k = 1: length(wv.separated)
                 waveforms{k} = wv.separated{k};
+                waveforms{k} = waveforms{k}(:,1:32);
             end
             concat_waveforms = vertcat(waveforms{:});
             %figure('Color','w');
             hold on
-            plot(concat_waveforms.',':','Color',[.5,.5,.5]);
+            plot(concat_waveforms.','-','Color',[.5,.5,.5],'LineWidth',1);
             plot(max(concat_waveforms),'--','Color','blue');
             plot(min(concat_waveforms),'--','Color','blue');
             plot(mean(concat_waveforms),'Color','red');
             xlabel('all waveforms')
+
+
+            % 把需要的Text 信息标记出来
+
+
+            % Set the text content
+            textStr = sprintf('mWL:%f\nnumSpikes:%u',wv.calMeanWaveLength,size(concat_waveforms,1));
+
+            % Get the current x and y axis limits
+            xLimits = xlim(gca);
+            yLimits = ylim(gca);
+
+            % Calculate the position of the text
+            textX = xLimits(1) + 0.05 * diff(xLimits);
+            textY = yLimits(2) - 0.05 * diff(yLimits);
+
+            % Add the text to the figure
+            text(textX, textY, textStr,'FontSize', 15,'Color','b');
+
+
             
         end
 
@@ -89,6 +121,7 @@ classdef SpikeWaveform
             for k = 1:length(wv.separated)
                 subplot(length(wv.separated),1,k)
                 local_waveform = wv.separated{k};
+                local_waveform = local_waveform(:,1:32);
                 hold on
                 plot(local_waveform.',':','Color',[cmap(k,:),0.3]);
                 plot(max(local_waveform),'--','Color',cmap(k,:)*0.7);
@@ -109,47 +142,73 @@ classdef SpikeWaveform
 
             
             figure('Color','w','Position',[2031 376 807 600]);
+
+            
             for k = 1: length(wv.separated)
                 waveforms{k} = wv.separated{k};
+                waveforms{k} = waveforms{k}(:,1:32);
             end
             concat_waveforms = vertcat(waveforms{:});
             %figure('Color','w');
 
             x = [1:size(concat_waveforms.',1)]* (1/wv.adfreq)*1000;
             hold on
-            plot(x,concat_waveforms.',':','Color',[.5,.5,.5]);
-            plot(x,max(concat_waveforms),'--','Color','blue');
-            plot(x,min(concat_waveforms),'--','Color','blue');
-            plot(x,mean(concat_waveforms),'Color','red');
+            plot(concat_waveforms.','-','Color',[.5,.5,.5],'LineWidth',1.2);
+            plot(max(concat_waveforms),'--','Color','blue');
+            plot(min(concat_waveforms),'--','Color','blue');
+            plot(mean(concat_waveforms),'Color','red');
             xlabel('all waveforms (ms)')
+            title(wv.formated_name,'Interpreter', 'none');
+
+            % 把需要的Text 信息标记出来
+
+
+            % Set the text content
+            textStr = sprintf('mWL:%f\nnumSpikes:%u',wv.calMeanWaveLength,size(concat_waveforms,1));
+
+            % Get the current x and y axis limits
+            xLimits = xlim(gca);
+            yLimits = ylim(gca);
+
+            % Calculate the position of the text
+            textX = xLimits(1) + 0.05 * diff(xLimits);
+            textY = yLimits(2) - 0.05 * diff(yLimits);
+
+            % Add the text to the figure
+            text(textX, textY, textStr,'FontSize', 15,'Color','b');
+
+
+
+
 
             img = {};
             img{1} = getframe(gcf).cdata;
             close(gcf);
 
-            
-
-            cmap = colormap(flip(hsv(7)));
-            for k = 1:length(wv.separated)
-                figure('Color','w','Position',[2031 376 807 600]);
-                local_waveform = wv.separated{k};
-                hold on
-
-                if ~isempty(local_waveform) 
-                    plot(x,local_waveform.',':','Color',[cmap(k,:),0.3]);
-                    plot(x,max(local_waveform),'--','Color',cmap(k,:)*0.7);
-                    plot(x,min(local_waveform),'--','Color',cmap(k,:)*0.7);
-                    plot(x,mean(local_waveform),'-*','Color',cmap(k,:)*0.5);
-                    xlabel(sprintf('第%u个文件',k));
-                    img{1+k} = getframe(gcf).cdata;
-                    close(gcf);
-                end
-
-            end
+%             
+% 
+%             cmap = colormap(flip(hsv(7)));
+%             for k = 1:length(wv.separated)
+%                 figure('Color','w','Position',[2031 376 807 600]);
+%                 local_waveform = wv.separated{k};
+%                 local_waveform = local_waveform(:,1:32);
+%                 hold on
+% 
+%                 if ~isempty(local_waveform) 
+%                     plot(x,local_waveform.',':','Color',[cmap(k,:),0.3]);
+%                     plot(x,max(local_waveform),'--','Color',cmap(k,:)*0.7);
+%                     plot(x,min(local_waveform),'--','Color',cmap(k,:)*0.7);
+%                     plot(x,mean(local_waveform),'-*','Color',cmap(k,:)*0.5);
+%                     xlabel(sprintf('第%u个文件',k));
+%                     img{1+k} = getframe(gcf).cdata;
+%                     close(gcf);
+%                 end
+% 
+%             end
 
             allimg = vertcat(img{:});
 
-            imwrite(allimg,sprintf('黄州CompleteDraw_%s.png', wv.formated_name));
+            imwrite(allimg,sprintf('黄州Waveform_%s.png', wv.formated_name));
 
 
         end

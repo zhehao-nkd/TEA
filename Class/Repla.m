@@ -1778,7 +1778,25 @@ classdef Repla < handle
             % remove those with catego num as 0
 %             idsnot0 = find([sequential_song_meta.catego].' ~= 0);
 %             sequential_song_meta = sequential_song_meta(idsnot0);
-            disp('Remove those with catego num as 0');
+
+
+            % 首先计算一下每个syllable出现的频率
+
+            syllable_count = [];
+            unique_types = unique([sequential_song_meta.catego].');
+            for k = 1:length(unique_types)
+
+                syllable_count(k) = length(find([sequential_song_meta.catego].'== unique_types(k)));
+
+            end
+
+            syllable_frequency = syllable_count/sum(syllable_count);
+
+
+            frequencymap = syllable_frequency.*syllable_frequency.';
+
+
+            %disp('Remove those with catego num as 0');
             splited = MetaStimuli.split(sequential_song_meta); % 把大的struct分解成对单个song的
             collect_transfering = {};
             for k = 1: length(splited) % 对每个song计算transfering的计数
@@ -1805,35 +1823,60 @@ classdef Repla < handle
 
             count = 0;
             for k = 1:length(all_categos)
+
+                count_initial = count + 1;
                 for kk = 1:length(all_categos)
                     count = count + 1;
-                    relation_map(k,kk) = length(intersect(...
-                        find([transitioncollect.first] == all_categos(k)),...
-                        find([transitioncollect.second] == all_categos(kk))));
+                    relation_map(kk,k) = length(intersect(... % k , 列，first
+                        find([transitioncollect.second] == all_categos(kk)),...
+                        find([transitioncollect.first] == all_categos(k))));
 
                     transition_statics(count).firstsyllable = k;
                     transition_statics(count).secondsyllable = kk;
                     transition_statics(count).firstsecond = [k,kk];
-                    transition_statics(count).counts = relation_map(k,kk);
+                    transition_statics(count).counts = relation_map(kk,k); % first 是几代表第几列
                     disp([k,kk]);
                 end
+
+                count_end = count;
+
+
+                sum_same_first = sum(relation_map(:,k));
+                for index = count_initial:count_end
+
+                    transition_statics(index).counts_same_first = sum_same_first ;
+
+                end
+
+
             end
 
             all_counts = sum(sum(relation_map));
+
+
 
             % sort the transition_statics and assign the rank
             transition_statics = table2struct(sortrows(struct2table(transition_statics),'counts','descend'));
             for k = 1:length(transition_statics)
                 transition_statics(k).rank = k; % rank越小， transition越常见
                 transition_statics(k).chance =  transition_statics(k).counts/all_counts;
-                transition_statics(k).chance_percentage =   transition_statics(k).chance*100;
+                transition_statics(k).chance_percentage = transition_statics(k).counts/all_counts*100;
+
+                transition_statics(k).frequency_post1st =   transition_statics(k).counts/transition_statics(k).counts_same_first*100;
+
+
+                calculated_frequency = frequencymap(transition_statics(k).firstsyllable,transition_statics(k).secondsyllable);
+                transition_statics(k).deviation_chance =   transition_statics(k).chance_percentage - calculated_frequency*100;
+                transition_statics(k).predicted = calculated_frequency*100;
+
             end
 
 
             % calculate rank when the second syllable is the same
             summer_sublist = {};
-            for k = 1:length(unique([transition_statics.firstsyllable].'))
-                sublist =transition_statics(find([transition_statics.secondsyllable].' == k));
+            unique_types = unique([transition_statics.firstsyllable].');
+            for k = 1:length(unique_types)
+                sublist =transition_statics(find([transition_statics.secondsyllable].' == unique_types(k)));
                 [~,index] = sortrows([sublist.chance_percentage].'); sublist = sublist(index(end:-1:1)); clear index
                 for kk = 1:length(sublist)
                     sublist(kk).same_second_rank = kk; % when the second syllable is the same

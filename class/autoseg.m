@@ -37,7 +37,7 @@ classdef AutoSeg
 
             %不需要restrict bout的数量
 
-            wb = PoolWaitbar(length(filenames),'自动分割birdsong');
+            wb = PoolWaitbar(length(filenames),'Auto-segmenting...');
             for idx = 1: length(filenames)
 
                 if ~isempty(regexp(filenames{idx},'WNS', 'once'))  % if the name contain the 'WNS'
@@ -548,7 +548,7 @@ classdef AutoSeg
             eleedge = T(tp_sum);
 
 
-            disp('白马啸西风')
+            %disp('白马啸西风')
 
         end
 
@@ -717,7 +717,7 @@ classdef AutoSeg
 
             title(sprintf('%s.png',birdid));
 
-            figdir = '对TargetSongs进行自动分割';
+            figdir = 'AutoSeg_Images';
             mkdir(figdir);
 
             if exist(sprintf('%s\\FinalResult-%s.png',figdir,birdid),'file')
@@ -961,7 +961,7 @@ classdef AutoSeg
 
             else  %如果不需要restrict bout的数量
 
-                wb = PoolWaitbar(length(filenames),'自动分割birdsong')
+                wb = PoolWaitbar(length(filenames),'Auto-Segmenting...')
                 for idx = 1: length(filenames)
 
                     if ~isempty(regexp(filenames{idx},'WNS', 'once'))  % if the name contain the 'WNS'

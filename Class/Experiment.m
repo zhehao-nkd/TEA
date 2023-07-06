@@ -34,6 +34,7 @@
         tg
 
         sp % sp
+        SNR
         
     end
     
@@ -66,6 +67,8 @@
             exp.config.lieshu = 12;
             exp.config.figsize = PM.size3plots; % to be edited
 
+            exp.SNR = exp.calculateSNR;
+
            
 
             % 更新list
@@ -74,6 +77,36 @@
             
         end
 
+      
+
+        function SNR = calculateSNR(exp)
+
+            %比较 信号的valley和estimated 的noise 的standard deviation的比例
+
+            % temp = strcat("E:\Trustable\" ,erase(neu.experiments{1, 1}.inputs.pl2data,("F:\"|"G:\")));
+
+            temp = exp.inputs.pl2data;
+            try
+                allsignal = PL2Ad(temp, exp.info.channelname).Values;
+                signalltable= Spike.extract_specific_channel(temp,exp.info.channelname);
+                %allsignal = PL2Ad(neu.experiments{1, 1}.inputs.pl2data, neu.info.channelname).Values;
+
+                noiselevel =  median(abs(allsignal)/0.6745);
+
+                signallevel = mean(abs(signalltable(signalltable.unit == exp.info.unitname,:).valley));
+                SNR = signallevel/noiselevel;  % 最少要大于5
+                % 来源是 http://www.scholarpedia.org/article/Spike_sorting
+            catch
+
+                SNR = nan;
+
+            end
+     
+
+        end
+
+
+        
         function exp = knowWaves(exp)
             % 获取与waveform有关的信息
          

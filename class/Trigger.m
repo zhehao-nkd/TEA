@@ -176,9 +176,9 @@ classdef Trigger < handle
                 values = ad(sum(edited_frag_nums(1:k)) + 1:sum(frag_nums(1:k)));
                 % figure; plot(values);
 
-                if mean(values) > 0
+                if max(values) > 0
                     pulse_channel = values;
-                elseif mean(values) < 0
+                elseif max(values) < 0
                     pulse_channel = - values;
                 end
                 % figure; plot(pulse_channel); % for debug

@@ -124,7 +124,7 @@ classdef Chorus < handle
         end
 
     end
-    methods(Hidden = true)
+    methods
 
 
 

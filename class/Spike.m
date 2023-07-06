@@ -297,7 +297,7 @@ classdef Spike < handle
 
                 spchnum = find(~cellfun(@isempty, regexp(spchnames,channel_name)));
 
-                numunits = min(setdiff(find(pl2info.SpikeChannels{ spchnum}.UnitCounts == 0),[1]))-1; % can't be the first unit (unit 1), because unsorted migght be zero
+                numunits = min(setdiff(find(pl2info.SpikeChannels{spchnum}.UnitCounts == 0),[1]))-1; % can't be the first unit (unit 1), because unsorted migght be zero
                 chaname = regexp(pl2info.SpikeChannels{spchnum}.Name,'SPKC\d+','match');
                 chaname = chaname{1};
                 unitsnames = 0:1:numunits-1; % unsorted (==0) not included

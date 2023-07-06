@@ -85,7 +85,7 @@ classdef reviseSeg
             xlabel([...
                 '{\color[rgb]{0.5 .5 .5}white--element \color{red}red--syllable} Press Space to change color']);
             
-            ylabel( ' 右键--创建 左键--拖动 双击--删除 ');
+            ylabel( ' Right Click--Make Left Click--Move Double Click--Delete ');
             set(hAxes,'Color','k');
             
             set(hFig,'WindowButtonDownFcn',  @mouseDown);

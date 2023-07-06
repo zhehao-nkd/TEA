@@ -661,7 +661,7 @@ classdef Piece < handle %& EphysAnalysis
         end
         
         function e = rawthree(e)% draw three plots
-            figure('Position',[2157 670 560 420],'Color','w')
+            figure('Position',[648 316 1241 783],'Color','w')
             Draw.three(e.rawy,e.fs,e.rawsptimes);
             xlabel(e.sound.name);
            % subplot(3,1,1);

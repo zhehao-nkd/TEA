@@ -687,6 +687,7 @@ classdef Archon
             getfileid = @(x) str2num(regexp(convertCharsToStrings(x),'(?<=F)\d*','match'));
             for k = 1: length(valid_pl2files) % parfor
 
+
                 if ~isempty(... % 一旦目标文件是merge
                         find(~cellfun(@isempty, regexp(cellstr(valid_pl2files{k}),'merge'))))
                     b = Chorus(valid_pl2files{k},stimuli_dirs);
@@ -734,15 +735,19 @@ classdef Archon
             repla = A.repla;
             consistency = A.consistency;
             waveform = A.waveform;
+            imagecache = A.imagecache;
+            tags = A.tags;
+            list = A.list;
+% 
+%             A.song = [];
+%             A.deg = [];
+%             A.frag = [];
+%             A.repla = [];
+%             A.consistency = [];
+%             A.waveform = [];
+%             A.imagecache = [];
 
-            A.song = [];
-            A.deg = [];
-            A.frag = [];
-            A.repla = [];
-            A.consistency = [];
-            A.waveform = [];
-
-            save(A.info.formated_name,'A','info','song','deg','frag','repla','consistency','waveform','-v7.3');
+            save(A.info.formated_name,'info','song','deg','frag','repla','consistency','waveform','imagecache','tags','list','-v7.3');
            % save(A.info.formated_name,'A','info');
         end
 
@@ -859,7 +864,7 @@ classdef Archon
 
             error = struct;
 
-            for k = from_where:length(rest_roster) % parfor
+           parfor k = from_where:length(rest_roster) % parfor
 
                 tic;
                 try
@@ -873,11 +878,12 @@ classdef Archon
                     increment(wb);
 
                     disp(k);
-
+% 
                 catch ME
                     disp('Error here!!!');
                     error(k).num = k;
                     error(k).ME = ME;
+                    error(k).roster = rest_roster(k);
                 end
 
                 toc;

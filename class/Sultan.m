@@ -10,9 +10,9 @@ classdef Sultan < handle
 
     methods %计算方法
 
-        function st = Sultan(dirs_of_analysis)
+        function st = Sultan(cell_of_filepath)
 
-            st.mfiles = Extract.filename(dirs_of_analysis,'*.mat');
+            st.mfiles = cell_of_filepath%Extract.filename(dirs_of_analysis,'*.mat');
 
         end
 
@@ -308,7 +308,7 @@ classdef Sultan < handle
         end
 
 
-        function error = regenerateNeurons(st,diskname)
+        function error = Deprecated_regenerateNeurons(st,diskname)
             % generate the neurons from the source
             tic;
             % rerun the Neuron(experiments) to update&save the neuron objects
@@ -480,163 +480,6 @@ classdef Sultan < handle
         end
 
 
-        function How_Do_NCM_Neurons_respond_to_Songs_FR(st)
-            % 为了计算Neuron对每一个song的反应的大小
-            neuronfiles = st.mfiles;
-            dbstop if error
-
-            conkeywords = {'B346','B512','B521','B554','B606','G429','G506','G518','G548','G573',...
-                'G578','O331','O507','O509','O540','Y515','Y606','Y616'};
-            num_files = length(neuronfiles);
-            wb = PoolWaitbar(num_files,'loading...');
-            
-
-            responseinfo = struct;
-%             ana_pathes = neuronfiles;
-% %             collect_frtable = {};
-% %             collect_sdftable = {};
-%             error = struct;
-
-
-            summer = {};
-        %    findit = @(x) find();
-            for k = 1:3 %length(neuronfiles) % should be par-for
-                %                 try
-                loaded = load(neuronfiles{k});
-                A = loaded.A;
-                % A.judgeConResp_FR;
-                list18 = A.song.normlist(~cellfun(@isempty, regexp(cellstr({A.song.normlist.stimuliname}.'),strjoin(conkeywords,'|'))));
-
-
-                for kk = 1:length(list18)
-                    list18(kk).neuronname = A.info.formated_name;
-
-                end
-                summer{k} = list18;
-%                 normlist = A.list(find(~cellfun(@isempty, regexp(cellstr({A.list.stimuliname}.'),'norm-CON'))));
-%                 if isempty(normlist)
-%                     normlist = A.list(setdiff( find(~cellfun(@isempty, regexp(cellstr({A.list.stimuliname}.'),'norm'))),...
-%                         find(~cellfun(@isempty, regexp(cellstr({A.list.stimuliname}.'),'WNS|TUT|BOS|Fcall|Mcall|Het')) ) ));
-%                 end
-% 
-              
-%                 try
-%                     list18 = normlist(cellfun(@(x) findit(x),conkeywords)) ;
-%                 catch
-%                     continue
-%                 end
-% 
-%                 for li = 1:length(list18)
-%                     [list18(li).sdf,~] = histcounts( vertcat(list18(li).sptimes{:}), 0:0.2:round(length(list18(li).y)/list18(li).fs-0.5)+0.5);
-%                     %list18(li).sdf = Cal.sdf(list18(li).sptimes,list18(li).y,list18(li).fs,0.1,0.4);
-%                 end
-%                 atable = struct2table(list18);
-
-%                 atable.Properties.RowNames = cellstr(regexp(atable.stimuliname,'[ORGBY]\d+','match'));
-%                 frtable =  rows2vars( normalize(atable(:,'sti_frs'),'range',[0,1]));
-%                 %frtable =  rows2vars( atable(:,'sti_frs'));
-%                 frtable.OriginalVariableNames = A.info.formated_name;
-%                 collect_frtable{k}= frtable;
-% 
-% 
-%                 %sdf collection
-%                 sdftable =  rows2vars( atable(:,{'sdf'}));
-%                 sdftable.OriginalVariableNames = A.info.formated_name;
-%                 collect_sdftable{k}= sdftable;
-% 
-%                 increment(wb);
-                %                 catch ME
-                %
-                %                     error(k).ME = ME;
-                %                     error(k).identifier = ME.identifier;
-                %                     error(k).num = k;
-                %                 end
-
-            end
-
-            respinfo = struct2table(horzcat(summer{:}));
-
-            figure
-            h = heatmap(respinfo,'neuronname','stimuliname','ColorVariable','label')
-            colormap('hot');
-
-%             responsemap = vertcat(collect_frtable{:});
-%             responsemap.Properties.RowNames = cellstr(responsemap.OriginalVariableNames);
-%             responsemap =  removevars(responsemap,{'OriginalVariableNames'});
-% 
-%             % group by best stimuli
-%             [~,which_song_best] = max(responsemap{:,:},[],2);
-%             [best_stimuli_name, best_stimuli_rank] = sort(which_song_best,'ascend');
-%             responsemap =responsemap(best_stimuli_rank,:)
-% 
-%             % In each group, sort by mean FR of best stimuli
-%             uniques = unique(best_stimuli_name);
-%             collectsubmap = {};
-%             for k = 1:length(uniques)
-%                 submap = responsemap(find(uniques(k) == best_stimuli_name),:);
-%                 submap = sortrows(submap,uniques(k));
-%                 collectsubmap{k} = submap;
-%             end
-% 
-%             responsemap = vertcat(collectsubmap{:});
-%             figure('Position',[2056 523 853 542],'Color','w');
-%             %             imagesc(responsemap{:,:});
-%             toshow = responsemap{:,:};
-%             toshow(toshow < 0.5) = 0;
-%             imagesc(toshow); % temporary trick
-         
-%             colorbar;
-%             xlabel('18 Songs')
-%             ylabel('Neurons')
-%             %             hugeunpack = @(x) x{1}{1};
-%             %             title(unique(  cellfun(@hugeunpack,regexp(responsemap.Properties.RowNames,'[OBYRG]\d{3}','match'),'Uni',0 )  ))
-%             title(sprintf('Bird:%st',regexp(convertCharsToStrings(responsemap.Properties.RowNames{1}),'[OBYRG]\d{3}','match')));
-% 
-%             %close(wb);
-% 
-%             sdfmap = vertcat(collect_sdftable{:});
-%             sdfmap.Properties.RowNames = cellstr(sdfmap.OriginalVariableNames);
-%             sdfmap =  removevars(sdfmap,{'OriginalVariableNames'});
-% 
-%             % group by best stimuli
-%             %             customizedMax = @(x)
-%             maxvaluemap = cellfun(@max,sdfmap{:,:});
-% 
-%             [~,which_song_best] = max(maxvaluemap,[],2);
-%             [best_stimuli_name, best_stimuli_rank] = sort(which_song_best,'ascend');
-%             maxvaluemap =maxvaluemap(best_stimuli_rank,:);
-%             sdfmap =sdfmap(best_stimuli_rank,:)
-%             % In each group, sort by mean FR of best stimuli
-%             uniques = unique(best_stimuli_name);
-%             collectsubmap = {};
-%             for k = 1:length(uniques)
-%                 submap = sdfmap(find(uniques(k) == best_stimuli_name),:);
-%                 wheremaxmap = cellfun(@wheremax,submap{:,:});
-%                 [~,sorted_index] = sortrows(wheremaxmap,uniques(k));
-%                 submap = submap(sorted_index,:);
-%                 collectsubmap{k} = submap;
-%             end
-% 
-%             sdfmap = vertcat(collectsubmap{:});
-% 
-%             figure; imagesc(cell2mat(sdfmap{:,:}));
-%             colormap('hot');
-%             colorbar;
-%             xlabel('18 Songs');
-%             ylabel('Neurons');
-%             %             title( unique( regexp(responsemap.Properties.RowNames,'[OBYRG]\d{3}','match') ) )
-%             title(sprintf('Bird:%st',regexp(convertCharsToStrings(responsemap.Properties.RowNames{1}),'[OBYRG]\d{3}','match')));
-% 
-
-
-
-            function idx = wheremax(input)
-                [~,idx] = max(input);
-            end
-
-
-        end
-
         function Deprecated_drawCONResponse(st)
             % Extract binarized neuron'st responses to CONs
             dbstop if error
@@ -711,31 +554,7 @@ classdef Sultan < handle
 
         end
 
-        function histWaveLength(st)
-            dbstop if error
-            %             figure
-            %             imagesc(new_respmap);
-            %             xticks(1:length(new_cnames));
-            %             xticklabels(new_cnames);
-            %             yticks(1:length(new_rnames));
-            %             yticklabels(new_rnames);
-            %             set(gca,'TickLabelInterpreter','none');
 
-            wl_info = struct;
-
-            for k = 1: length(st.mfiles)
-                load(st.mfiles{k});
-                wl_info(k).wl = A.calMeanWaveLength;
-                wl_info(k).neuronname = A.unique_neuronname;
-            end
-
-            figure('Color','w');
-            histogram([wl_info.wl].',30); % originally 15
-
-            xlabel('Spike width (ms)');
-            ylabel('Neurons per bin');
-
-        end
 
 
  
@@ -747,145 +566,71 @@ classdef Sultan < handle
             %             memData = memory;
             %             memLimit = memData.MemAvailableAllArrays*0.95;
 
-            conkeywords = {'B346','B512','B521','B554','B606','G429','G506','G518','G548','G573',...
-                'G578','O331','O507','O509','O540','Y515','Y606','Y616'};
-            spekeywords = {'BOS','TUT','Fcall','Mcall','Het','WNS'};
+            keywords = {'B346','B512','B521','B554','B606','G429','G506','G518','G548','G573',...
+                'G578','O331','O507','O509','O540','Y515','Y606','Y616','G699','BOS','TUT','Fcall','Mcall','Het','WNS'};
 
-            wb = waitbar(0,'Start processing');
-            num_files = length(st.mfiles);
-            % Dummy call to nUpdateWaitbar to initialise
-            nUpdateWaitbar(num_files, wb);
-            % Go back to simply calling nUpdateWaitbar with the data
-            D = parallel.pool.DataQueue;
-            afterEach(D, @nUpdateWaitbar);
 
             conallneurons = struct;
-            ana_pathes = st.mfiles;
-            for k = 1: length(ana_pathes)
-                %                 memData = memory;
-                %                 if memData.MemUsedMATLAB > memLimit
-                %                     task = getCurrentTask();
-                %                     cancel(task);
-                %                 end
-
-                loaded = load(ana_pathes{k});
-                A = loaded.A;
-                FRINFO  = A.multiRepeatsFiringRate;
-                conallneurons(k).wl =  A.neurons{A.song_id}.calMeanWaveLength;
-                conallneurons(k).neuronname = A.formated_name;
-                conallneurons(k).mean_plt_fr = FRINFO.mean_plt_fr;
-
-                for kk = 1: length(conkeywords) % for Cons
-
-                    thisid = find(~cellfun(@isempty,regexp(cellstr({A.list.stimuliname}.'),['norm\S+(?!(TUT|BOS))',conkeywords{kk},'(?!(TUT|BOS))'] )));
-                    if length(thisid) == 1
-                        conallneurons(k).figcon{kk} = A.list(thisid).image;
-                    elseif isempty(thisid)
-                        conallneurons(k).figcon{kk} = uint8(255*ones(size(A.list(1).image)));
-                    else
-                        conallneurons(k).figcon{kk} = A.list(thisid(1)).image; % 如果norm song 不只播放了一次
-                    end
-                end
-
-                for kk = 1:length(spekeywords) %for Spes
-
-                    thisid = find(~cellfun(@isempty,regexp(cellstr({A.list.stimuliname}.'),['norm\S+',spekeywords{kk}] )));
-                    if length(thisid) == 1
-                        conallneurons(k).figspe{kk} = A.list(thisid).image;
-                    elseif isempty(thisid)
-                        conallneurons(k).figspe{kk} = uint8(255*ones(size(A.list(1).image)));
-                    else
-                        conallneurons(k).figspe{kk} = A.list(thisid(1)).image;
-                    end
-                end
-
-                figure('Position',[2108 544 690 438],'color','w','Visible','off')
-                A.neurons{A.song_id}.draw_waveform; % draw waveform plot
-                frame = getframe(gcf);close(gcf);
-                conallneurons(k).figwf = frame.cdata; % waveform figure
-
-                send(D, 1);
-
-            end
-
-            close(wb);
+            ana_pathes = st.mfiles; %可以排序
 
 
-            % draw the three plots
-            Icollect = {}; % to collect figure frames for each pairwise three plots
-            for k = 1: length(conallneurons)
-                for kk = 1: length(conallneurons(k).figcon)
-                    Icollect{k,kk} = conallneurons(k).figcon{kk};
-                end
-            end
+            num = 100;
 
-            specollect = {}; % to collect figure frames for each pairwise three plots
-            for k = 1: length(conallneurons)
-                for kk = 1: length(conallneurons(k).figspe)
-                    specollect{k,kk} = conallneurons(k).figspe{kk};
-                end
-            end
+            trails = ceil(length(ana_pathes)/num);
 
-            wfIcollect = {};
-            for g = 1: length(conallneurons);wfIcollect{g} = conallneurons(g).figwf;end
-            Icollect = horzcat(Icollect,specollect,wfIcollect.');
+            for n = 1:trails
 
-
-            % draw neuron ids column
-            nameIcollect = {};
-            for g = 1: length(conallneurons)
-                figure('Position',[2108 544 690 438],'color','w','menubar','none','Visible','off')
-                ah = gca ;
-                th = text(1,1,conallneurons(g).neuronname,'Interpreter','none','FontSize',51);
-                set(ah,'visible','off','xlim',[0 2],'ylim',[0 2],'Position',[0 0 1 1]) ;
-                set(th,'visible','on','HorizontalAlignment','center','VerticalAlignment','middle');
-                frame = getframe(gcf);
-                nameIcollect{g,1} = frame.cdata;
-                close(gcf)
-            end
-
-            finalIcollect = horzcat(Icollect,nameIcollect);
-            %finalI = cell2mat(finalIcollect);
-
-            numperfig = 50;
-            numsections = ceil(length(st.mfiles)/numperfig);
-
-            for k = 1: numsections
-
-                if k < numsections
-                    Icollect_this_section = finalIcollect((k-1)*numperfig+1:numperfig*k,:);
-                elseif k == numsections
-                    Icollect_this_section = finalIcollect((k-1)*numperfig+1:end,:);
-                end
-
-                I_this_section = cell2mat(Icollect_this_section);
-                t = Tiff(sprintf('原始顺序_Part%u.tiff',k),'w8');
-                setTag(t,'ImageLength',size(I_this_section,1));
-                setTag(t,'ImageWidth',size(I_this_section,2));
-                setTag(t,'Photometric',Tiff.Photometric.RGB);
-                setTag(t,'PlanarConfiguration',Tiff.PlanarConfiguration.Chunky);
-                setTag(t,'BitsPerSample',8);
-                setTag(t,'SamplesPerPixel',3);
-                % write data
-                write(t,I_this_section);
-                close(t);
-
-            end
-
-            % subfunctiuon
-            function p = nUpdateWaitbar(data, h)
-                persistent TOTAL COUNT H
-                if nargin == 2
-                    % initialisation mode
-                    H = h;
-                    TOTAL = data;
-                    COUNT = 0;
+                if num*n < length(ana_pathes)
+                    subfiles = ana_pathes(1+num*(n-1):num*n);
                 else
-                    % afterEach call, increment COUNT
-                    COUNT = 1 + COUNT;
-                    p = COUNT / TOTAL;
-                    waitbar(p, H,sprintf('此为总共%u个神经元中的%u',TOTAL,COUNT));
+                    subfiles = ana_pathes(1+num*(n-1):length(ana_pathes));
                 end
+
+                summer = {};
+                for k = 1: length(subfiles)
+
+                    loaded = load(subfiles{k},'song','info','imagecache');
+                    song = loaded.song;
+                    info = loaded.info;
+                    imagecache = loaded.imagecache;
+                    thisrow = {};
+
+                    for kk = 1:length(keywords)
+                        hitted = find(~cellfun(@isempty,regexp(cellstr({imagecache.responseimage.name}.'),keywords{kk})));
+                        threeplots = vertcat(imagecache.responseimage(hitted).spec,imagecache.responseimage(hitted).raster,imagecache.responseimage(hitted).sdf);
+                        hitted_in_song = find(~cellfun(@isempty,regexp(cellstr({song.normlist.name}.'),keywords{kk})));
+                        label = song.normlist( hitted_in_song).label;
+                        if label == 1
+                            threeplots =  Convert.colorEdge(threeplots,'r',18);
+                        end
+                        thisrow{kk} =  threeplots;
+                    end
+
+                    thisrow{length(keywords)+1} =   imagecache.waveimage;
+                    thisrow{length(keywords)+2} =   imagecache.nameimage;
+                    summer{k} = thisrow;
+
+                end
+
+
+%                 try
+
+                    allimages = vertcat(summer{:});
+                    I_this_section = cell2mat(allimages);
+                    t = Tiff(sprintf('ResponseMap_Part%u.tiff',n),'w8');
+                    %t = Tiff(sprintf('原始顺序_Part%u.tiff',k),'w8');
+                    setTag(t,'ImageLength',size(I_this_section,1));
+                    setTag(t,'ImageWidth',size(I_this_section,2));
+                    setTag(t,'Photometric',Tiff.Photometric.RGB);
+                    setTag(t,'PlanarConfiguration',Tiff.PlanarConfiguration.Chunky);
+                    setTag(t,'BitsPerSample',8);
+                    setTag(t,'SamplesPerPixel',3);
+                    % write data
+                    write(t,I_this_section);
+                    close(t);
+
+%                 catch
+%                 end
             end
 
 
@@ -945,7 +690,7 @@ classdef Sultan < handle
 
         end
 
-        function conallneurons = How_Do_NCM_Neurons_respond_to_Songs(st)
+        function conallneurons = ResponseMap2Songs_ThreePlots(st)
             %对每个neuron画出复杂的Three plots 阵列，Three plots会按照response map进行排列
 
             % Extract binarized neuron'st responses to CONs
@@ -959,17 +704,19 @@ classdef Sultan < handle
             wb = waitbar(0,'Start processing');
             num_files = length(st.mfiles);
             % Dummy call to nUpdateWaitbar to initialise
-            Utl.UpdateParforWaitbar(num_files, wb);
-            % Go back to simply calling nUpdateWaitbar with the data
-            D = parallel.pool.DataQueue;
-            afterEach(D, @Utl.UpdateParforWaitbar);
+            wb = PoolWaitbar(num_files,"Running")
+%             Utl.UpdateParforWaitbar(num_files, wb);
+%             % Go back to simply calling nUpdateWaitbar with the data
+%             D = parallel.pool.DataQueue;
+%             afterEach(D, @Utl.UpdateParforWaitbar);
 
             conallneurons = struct;
             ana_pathes = st.mfiles;
             for k = 1: length(ana_pathes) % should be par-for
-                loaded = load(ana_pathes{k});
-                A = loaded.A;
-                A.judgeConResp_FR;
+                loaded = load(ana_pathes{k},'song');
+                sg = loaded.song;
+                
+                %.judgeConResp_FR;
                 %A.judgeConResp; % update con resp labels
                 conallneurons(k).wl =  A.info.wl;
                 conallneurons(k).neuronname = A.info.formated_name;
@@ -1009,10 +756,12 @@ classdef Sultan < handle
                 A.experiments{A.extra.song_id}.drawWaveform; % draw waveform plot
                 frame = getframe(gcf);close(gcf);
                 conallneurons(k).figwf = frame.cdata; % waveform figure
+
+                increment(wb);
                 %waitbar(k/length(st.mfiles),wb,sprintf('%u of %u files',k,length(st.mfiles)));
 
-                % Note we send only an "increment" for the waitbar.
-                send(D, 1);
+%                 % Note we send only an "increment" for the waitbar.
+%                 send(D, 1);
 
             end
 
@@ -1175,7 +924,7 @@ classdef Sultan < handle
             common_spes = {};
 
             for k = 1: length(st.mfiles)
-                load(st.mfiles{k});
+                load(st.mfiles{k},'song');
                 this_neuron = A.neurons{A.song_id};
                 Conlist = Neuron(this_neuron).evaluateConResponse;
                 if length(Conlist) >= 18 % hard code here
@@ -2095,6 +1844,115 @@ classdef Sultan < handle
     end
 
     methods(Static) % 新的静态方法
+
+
+
+        function [fig,persong] = ResponseMap2Songs(neuroninfo)
+            % 为了计算Neuron对每一个song的反应的大小
+            
+            dbstop if error
+
+            conkeywords = {'B346','B512','B521','B554','B606','G429','G506','G518','G573',...
+                'G578','O331','O507','O509','O540','Y515','Y606','Y616','G699'}; % 如果查看其他song,那就在此处添加吧!!!
+            num_files = length(neuroninfo);
+            wb = PoolWaitbar(num_files,'loading...');
+
+
+            responseinfo = struct;
+
+            summer = {};
+            %    findit = @(x) find();
+
+            perneuron = struct;
+            parfor k = 1:length(neuroninfo) % should be par-for
+                %                 try
+                loaded = load(neuroninfo(k).filepath,'song');
+                list18 = loaded.song.normlist(~cellfun(@isempty, regexp(cellstr({loaded.song.normlist.stimuliname}.'),strjoin(conkeywords,'|'))));
+                list18  = Song.judgeConResp(list18);
+                for kk = 1:length(list18)
+                    list18(kk).neuronname = loaded.song.formated_name;
+                    list18(kk).bsns = neuroninfo(k).nsbs;
+                end
+                summer{k} = list18;
+                perneuron(k).numpositive = length(find([list18.label].' == 1));
+                perneuron(k).neuronname = loaded.song.formated_name;
+                perneuron(k).bsns = neuroninfo(k).nsbs;
+                perneuron(k).respsong18 = neuroninfo(k).RepSong18;
+                perneuron(k).respsong18_thifunction = sum([list18.label].');
+                increment(wb);
+                %
+            end
+
+            [~,index] = sortrows([perneuron.numpositive].'); perneuron = perneuron(index(end:-1:1)); clear index
+
+            columnnames = cellstr({perneuron.neuronname}.');
+
+            respinfo = horzcat(summer{:});
+            for k = 1:length(respinfo)
+                if respinfo(k).bsns == 1 && respinfo(k).label == 1
+                    respinfo(k).colorstate = 1;
+                elseif respinfo(k).bsns == 2 && respinfo(k).label == 1
+                    respinfo(k).colorstate = 2;
+                else
+                    respinfo(k).colorstate = 0;
+                end
+            end
+
+            respinfoT = struct2table(respinfo);
+
+
+            % calculate the stimuli information
+            unique_songname = unique(cellstr({respinfo.stimuliname}.'));
+
+            persong = struct;
+            for k = 1:length(unique_songname)
+
+                hitted = find(~cellfun(@isempty, regexp(cellstr({respinfo.stimuliname}.'),unique_songname{k})));
+                sublist = respinfo(hitted);
+                persong(k).songname = unique_songname{k};
+                persong(k).numpositive =  length(find([sublist.label].' == 1));
+
+            end
+
+
+            perneuron = table2struct(sortrows(struct2table(perneuron),{'bsns','numpositive'},{'ascend','descend'}));
+
+            selected_perneuron = perneuron(find([perneuron.respsong18_thifunction].' ~= 0));
+            columnnames = cellstr({selected_perneuron.neuronname}.');
+
+            persong = table2struct(sortrows(struct2table(persong),{'numpositive'},{'descend'}));
+            
+            rownames = cellstr({persong.songname}.');
+
+
+
+            fig = figure;
+            title(neuroninfo(1).neuronname);
+            h = heatmap(respinfoT,'neuronname','stimuliname','ColorVariable','colorstate');
+
+            % Define the custom colormap
+            customColormap = [0.9 0.9 0.9; 0.3 0.3 1; 1 0.3 0.3]; % White, Blue, Red
+
+            % Assign the custom colormap to the heatmap object
+            h.Colormap = customColormap;
+
+            h.YDisplayData = rownames;
+            h.XDisplayData = columnnames;
+
+            % title('Diff')
+            %h = heatmap(T_sum_perstimulus,'fragname','neuronname','ColorVariable','diff','CellLabelColor','none')
+            h.YDisplayData = rownames;
+            h.XDisplayData = columnnames;
+            textObjs = findobj(h,'Type','Text');
+            set(textObjs,'Interpreter','none');
+          
+           
+
+
+
+        end
+
+
 
         function conlist = plotWLvsFR(conlist)
 

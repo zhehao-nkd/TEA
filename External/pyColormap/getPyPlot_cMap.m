@@ -1,5 +1,4 @@
 function cmp = getPyPlot_cMap(nam,n,keepAlpha,pyCmd)
-dbstop if error
 % cmp = getPyPlot_cMap(nam [, n, keepAlpha, pyCmd])
 %
 %

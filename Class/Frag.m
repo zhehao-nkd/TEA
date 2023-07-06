@@ -52,6 +52,86 @@ classdef Frag < handle
 
         end
 
+
+
+        function drawFragsSortedByTypes(fg,newcategolist, outdir)
+
+            inputlist = fg.allfraglist;
+
+            thelist = Frag.judgeFragResp(inputlist);
+
+
+            newstimuli_ids = find(~cellfun(@isempty, regexp(cellstr({thelist.stimuliname}.'),'Type')));
+
+
+            % Find the most frequent Fid
+            C = cellstr({thelist.Fid}.') ;
+            catC=categorical(C);
+            catNames=categories(catC);
+            [~,ix] = max(countcats(catC));
+
+            samefile_ids = find(strcmp({thelist.Fid}.',catNames{ix}));
+            goodids = intersect(newstimuli_ids,samefile_ids);
+
+
+            if exist('newcategolist','var')
+                summer = {};
+                for kk = 1:length(newcategolist)
+                    summer{kk} = find(~cellfun(@isempty, regexp(cellstr({thelist.stimuliname}.'),newcategolist(kk).fullname)));
+                end
+                summerids = vertcat(summer{:});
+                goodids = intersect(goodids,summerids);
+            end
+
+            goodlist = thelist(goodids);
+            for k = 1:length(goodlist)
+                goodlist(k).catego = str2double(regexp(convertCharsToStrings(goodlist(k).stimuliname),'(?<=Type)\d+','match'));
+            end
+
+            %             unique_categos = unique([goodlist.catego].');
+
+            % Sorting !!!!!!!!!!!!!!
+            if isempty(goodlist)
+                return
+            end
+            [~,index] = sortrows([goodlist.catego].'); goodlist = goodlist(index); clear index
+
+
+            for idx = 1: length(goodlist)
+                figure('Color','w','Position',[2008 213 882 666]);%,'Visible','off');
+
+                newsptimes = Extract.sptimes_resetSP(goodlist(idx).rawsptimes, goodlist(idx).zpt - 0.2, goodlist(idx).zpt - 0.2 + 0.6);
+                newy = Utl.pad0(goodlist(idx).y,goodlist(idx).fs,0.2,0.6-goodlist(idx).leny/goodlist(idx).fs-0.2);
+                Draw.two_forPaper(newy,goodlist(idx).fs,newsptimes);
+                frame = getframe(gcf);
+                I{idx} = frame.cdata;
+                close(gcf);
+            end
+
+
+            % draw blank white
+
+            lieshu = 10;
+
+            hangshu = ceil(length(I)/lieshu);
+            rest = lieshu*hangshu - length(I);
+            white = uint8(255*ones(size(I{1})));
+
+            if rest > 0
+                for k = 1:rest
+                    I = [I,white];
+                end
+            end
+
+            reshapedI = reshape(I, lieshu,[]);%';
+            %clear I
+            IMG = cell2mat(reshapedI);
+            imwrite(IMG,sprintf('%s\\音节Syllables_%s.tiff',outdir,fg.formated_name));
+
+
+        end
+
+
         function latency = calLatency(frag)
             % 这个方法迁移自Neuron
 
@@ -1156,21 +1236,53 @@ classdef Frag < handle
 
             for n = 1: length(ids)
                 kk = ids(n);
-       
-                inputlist(kk).targety = inputlist(kk).rawy(int64((inputlist(kk).zpt + latency)*inputlist(kk).fs):int64((inputlist(kk).zpt + latency+DUR)*inputlist(kk).fs)); % 
+
+                inputlist(kk).targety = inputlist(kk).rawy(int64((inputlist(kk).zpt + latency)*inputlist(kk).fs):int64((inputlist(kk).zpt + latency+DUR)*inputlist(kk).fs)); %
                 inputlist(kk).targetsptimes = Extract.sptimes_resetSP(inputlist(kk).rawsptimes,inputlist( kk).zpt+latency,inputlist(kk).zpt + DUR+ latency);
-%                 disp(inputlist(kk).sptimes);
-%                 disp(inputlist(kk).targetsptimes);
-               
+                %                 disp(inputlist(kk).sptimes);
+                %                 disp(inputlist(kk).targetsptimes);
+
                 inputlist(kk).pretargety = zeros(DUR*inputlist(kk).fs,1);%inputlist(nid).prey(end - 0.1*32000:end); % 截取200ms
                 inputlist(kk).pretargetsptimes = Extract.sptimes_resetSP(...
                     inputlist(kk).presptimes,inputlist(kk).zpt - DUR,inputlist(kk).zpt);%length(inputlist(rids(kk)).prey)/32000 -0.1*32000
                 %calculate and judege whether the neuron respond to the target area or not
-%                 temp = Neuron.UseMaxSdfToJudgeRespOrNot(inputlist(kk).targety,inputlist(kk).targetsptimes,...
-%                     inputlist(kk).pretargety,inputlist(kk).pretargetsptimes,inputlist(kk).fs);
+                %                 temp = Neuron.UseMaxSdfToJudgeRespOrNot(inputlist(kk).targety,inputlist(kk).targetsptimes,...
+                %                     inputlist(kk).pretargety,inputlist(kk).pretargetsptimes,inputlist(kk).fs);
 
                 temp = Neuron.UseTtestToJudgeRespOrNot(inputlist(kk).targety,inputlist(kk).targetsptimes,...
                     inputlist(kk).pretargety,inputlist(kk).pretargetsptimes,inputlist(kk).fs);
+
+                %             [maxpresdf,~] = max(presdf);
+                %             [maxsdf,maxidx] = max(sdf);
+
+                pre_frs = Cal.eachTrialFiringRate(inputlist(kk).pretargetsptimes,length(inputlist(kk).pretargety)/inputlist(kk).fs);
+                sti_frs = Cal.eachTrialFiringRate(inputlist(kk).targetsptimes,length(inputlist(kk).targety)/inputlist(kk).fs);
+
+                [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
+
+%                 % 有多少个不为零的trails
+%                 num_not0trails = length(find(~cellfun(@isempty,sptimes)));
+%                 percentage_not0 = num_not0trails/length(sptimes);
+
+                if h == 1
+                    answer = 1;
+                else
+                    answer = 0;
+                end
+
+                %             if h == 1 && percentage_not0 >=0.5
+                %                 answer = 1;
+                %             elseif h == 1 && percentage_not0 < 0.5
+                %                 answer = 0;
+                %             elseif h == 0||isnan(h)
+                %                 answer = 0;
+                %             end
+
+
+                temp.pvalue = p;
+                temp.label = answer;
+                temp.maxsdf = nan;%sdf;
+
 
                 inputlist(kk).label = temp.label;
                 inputlist(kk).pvalue = temp.pvalue;
@@ -1181,72 +1293,6 @@ classdef Frag < handle
             end
 
             outputlist = inputlist;
-
-        end
-
-
-        function drawFragsSortedByTypes(frag)
-
-            inputlist = frag.allfraglist;
-
-            thelist = Frag.judgeFragResp(inputlist);
-
-
-            newstimuli_ids = find(~cellfun(@isempty, regexp(cellstr({thelist.stimuliname}.'),'Type')));
-
-
-            % Find the most frequent Fid
-            C = cellstr({thelist.Fid}.') ;
-            catC=categorical(C);
-            catNames=categories(catC);
-            [~,ix] = max(countcats(catC));
-
-            samefile_ids = find(strcmp({thelist.Fid}.',catNames{ix}));
-            goodids = intersect(newstimuli_ids,samefile_ids);
-
-
-            goodlist = thelist(goodids);
-            for k = 1:length(goodlist)
-                goodlist(k).catego = str2double(regexp(convertCharsToStrings(goodlist(k).stimuliname),'(?<=Type)\d+','match'));
-            end
-
-%             unique_categos = unique([goodlist.catego].');
-
-            % Sorting !!!!!!!!!!!!!!
-            if isempty(goodlist)
-                return
-            end
-            [~,index] = sortrows([goodlist.catego].'); goodlist = goodlist(index); clear index
-
-
-            for idx = 1: length(goodlist)
-                figure('Color','w','Position',PM.size1);
-                Draw.three(goodlist(idx).plty,goodlist(idx).fs,goodlist(idx).pltsptimes);
-                frame = getframe(gcf);
-                I{idx} = frame.cdata;
-                close(gcf);
-            end
-
-
-            % draw blank white
-
-            lieshu = 15;
-
-            hangshu = ceil(length(I)/lieshu);
-            rest = lieshu*hangshu - length(I);
-            white = uint8(255*ones(size(I{1})));
-
-            if rest > 0
-                for k = 1:rest
-                    I = [I,white];
-                end
-            end
-
-            reshapedI = reshape(I, lieshu,[])';
-            %clear I
-            IMG = cell2mat(reshapedI);
-            imwrite(IMG,sprintf('涿州Syllables_%s.png',frag.formated_name));
-
 
         end
 
