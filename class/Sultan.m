@@ -1931,7 +1931,7 @@ classdef Sultan < handle
             h = heatmap(respinfoT,'neuronname','stimuliname','ColorVariable','colorstate');
 
             % Define the custom colormap
-            customColormap = [0.9 0.9 0.9; 0.3 0.3 1; 1 0.3 0.3]; % White, Blue, Red
+            customColormap = [0.99 0.99 0.99; 0.1 0.1 1; 1 0.1 0.1]; % White, Blue, Red
 
             % Assign the custom colormap to the heatmap object
             h.Colormap = customColormap;

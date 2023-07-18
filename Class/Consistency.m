@@ -148,63 +148,63 @@ classdef Consistency
 
 
 
-
-            %是否被测了 replas + 80 frags
-            consis_songs = cs.sublist(find(~cellfun(@isempty,regexp(cellstr({cs.sublist.stimuliname}.'),'norm'))));
-            all_repla_ids = find(~cellfun(@isempty,regexp(cellstr({list.stimuliname}.'),'Repla')));
-            if isempty(all_repla_ids)
-                cs.replatested = 0;
-
-            else
-
-                repla_Fid = cs.sublist(find(~cellfun(@isempty,regexp(cellstr({cs.sublist.stimuliname}.'),'Repla')))).Fid;
-                repla_corresp_norm = consis_songs(find(~cellfun(@isempty,regexp(cellstr({consis_songs.Fid}.'),repla_Fid))));
-                if isempty(repla_corresp_norm)
-                    cs.replatested = 0.4;
-                else
-                    repla_answer = Song.judgeConResp(repla_corresp_norm).label;
-                    % figure; Draw.three(repla_corresp_norm.plty,repla_corresp_norm.fs,repla_corresp_norm.pltsptimes);
-
-                    if repla_answer == 1
-                        cs.replatested = 1;
-                    else
-                        cs.replatested = 0.5;
-                    end
-
-                end
-            end
-
-
-            criteria1 = find(~cellfun(@isempty,regexp(cellstr({list.stimuliname}.'),'Type')));
-            criteria2 = find(~cellfun(@isempty,regexp(cellstr({list.stimuliname}.'),'Frag')));
-            frag80 =  Frag.judgeFragResp(list(intersect(criteria1,criteria2)));
-           
-            if strcmp(repla_Fid, frag80(1).Fid)
-                cs.comparable = 1;
-            else
-                cs.comparable = 0;
-            end
-
-
-            % 是否对任意一个single syllable of the song 反应？  这个Neuron 是否对单个elements （same song） 反应？如果是，有多少个？
-            raw_samesongfrags = list(find(~cellfun(@isempty,regexp( cellstr({list.stimuliname}.'),'samesong'))));
-            [counts, groupnames] = groupcounts({raw_samesongfrags.Fid}.');
-            [maxvalue, maxid] = max(counts);
-            if length(counts) > 1
-                warning('Dangerous!!!!!!');
-                %pause
-            end
-            selected_fid = groupnames(maxid);
-            samesongfrags = raw_samesongfrags(find(~cellfun(@isempty,regexp( cellstr({raw_samesongfrags.Fid}.'),selected_fid))));
-            judged_frags = Frag.judgeFragResp(samesongfrags);
-
-            if any([judged_frags.label].'==1)
-                cs.resp2SameSongFrags = 1;
-            else
-                cs.resp2SameSongFrags = 0;
-            end
-
-            cs.numResp2SameSongFrags = length(find([judged_frags.label].'==1));
+% 
+%             %是否被测了 replas + 80 frags
+%             consis_songs = cs.sublist(find(~cellfun(@isempty,regexp(cellstr({cs.sublist.stimuliname}.'),'norm'))));
+%             all_repla_ids = find(~cellfun(@isempty,regexp(cellstr({list.stimuliname}.'),'Repla')));
+%             if isempty(all_repla_ids)
+%                 cs.replatested = 0;
+% 
+%             else
+% 
+%                 repla_Fid = cs.sublist(find(~cellfun(@isempty,regexp(cellstr({cs.sublist.stimuliname}.'),'Repla')))).Fid;
+%                 repla_corresp_norm = consis_songs(find(~cellfun(@isempty,regexp(cellstr({consis_songs.Fid}.'),repla_Fid))));
+%                 if isempty(repla_corresp_norm)
+%                     cs.replatested = 0.4;
+%                 else
+%                     repla_answer = Song.judgeConResp(repla_corresp_norm).label;
+%                     % figure; Draw.three(repla_corresp_norm.plty,repla_corresp_norm.fs,repla_corresp_norm.pltsptimes);
+% 
+%                     if repla_answer == 1
+%                         cs.replatested = 1;
+%                     else
+%                         cs.replatested = 0.5;
+%                     end
+% 
+%                 end
+%             end
+% 
+% 
+%             criteria1 = find(~cellfun(@isempty,regexp(cellstr({list.stimuliname}.'),'Type')));
+%             criteria2 = find(~cellfun(@isempty,regexp(cellstr({list.stimuliname}.'),'Frag')));
+%             frag80 =  Frag.judgeFragResp(list(intersect(criteria1,criteria2)));
+%            
+%             if strcmp(repla_Fid, frag80(1).Fid)
+%                 cs.comparable = 1;
+%             else
+%                 cs.comparable = 0;
+%             end
+% 
+% 
+%             % 是否对任意一个single syllable of the song 反应？  这个Neuron 是否对单个elements （same song） 反应？如果是，有多少个？
+%             raw_samesongfrags = list(find(~cellfun(@isempty,regexp( cellstr({list.stimuliname}.'),'samesong'))));
+%             [counts, groupnames] = groupcounts({raw_samesongfrags.Fid}.');
+%             [maxvalue, maxid] = max(counts);
+%             if length(counts) > 1
+%                 warning('Dangerous!!!!!!');
+%                 %pause
+%             end
+%             selected_fid = groupnames(maxid);
+%             samesongfrags = raw_samesongfrags(find(~cellfun(@isempty,regexp( cellstr({raw_samesongfrags.Fid}.'),selected_fid))));
+%             judged_frags = Frag.judgeFragResp(samesongfrags);
+% 
+%             if any([judged_frags.label].'==1)
+%                 cs.resp2SameSongFrags = 1;
+%             else
+%                 cs.resp2SameSongFrags = 0;
+%             end
+% 
+%             cs.numResp2SameSongFrags = length(find([judged_frags.label].'==1));
 
        
          

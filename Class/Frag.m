@@ -1258,7 +1258,7 @@ classdef Frag < handle
                 pre_frs = Cal.eachTrialFiringRate(inputlist(kk).pretargetsptimes,length(inputlist(kk).pretargety)/inputlist(kk).fs);
                 sti_frs = Cal.eachTrialFiringRate(inputlist(kk).targetsptimes,length(inputlist(kk).targety)/inputlist(kk).fs);
 
-                [h,p] = ttest(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
+                [p,h] = signrank(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
 
 %                 % 有多少个不为零的trails
 %                 num_not0trails = length(find(~cellfun(@isempty,sptimes)));

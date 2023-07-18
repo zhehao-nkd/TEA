@@ -24,7 +24,7 @@ classdef Repla < handle
                 if  length(find(~cellfun(@isempty, regexp(cellstr({sublist.stimuliname}.'),'Type')))) >0 % 说明是新的stimuli
                     rp.replalist{k} = Repla.judgeReplaRespNewStimuli(sublist,latency); 
                 else
-                    rp.replalist{k} = Repla.judgeReplaRespOldStimuli(sublist,latency);
+                    rp.replalist{k} = Repla.judgeReplaRespOldStimuli(sublist);
 
                 end
 
