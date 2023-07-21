@@ -53,7 +53,7 @@ for kk = 1: length(neurondir) % iterate 对每一个 ZP folder
             coresp_stimulidirs = valid_stimulidir;
         else
             hitted_stimulidir_ids = find(~cellfun(@isempty, regexp(cellstr(valid_stimulidir),...
-                unpack(regexp(valid_pl2files{index},'F\d+','match')))  ));
+                unpack(regexp(valid_pl2files{index},'F\d','match')))  ));
             if isempty(hitted_stimulidir_ids)
                 continue
             else
