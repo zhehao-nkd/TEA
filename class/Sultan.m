@@ -1853,7 +1853,7 @@ classdef Sultan < handle
             dbstop if error
 
             conkeywords = {'B346','B512','B521','B554','B606','G429','G506','G518','G573',...
-                'G578','O331','O507','O509','O540','Y515','Y606','Y616','G699'}; % 如果查看其他song,那就在此处添加吧!!!
+                'G578','O331','O507','O509','O540','Y515','Y606','Y616','G699'}; % 如果查看其他song,那就在此处添加!!!
             num_files = length(neuroninfo);
             wb = PoolWaitbar(num_files,'loading...');
 

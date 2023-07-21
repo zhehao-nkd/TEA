@@ -267,6 +267,10 @@ classdef Song < handle
                 [p,h] = signrank(sti_frs,pre_frs,'Tail','Right','Alpha',0.05);
                 inputlist(k).pvalue = p;
                 % mean_maxsdf = maxsdf/length(neu.list(thisi).judgerespsptimes);
+                inputlist(k).pre_fr = mean(pre_frs);
+                inputlist(k).sti_fr = mean(sti_frs);
+                inputlist(k).rs = inputlist(k).sti_fr - inputlist(k).pre_fr;
+
                 inputlist(k).maxsdf = maxsdf;
                 inputlist(k).label = h; % 初始化
 
@@ -288,6 +292,12 @@ classdef Song < handle
                 %                 title(sprintf('Label is %u',neu.list(thisi).label) );
                 %                 close(gcf)
 
+            end
+
+            zscored_rs = [inputlist.rs].';
+
+            for k = 1:length(inputlist)
+                inputlist(k).zscored_rs = zscored_rs(k);
             end
 
             outputlist = inputlist;

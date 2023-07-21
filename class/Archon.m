@@ -684,7 +684,7 @@ classdef Archon
             this_unit = roster.unit;
             experiments = {};
             count = 0;
-            getfileid = @(x) str2num(regexp(convertCharsToStrings(x),'(?<=F)\d*','match'));
+            getfileid = @(x) str2num(regexp(convertCharsToStrings(x),'(?<=F)\d','match'));
             for k = 1: length(valid_pl2files) % parfor
 
 

@@ -80,7 +80,7 @@ classdef Bird < handle
             hatch_dates =birdlist.Hatchdate(siblings_index);
 
             for k = 1: length(siblings_names)
-                disp(sprintf('sibling is:  %s, hatching date: %s, recording state: %s',siblings_names{k},hatch_dates{k},bd.getRecordingState(siblings_names{k}).identifier));
+                disp(sprintf('sibling is:  %s, hatching date: %s, recording state: %f',siblings_names{k},hatch_dates{k},bd.getRecordingState(siblings_names{k}).identifier));
                 newline;
             end
 

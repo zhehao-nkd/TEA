@@ -149,7 +149,7 @@ classdef Neuron < handle & Neuron_basicDrawings & Neuron_CDF
 
 
                 % 生成images
-               neu.imagecache = ImageCache(neu.song,neu.waveform);
+               %neu.imagecache = ImageCache(neu.song,neu.waveform);
                 
 
             end
